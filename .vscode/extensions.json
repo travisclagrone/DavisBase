@@ -1,0 +1,12 @@
+{
+	"recommendations": [
+		"vscjava.vscode-java-pack",  // Java Extension Pack
+		"redhat.vscode-xml",  // XML Language Support
+		"dotjoshjohnson.xml",  // XML Tools
+		"EditorConfig.EditorConfig",  // Editor Config
+		"streetsidesoftware.code-spell-checker",  // Code Spell Checker
+	],
+	"unwantedRecommendations": [
+
+	]
+}
