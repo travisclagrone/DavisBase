@@ -1,2 +1,11 @@
 {
+  "maven.view": "hierarchical",
+
+  "[feature]": {
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true,  // Quick suggestions for strings must be true for the alexkrechik.cucumberautocomplete extension to work properly.
+    },
+  },
 }

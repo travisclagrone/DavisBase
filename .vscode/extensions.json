@@ -4,7 +4,8 @@
 		"redhat.vscode-xml",  // XML Language Support
 		"dotjoshjohnson.xml",  // XML Tools
 		"EditorConfig.EditorConfig",  // Editor Config
-		"streetsidesoftware.code-spell-checker",  // Code Spell Checker
+    "streetsidesoftware.code-spell-checker",  // Code Spell Checker
+    "alexkrechik.cucumberautocomplete",  // Cucumber (Gherkin) Full Support
 	],
 	"unwantedRecommendations": [
 
