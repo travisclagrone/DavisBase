@@ -1,0 +1,30 @@
+@startuml REPL
+control ":DavisBase"
+participant ":Host"
+participant ":Parser"
+participant ":Compiler"
+participant ":Executor"
+database ":Storage"
+
+loop
+    ":DavisBase" -> ":Host" ++ #LightGray : read()
+    return statement: String
+
+    ":DavisBase" -> ":Parser" ++ #LightGray : parse(statement: String)
+    return AbstractSyntaxTree
+
+    ":DavisBase" -> ":Compiler" ++ #LightGray : compile(:AbstractSyntaxTree, :Storage)
+        ":Compiler" -> ":Storage" ++ #LightGray : getSchema()
+        return schema
+    return :Command
+
+    ":DavisBase" -> ":Executor" ++ #LightGray : execute(:Command, :Storage)
+        ":Executor" -> ":Storage" ++ : open(:TableId)
+        ":Executor" <-- ":Storage" : :Data
+        ":Executor" -> ":Storage" : close(:TableId)
+        deactivate ":Storage"
+    return :Result
+
+    ":DavisBase" -> ":Host" : write(:Result)
+end
+@enduml
