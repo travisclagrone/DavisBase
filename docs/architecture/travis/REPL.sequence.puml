@@ -13,15 +13,20 @@ loop
     ":DavisBase" -> ":Parser" ++ #LightGray : parse(statement: String)
     return AbstractSyntaxTree
 
-    ":DavisBase" -> ":Compiler" ++ #LightGray : compile(:AbstractSyntaxTree, :Storage)
-        ":Compiler" -> ":Storage" ++ #LightGray : getSchema()
-        return schema
+    ":DavisBase" -> ":Compiler" ++ #LightGray : compile(:AbstractSyntaxTree, context: Storage)
+        ":Compiler" -> ":Storage" : open(dataDictionary: TableId)
+        activate ":Storage"
+            ":Compiler" -> ":Storage" ++ #LightGray : read()
+            return schema: Data
+        ":Compiler" -> ":Storage" : close()
+        deactivate ":Storage"
     return :Command
 
-    ":DavisBase" -> ":Executor" ++ #LightGray : execute(:Command, :Storage)
-        ":Executor" -> ":Storage" ++ : open(:TableId)
-        ":Executor" <-- ":Storage" : :Data
-        ":Executor" -> ":Storage" : close(:TableId)
+    ":DavisBase" -> ":Executor" ++ #LightGray : execute(:Command, context: Storage)
+        ":Executor" -> ":Storage" : open(target: TableId)
+        activate ":Storage"
+            ref over ":Executor", ":Storage" : command execution
+        ":Executor" -> ":Storage" : close()
         deactivate ":Storage"
     return :Result
 
