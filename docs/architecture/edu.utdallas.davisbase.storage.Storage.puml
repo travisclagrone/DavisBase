@@ -1,0 +1,33 @@
+@startuml edu.utdallas.davisbase.storage.Storage
+
+package edu.utdallas.davisbase.storage {
+
+  class Storage {
+    #configuration: Storage.Configuration
+    #state: Storage.State
+    #<<create>> Storage(configuration: Storage.Configuration, state: Storage.State)
+    +getFiles(): FileInfo[0..*]
+    +openTable(tableName: String): TableFileStream
+    +openIndex(tableName: String, columnName: String): IndexFileStream
+  }
+
+  Storage o-- Configuration
+  Storage +-- Configuration
+  class Configuration {
+    +dataDirectoryName: String = "data"
+    +tableFileExtension: String = "tbl"
+    +indexFileExtension: String = "ndx"
+    +catalogTablesTableName: String = "davisbase_tables"
+    +catalogColumnsTableName: String = "davisbase_columns"
+  }
+
+  Storage *-- State
+  Storage +-- State
+  class State {
+    {field} +dataDirectory: String = System.getProperty("user.dir")
+    {field} +openTableFileStreams: Map<fileName: String, TableFileStream> = new Map<>()
+    {field} +openIndexFileStreams: Map<fileName: String, IndexFileStream> = new Map<>()
+  }
+
+}
+@enduml

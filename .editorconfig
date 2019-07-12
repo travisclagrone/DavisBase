@@ -13,6 +13,3 @@ indent_size = 4
 
 [*.{md,markdown}]
 trim_trailing_whitespace = false
-
-[*.{pu,puml,plantuml}]
-indent_size = 4

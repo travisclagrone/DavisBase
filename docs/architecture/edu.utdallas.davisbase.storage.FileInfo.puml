@@ -1,0 +1,43 @@
+@startuml edu.utdallas.davisbase.storage.FileInfo
+
+package edu.utdallas.davisbase.storage {
+
+  Storage ..> FileInfo : <<use>>
+  hide Storage fields
+  hide Storage methods
+
+  abstract FileInfo {
+    #baseName: String {readOnly}
+    +<<create>> FileInfo(baseName: String)
+    +/getBaseName(): String
+    +/isCatalogFile(): boolean
+  }
+
+  FileInfo <|-- TableFileInfo
+  class TableFileInfo {
+    +<<create>> TableFileInfo(baseName: String)
+    +/getTableName(): String
+  }
+
+  FileInfo <|-- IndexFileInfo
+  class IndexFileInfo {
+    +<<create>> IndexFileInfo(baseName: String)
+    +/getTableName(): String
+    +/getColumnName(): String
+  }
+  note bottom #OrangeRed
+    <size:9>There may be a bug in the specs regarding</size>
+    <size:9>the "<tablename>_<columnname>" format.</size>
+  end note
+
+  note as BaseNameNote
+    <size:9>"baseName" is the filename without the extension.</size>
+    <size:9>(e.g. "hello_world.txt" => "hello_world")</size>
+  end note
+  FileInfo .. BaseNameNote
+  BaseNameNote .. TableFileInfo
+  BaseNameNote .. IndexFileInfo
+
+}
+
+@enduml

@@ -1,0 +1,42 @@
+@startuml Storage
+
+package edu.utdallas.davisbase.storage {
+
+  class Storage
+
+  together {
+    Storage +-- Configuration
+    class Configuration
+
+    Storage +-- State
+    class State
+  }
+
+  together {
+    Storage ..> FileInfo : <<use>>
+    abstract FileInfo
+
+    FileInfo <|-- TableFileInfo
+    class TableFileInfo
+
+    FileInfo <|-- IndexFileInfo
+    class IndexFileInfo
+  }
+
+  together {
+    Storage *-- TableFileStream
+    class TableFileStream {
+      ' TODO
+    }
+
+    Storage *-- IndexFileStream
+    class IndexFileStream {
+      ' TODO
+    }
+  }
+
+}
+
+hide members
+
+@enduml
