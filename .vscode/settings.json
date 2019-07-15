@@ -1,7 +1,7 @@
 {
   "maven.view": "hierarchical",
 
-  "[feature]": {
+  "[feature]": {  // Gherkin (Cucumber)
     "editor.quickSuggestions": {
       "other": true,
       "comments": false,
