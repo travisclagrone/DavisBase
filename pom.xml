@@ -14,8 +14,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Use Java 8 (LTS -1) instead of Java 11 (LTS -0) because most dependencies don't support Java 11 yet. -->
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
     <annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
   </properties>
 
@@ -132,8 +130,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.8.1</version><!-- Use at least 3.6 for Java8 support. -->
           <configuration>
-            <source>${maven.compile.source}</source>
-            <target>${maven.compiler.target}</target>
+            <source>1.8</source>
+            <target>1.8</target>
             <compilerArguments>
               <Xmaxerrs>10000</Xmaxerrs>
               <Xmaxwarns>10000</Xmaxwarns>
