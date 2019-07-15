@@ -1,4 +1,8 @@
 {
+  "cSpell.words": [
+    "davisbase"
+  ],
+
   "maven.view": "hierarchical",
 
   "[feature]": {  // Gherkin (Cucumber)
