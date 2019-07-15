@@ -6,9 +6,9 @@ package edu.utdallas.davisbase.storage {
     #configuration: Storage.Configuration
     #state: Storage.State
     #<<create>> Storage(configuration: Storage.Configuration, state: Storage.State)
-    +getFiles(): FileInfo[0..*]
-    +openTable(tableName: String): TableFileStream
-    +openIndex(tableName: String, columnName: String): IndexFileStream
+    +getDataFiles(): DataFileInfo[0..*]
+    +openTable(tableName: String): TableFileAccessor
+    +openIndex(tableName: String, columnName: String): IndexFileAccessor
   }
 
   Storage o-- Configuration
@@ -20,14 +20,16 @@ package edu.utdallas.davisbase.storage {
     +catalogTablesTableName: String = "davisbase_tables"
     +catalogColumnsTableName: String = "davisbase_columns"
   }
+  hide Configuration methods
 
   Storage *-- State
   Storage +-- State
   class State {
     {field} +dataDirectory: String = System.getProperty("user.dir")
-    {field} +openTableFileStreams: Map<fileName: String, TableFileStream> = new Map<>()
-    {field} +openIndexFileStreams: Map<fileName: String, IndexFileStream> = new Map<>()
+    {field} +openedTableAccessors: Map<fileName: String, TableFileAccessor> = new Map<>()
+    {field} +openedIndexAccessors: Map<fileName: String, IndexFileAccessor> = new Map<>()
   }
+  hide State methods
 
 }
 @enduml

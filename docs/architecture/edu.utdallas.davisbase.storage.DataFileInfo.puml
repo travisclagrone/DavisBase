@@ -1,25 +1,25 @@
-@startuml edu.utdallas.davisbase.storage.FileInfo
+@startuml edu.utdallas.davisbase.storage.DataFileInfo
 
 package edu.utdallas.davisbase.storage {
 
-  Storage ..> FileInfo : <<use>>
+  Storage ..> DataFileInfo : <<use>>
   hide Storage fields
   hide Storage methods
 
-  abstract FileInfo {
+  abstract DataFileInfo {
     #baseName: String {readOnly}
-    +<<create>> FileInfo(baseName: String)
+    +<<create>> DataFileInfo(baseName: String)
     +/getBaseName(): String
     +/isCatalogFile(): boolean
   }
 
-  FileInfo <|-- TableFileInfo
+  DataFileInfo <|-- TableFileInfo
   class TableFileInfo {
     +<<create>> TableFileInfo(baseName: String)
     +/getTableName(): String
   }
 
-  FileInfo <|-- IndexFileInfo
+  DataFileInfo <|-- IndexFileInfo
   class IndexFileInfo {
     +<<create>> IndexFileInfo(baseName: String)
     +/getTableName(): String
@@ -34,7 +34,7 @@ package edu.utdallas.davisbase.storage {
     <size:9>"baseName" is the filename without the extension.</size>
     <size:9>(e.g. "hello_world.txt" => "hello_world")</size>
   end note
-  FileInfo .. BaseNameNote
+  DataFileInfo .. BaseNameNote
   BaseNameNote .. TableFileInfo
   BaseNameNote .. IndexFileInfo
 

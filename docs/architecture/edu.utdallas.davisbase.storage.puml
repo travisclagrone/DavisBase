@@ -1,4 +1,4 @@
-@startuml Storage
+@startuml edu.utdallas.davisbase.storage
 
 package edu.utdallas.davisbase.storage {
 
@@ -13,28 +13,23 @@ package edu.utdallas.davisbase.storage {
   }
 
   together {
-    Storage ..> FileInfo : <<use>>
-    abstract FileInfo
+    Storage ..> DataFileInfo : <<use>>
+    abstract DataFileInfo
 
-    FileInfo <|-- TableFileInfo
+    DataFileInfo <|-- TableFileInfo
     class TableFileInfo
 
-    FileInfo <|-- IndexFileInfo
+    DataFileInfo <|-- IndexFileInfo
     class IndexFileInfo
   }
 
   together {
-    Storage *-- TableFileStream
-    class TableFileStream {
-      ' TODO
-    }
+    Storage "0..1" *-- "0..*" TableFileAccessor
+    class TableFileAccessor
 
-    Storage *-- IndexFileStream
-    class IndexFileStream {
-      ' TODO
-    }
+    Storage "0..1" *-- "0..*" IndexFileAccessor
+    class IndexFileAccessor
   }
-
 }
 
 hide members
