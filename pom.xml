@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>edu.utdallas.davisbase</groupId>
@@ -16,36 +16,47 @@
     <!-- Use Java 8 (LTS -1) instead of Java 11 (LTS -0) because most dependencies don't support Java 11 yet. -->
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
   </properties>
 
   <dependencies>
 
-    <!-- #region Compile Scope -->
-    <dependency><!-- Google Guava is a lightweight core library extension. E.g. declarative run-time argument checking. -->
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>28.0-jre</version>
-      <scope>compile</scope>
+    <!-- #region Checker Framework (primarily for compile-time null checking) -->
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>2.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>jdk8</artifactId>
+      <version>2.9.0</version>
     </dependency>
     <!-- #endregion -->
 
-    <!-- #region Test Scope -->
-    <dependency><!-- Cucumber is a behavioral specification and testing framework. (BDD: "behavior-driven design") -->
+    <dependency>      <!-- Google Guava is a lightweight core library extension. E.g. declarative run-time argument checking. -->
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>28.0-jre</version>
+    </dependency>
+
+    <!-- #region Testing -->
+    <dependency>      <!-- Cucumber is a behavioral specification and testing framework. (BDD: "behavior-driven design") -->
       <groupId>io.cucumber</groupId>
-      <artifactId>cucumber-java8</artifactId><!-- Use Java8 edition for lambda support. -->
+      <artifactId>cucumber-java8</artifactId>      <!-- Use Java8 edition for lambda support. -->
       <version>4.5.3</version>
       <scope>test</scope>
     </dependency>
-    <dependency><!-- JUnit is a unit testing framework and test runner. -->
+    <dependency>      <!-- JUnit is a unit testing framework and test runner. -->
       <groupId>junit</groupId>
-      <artifactId>junit</artifactId><!-- Don't upgrade to JUnit5 edition because other tools don't integrate with it yet. -->
+      <artifactId>junit</artifactId>      <!-- Don't upgrade to JUnit5 edition because other tools don't integrate with it yet. -->
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
-    <dependency><!-- Mockito is a test mocking framework. -->
+    <dependency>      <!-- Mockito is a test mocking framework. -->
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.28.2</version><!-- Don't upgrade to version 3 because other tools don't integrate with it yet. -->
+      <version>2.28.2</version>      <!-- Don't upgrade to version 3 because other tools don't integrate with it yet. -->
       <scope>test</scope>
     </dependency>
     <!-- #endregion -->
@@ -53,10 +64,10 @@
   </dependencies>
 
   <build>
-    <pluginManagement><!-- Explicitly specify plugin versions to avoid using Maven defaults. -->
+    <pluginManagement>      <!-- Explicitly specify plugin versions to avoid using Maven defaults. -->
       <plugins>
-        <plugin>
 
+        <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>3.0.0-M2</version>
           <executions>
@@ -70,9 +81,9 @@
                   <requireMavenVersion>
                     <version>3.6.1</version>
                   </requireMavenVersion>
-                  <requireJavaVersion>
+                  <!-- <requireJavaVersion>
                     <version>1.8</version>
-                  </requireJavaVersion>
+                  </requireJavaVersion> -->
                 </rules>
               </configuration>
             </execution>
@@ -93,6 +104,19 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <!-- This plugin will set properties values using dependency information -->
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <executions>
+            <execution>
+              <goals>
+                <goal>properties</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -107,6 +131,31 @@
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.8.1</version><!-- Use at least 3.6 for Java8 support. -->
+          <configuration>
+            <source>${maven.compile.source}</source>
+            <target>${maven.compiler.target}</target>
+            <compilerArguments>
+              <Xmaxerrs>10000</Xmaxerrs>
+              <Xmaxwarns>10000</Xmaxwarns>
+            </compilerArguments>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>org.checkerframework</groupId>
+                <artifactId>checker</artifactId>
+                <version>2.9.0</version>
+              </path>
+            </annotationProcessorPaths>
+            <annotationProcessors>
+              <!-- Add all the checkers you want to enable here -->
+              <annotationProcessor>org.checkerframework.checker.nullness.NullnessChecker</annotationProcessor>
+            </annotationProcessors>
+            <compilerArgs>
+              <!-- location of the annotated JDK, which comes from a Maven dependency -->
+              <arg>-Xbootclasspath/p:${annotatedJdk}</arg>
+              <!-- -Awarns turns type-checking warnings into errors. -->
+              <!-- <arg>-Awarns</arg> -->
+            </compilerArgs>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
