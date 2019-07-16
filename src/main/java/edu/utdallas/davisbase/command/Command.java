@@ -10,4 +10,5 @@ public interface Command {
     // TODO Implement Command.execute(Storage)
     throw new NotImplementedException();
   }
+
 }
