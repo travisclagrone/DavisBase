@@ -6,7 +6,7 @@ import edu.utdallas.davisbase.storage.Storage;
 
 public interface Command {
 
-  public default Result execute(Storage storage) {
+  public default Result execute(Storage storage) throws ExecuteException {
     // TODO Implement Command.execute(Storage)
     throw new NotImplementedException();
   }
