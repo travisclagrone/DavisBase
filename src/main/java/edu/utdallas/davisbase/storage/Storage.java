@@ -30,8 +30,9 @@ public class Storage {
     checkNotNull(tableName);
     checkElementIndex(rootPageId, Short.MAX_VALUE);
 
-    String tableFileName = tableName + configuration.getTableFileExtension();
-    File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
+    final String tableFileName = tableName + configuration.getTableFileExtension();
+    final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
+
     checkArgument(tableFileHandle.exists(),
         String.format("File \"%s\" for table \"%s\" does not exist.",
             tableFileHandle.toString(),
@@ -41,17 +42,19 @@ public class Storage {
             tableFileHandle.toString(),
             tableName));
 
-    RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
-    checkState(randomAccessFile.length() % configuration.getPageSize() == 0,
+    final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
+    final long length = randomAccessFile.length();
+    checkState(length % configuration.getPageSize() == 0,
         String.format("File length %d is not a multiple of page size %d.",
-            randomAccessFile.length(),
+            length,
             configuration.getPageSize()));
-    checkState(rootPageId < (randomAccessFile.length() / configuration.getPageSize()),
+    checkState(rootPageId < (length / configuration.getPageSize()),
         String.format("Root page id %d is out of file length %d given page size %d.",
             rootPageId,
-            randomAccessFile.length(),
+            length,
             configuration.getPageSize()));
 
     return new TableFile(randomAccessFile, rootPageId);
   }
+
 }

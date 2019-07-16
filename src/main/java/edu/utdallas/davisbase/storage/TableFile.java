@@ -35,8 +35,8 @@ import static com.google.common.base.Preconditions.checkElementIndex;
  */
 public class TableFile implements Closeable {
 
-  private final RandomAccessFile file;
-  private short rootPageId;
+  protected final RandomAccessFile file;
+  protected short rootPageId;
   // TODO Add current state
 
   public TableFile(RandomAccessFile file, short rootPageId) {
@@ -49,150 +49,150 @@ public class TableFile implements Closeable {
     this.rootPageId = rootPageId;
   }
 
-  public void appendRow(TableRowBuilder tableRowBuilder) {
-    // TODO Implement TableFile.appendRow(TableRowBuilder)
-    throw new NotImplementedException();
-  }
-
   @Override
   public void close() throws IOException {
     file.close();
   }
 
-  public boolean goToNextRow() {
+  public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
+    // TODO Implement TableFile.appendRow(TableRowBuilder)
+    throw new NotImplementedException();
+  }
+
+  public boolean goToNextRow() throws IOException {
     // TODO Implement TableFile.goToNextRow()
     throw new NotImplementedException();
   }
 
-  public boolean goToRow(int rowId) {
+  public boolean goToRow(int rowId) throws IOException {
     // TODO Implement TableFile.goToRow(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Byte readTinyInt(int columnIndex) {
+  public @Nullable Byte readTinyInt(int columnIndex) throws IOException {
     // TODO Implement TableFile.readTinyInt(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Short readSmallInt(int columnIndex) {
+  public @Nullable Short readSmallInt(int columnIndex) throws IOException {
     // TODO Implement TableFile.readSmallInt(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Integer readInt(int columnIndex) {
+  public @Nullable Integer readInt(int columnIndex) throws IOException {
     // TODO Implement TableFile.readInt(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Long readBigInt(int columnIndex) {
+  public @Nullable Long readBigInt(int columnIndex) throws IOException {
     // TODO Implement TableFile.readBigInt(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Float readFloat(int columnIndex) {
+  public @Nullable Float readFloat(int columnIndex) throws IOException {
     // TODO Implement TableFile.readFloat(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Double readDouble(int columnIndex) {
+  public @Nullable Double readDouble(int columnIndex) throws IOException {
     // TODO Implement TableFile.readDouble(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable Year readYear(int columnIndex) {
+  public @Nullable Year readYear(int columnIndex) throws IOException {
     // TODO Implement TableFile.readYear(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable LocalTime readTime(int columnIndex) {
+  public @Nullable LocalTime readTime(int columnIndex) throws IOException {
     // TODO Implement TableFile.readTime(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable LocalDateTime readDateTime(int columnIndex) {
+  public @Nullable LocalDateTime readDateTime(int columnIndex) throws IOException {
     // TODO Implement TableFile.readDateTime(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable LocalDate readDate(int columnIndex) {
+  public @Nullable LocalDate readDate(int columnIndex) throws IOException {
     // TODO Implement TableFile.readDate(int)
     throw new NotImplementedException();
   }
 
-  public @Nullable String readText(int columnIndex) {
+  public @Nullable String readText(int columnIndex) throws IOException {
     // TODO Implement TableFile.readText(int)
     throw new NotImplementedException();
   }
 
-  public void removeRow() {
+  public void removeRow() throws IOException {
     // TODO Implement TableFile.removeRow()
     throw new NotImplementedException();
   }
 
-  public void writeNull(int columnIndex) {
+  public void writeNull(int columnIndex) throws IOException {
     // TODO Implement TableFile.writeNull(int)
     throw new NotImplementedException();
   }
 
-  public void writeTinyIny(int columnIndex, byte value) {
+  public void writeTinyIny(int columnIndex, byte value) throws IOException {
     // TODO Implement TableFile.writeTinyInt(int, byte)
     throw new NotImplementedException();
   }
 
-  public void writeSmallInt(int columnIndex, short value) {
+  public void writeSmallInt(int columnIndex, short value) throws IOException {
     // TODO Implement TableFile.writeSmallInt(int, short)
     throw new NotImplementedException();
   }
 
-  public void writeInt(int columnIndex, int value) {
+  public void writeInt(int columnIndex, int value) throws IOException {
     // TODO Implement TableFile.writeInt(int, int)
     throw new NotImplementedException();
   }
 
-  public void writeBigInt(int columnIndex, long value) {
+  public void writeBigInt(int columnIndex, long value) throws IOException {
     // TODO Implement TableFile.writeBigInt(int, long)
     throw new NotImplementedException();
   }
 
-  public void writeFloat(int columnIndex, float value) {
+  public void writeFloat(int columnIndex, float value) throws IOException {
     // TODO Implement TableFile.writeFloat(int, float)
     throw new NotImplementedException();
   }
 
-  public void writeDouble(int columnIndex, double value) {
+  public void writeDouble(int columnIndex, double value) throws IOException {
     // TODO Implement TableFile.writeDouble(int, double)
     throw new NotImplementedException();
   }
 
-  public void writeYear(int columnIndex, Year value) {
+  public void writeYear(int columnIndex, Year value) throws IOException {
     checkNotNull(value);
 
     // TODO Implement TableFile.writeYear(int, Year)
     throw new NotImplementedException();
   }
 
-  public void writeTime(int columnIndex, LocalTime value) {
+  public void writeTime(int columnIndex, LocalTime value) throws IOException {
     checkNotNull(value);
 
     // TODO Implement TableFile.writeTime(int, LocalTime)
     throw new NotImplementedException();
   }
 
-  public void writeDateTime(int columnIndex, LocalDateTime value) {
+  public void writeDateTime(int columnIndex, LocalDateTime value) throws IOException {
     checkNotNull(value);
 
     // TODO Implement TableFile.writeDateTime(int, value)
     throw new NotImplementedException();
   }
 
-  public void writeDate(int columnIndex, LocalDate value) {
+  public void writeDate(int columnIndex, LocalDate value) throws IOException {
     checkNotNull(value);
 
     // TODO Implement TableFile.writeDate(int, LocalDate)
     throw new NotImplementedException();
   }
 
-  public void writeText(int columnIndex, String value) {
+  public void writeText(int columnIndex, String value) throws IOException {
     checkNotNull(value);
 
     // TODO Implement TableFile.writeText(int, String)
