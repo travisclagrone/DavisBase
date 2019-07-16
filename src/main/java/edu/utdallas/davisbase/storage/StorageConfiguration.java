@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -28,11 +29,20 @@ public class StorageConfiguration {
       return "davisbase_columns";
     }
 
+    public static int getDefaultPageSize() {
+      return 512;
+    }
+
+    public static int getMinimumPageSize() {
+      return 512;
+    }
+
     private @Nullable String dataDirectoryName = null;
     private @Nullable String tableFileExtension = null;
     private @Nullable String indexFileExtension = null;
     private @Nullable String catalogTablesTableName = null;
     private @Nullable String catalogColumnsTableName = null;
+    private @Nullable Integer pageSize = null;
 
     public Builder() {}
 
@@ -59,6 +69,14 @@ public class StorageConfiguration {
     public void setCatalogColumnsTableName(String catalogColumnsTableName) {
       checkNotNull(catalogColumnsTableName);
       this.catalogColumnsTableName = catalogColumnsTableName;
+    }
+
+    public void setPageSize(int pageSize) {
+      checkArgument(getMinimumPageSize() <= pageSize,
+          String.format("Page size must be at least %d (bytes)",
+              getMinimumPageSize()));
+
+      this.pageSize = pageSize;
     }
 
     public StorageConfiguration build() {
@@ -92,7 +110,8 @@ public class StorageConfiguration {
           tableFileExtension,
           indexFileExtension,
           catalogTablesTableName,
-          catalogColumnsTableName);
+          catalogColumnsTableName,
+          pageSize);
     }
   }
 
@@ -101,19 +120,22 @@ public class StorageConfiguration {
   private final String indexFileExtension;
   private final String catalogTablesTableName;
   private final String catalogColumnsTableName;
+  private final int pageSize;
 
   private StorageConfiguration(
       String dataDirectoryName,
       String tableFileExtension,
       String indexFileExtension,
       String catalogTablesTableName,
-      String catalogColumnsTableName
+      String catalogColumnsTableName,
+      int pageSize
   ) {
     this.dataDirectoryName = dataDirectoryName;
     this.tableFileExtension = tableFileExtension;
     this.indexFileExtension = indexFileExtension;
     this.catalogTablesTableName = catalogTablesTableName;
     this.catalogColumnsTableName = catalogColumnsTableName;
+    this.pageSize = pageSize;
   }
 
   /**
@@ -151,4 +173,10 @@ public class StorageConfiguration {
     return tableFileExtension;
   }
 
+  /**
+   * @return the pageSize
+   */
+  public int getPageSize() {
+    return pageSize;
+  }
 }
