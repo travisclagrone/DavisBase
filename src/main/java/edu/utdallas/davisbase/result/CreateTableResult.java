@@ -36,7 +36,7 @@ public class CreateTableResult implements Result {
 
   @Override
   public int hashCode() {
-    return hash(tableName);
+    return hash(getTableName());
   }
 
   @Override
