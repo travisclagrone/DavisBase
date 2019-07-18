@@ -1,8 +1,7 @@
 package edu.utdallas.davisbase.parser;
 
-import edu.utdallas.davisbase.command.Command;
-import edu.utdallas.davisbase.command.UpdateCommand;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.index.CreateIndex;
@@ -34,7 +33,7 @@ public class Parser {
    */
   public Ast parse(String statement) throws ParseException {
     // TODO Implement Parser.parse(String)
-    Command cmd;
+    ExpressionParser expParse = new ExpressionParser();
     try {
       if(statement.equalsIgnoreCase("exit")){
         System.out.println("Exit Command");
@@ -80,8 +79,8 @@ public class Parser {
         Update updateStatement = (Update) stmt;
         System.out.println(updateStatement.getColumns());
         System.out.println(updateStatement.getExpressions());
-        System.out.println(updateStatement.getWhere());
-        cmd = new UpdateCommand();
+        Expression where = updateStatement.getWhere();
+        expParse.parseWhereExpression(where);
       }
       else if(stmt instanceof Select){
         Select selectStatement = (Select) stmt;
@@ -93,7 +92,7 @@ public class Parser {
       }
     }
     catch(JSQLParserException e){
-      System.out.println("PARSE EXCEPTION");
+      System.out.println("PARSE EXCEPTION " + e.getCause());
       throw(new ParseException());
     }
 
