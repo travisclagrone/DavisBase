@@ -17,7 +17,9 @@ public class DeleteResult implements Result {
    */
   public DeleteResult(String tableName, int rowsDeleted) {
     checkNotNull(tableName);
-    checkArgument(0 <= rowsDeleted, format("rowsDeleted must be nonnegative, but is %d", rowsDeleted));
+    checkArgument(0 <= rowsDeleted,
+        format("rowsDeleted must be nonnegative, but is %d",
+            rowsDeleted));
 
     this.tableName = tableName;
     this.rowsDeleted = rowsDeleted;

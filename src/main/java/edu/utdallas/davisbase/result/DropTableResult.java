@@ -9,7 +9,7 @@ public class DropTableResult implements Result {
   private final String tableName;
 
   /**
-   * @param tableName the name of the table that was dropped
+   * @param tableName the name of the table that was dropped (not null)
    */
   public DropTableResult(String tableName) {
     checkNotNull(tableName);
@@ -18,7 +18,7 @@ public class DropTableResult implements Result {
   }
 
   /**
-   * @return the name of the table that was dropped
+   * @return the name of the table that was dropped (not null)
    */
   public String getTableName() {
     return tableName;

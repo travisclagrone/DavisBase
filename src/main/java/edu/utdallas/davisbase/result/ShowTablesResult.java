@@ -2,11 +2,12 @@ package edu.utdallas.davisbase.result;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.hash;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public class ShowTablesResult implements Result {
@@ -18,7 +19,8 @@ public class ShowTablesResult implements Result {
   private final List<String> tableNames;
 
   /**
-   * @param tableNames the non-null collection of non-null table names
+   * @param tableNames the collection of (nonnull) names of the tables currently defined in this
+   *                   DavisBase storage instance (not null)
    */
   public ShowTablesResult(Collection<String> tableNames) {
     checkNotNull(tableNames);
@@ -27,11 +29,12 @@ public class ShowTablesResult implements Result {
     }
 
     // Copy the collection and then wrap it in an unmodifiable view to ensure immutability.
-    this.tableNames = Collections.unmodifiableList(new ArrayList<>(tableNames));
+    this.tableNames = unmodifiableList(new ArrayList<>(tableNames));
   }
 
   /**
-   * @return the non-null unmodifiable list of non-null table names
+   * @return an unmodifiable list of the (nonnull) names of the tables defined in this DavisBase
+   *         storage instance at the time this {@link ShowTablesResult} was created (not null)
    */
   public List<String> getTableNames() {
     return tableNames;
@@ -44,18 +47,18 @@ public class ShowTablesResult implements Result {
     }
 
     ShowTablesResult other = (ShowTablesResult) obj;
-    return tableNames.equals(other.tableNames);
+    return getTableNames().equals(other.getTableNames());
   }
 
   @Override
   public int hashCode() {
-    return tableNames.hashCode();
+    return hash(getTableNames());
   }
 
   @Override
   public String toString() {
-    return toStringHelper(this)
-        .add("tableNames", Arrays.toString(tableNames.toArray()))
+    return toStringHelper(ShowTablesResult.class)
+        .add("tableNames", Arrays.toString(getTableNames().toArray()))
         .toString();
   }
 

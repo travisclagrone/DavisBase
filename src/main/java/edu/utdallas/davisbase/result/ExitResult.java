@@ -13,12 +13,12 @@ public class ExitResult implements Result {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getClass());
+    return Objects.hashCode(ExitResult.class);
   }
 
   @Override
   public String toString() {
-    return toStringHelper(getClass()).toString();
+    return toStringHelper(ExitResult.class).toString();
   }
 
 }
