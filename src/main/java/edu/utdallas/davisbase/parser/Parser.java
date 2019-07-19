@@ -1,7 +1,7 @@
 package edu.utdallas.davisbase.parser;
 
+import edu.utdallas.davisbase.representation.*;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.index.CreateIndex;
@@ -27,60 +27,76 @@ public class Parser {
 
   /**
    * @param statement a single complete statement to parse
-   * @return the {@link Ast} representation of <code>statement</code>
+   * @return the {@link CommandRepresentation} representation of <code>statement</code>
    * @throws ParseException if <code>statement</code> is not a single complete statement that is
    *                        both lexically and syntactically correct
    */
-  public Ast parse(String statement) throws ParseException {
-    // TODO Implement Parser.parse(String)
-    ExpressionParser expParse = new ExpressionParser();
+  public CommandRepresentation parse(String statement) throws ParseException {
     try {
-      if(statement.equalsIgnoreCase("exit")){
-        System.out.println("Exit Command");
+      if(statement.equalsIgnoreCase(new ExitCommandRepresentation().getFullCommand())){
+        return new ExitCommandRepresentation();
       }
-      else if(statement.equalsIgnoreCase("show tables")){
-        System.out.println("Show Tables");
+      if(statement.equalsIgnoreCase(new ShowTablesCommandRepresentation().getFullCommand())){
+        return new ShowTablesCommandRepresentation();
       }
       CCJSqlParserManager pm = new CCJSqlParserManager();
       Statement stmt = pm.parse(new StringReader(statement));
       System.out.println("Hello this is my statment: " + stmt.toString());
       if(stmt instanceof CreateTable){
-        CreateTable createTableStatment = (CreateTable) stmt;
-        System.out.println(createTableStatment.getColumnDefinitions());
-        System.out.println(createTableStatment.getIndexes());
-        System.out.println(createTableStatment.getTable());
-        System.out.println(createTableStatment.getTableOptionsStrings());
-      }
+        CreateTable createTableStatement = (CreateTable) stmt;
+        CreateTableCommandRepresentation create = new CreateTableCommandRepresentation(
+          createTableStatement.toString(),
+          createTableStatement.getTable(),
+          createTableStatement.getColumnDefinitions()
+        );
+           }
       else if(stmt instanceof Drop){ //type determines if index or table
         Drop dropTableStatement = (Drop) stmt;
-        System.out.println(dropTableStatement.getName());
-        System.out.println(dropTableStatement.getParameters());
-        System.out.println(dropTableStatement.getType());
+        if(dropTableStatement.getType().equalsIgnoreCase("INDEX")){
+          DropTableCommandRepresentation dropTable = new DropTableCommandRepresentation(
+            dropTableStatement.toString(),
+            dropTableStatement.getName()
+          );
+          return dropTable;
+        }
       }
       else if(stmt instanceof CreateIndex){
         CreateIndex createIndexStatement = (CreateIndex) stmt;
-        System.out.println(createIndexStatement.getIndex());
-        System.out.println(createIndexStatement.getTable());
+        CreateIndexCommandRepresentation createIndex = new CreateIndexCommandRepresentation(
+          createIndexStatement.toString(),
+          createIndexStatement.getTable(),
+          createIndexStatement.getIndex()
+        );
+        return createIndex;
       }
 
       else if (stmt instanceof Insert) {
         Insert insertStatement = (Insert) stmt;
-        System.out.println(insertStatement.getColumns());
-        System.out.println(insertStatement.getItemsList());
-        System.out.println(insertStatement.getTable());
+        InsertCommandRepresentation insert = new InsertCommandRepresentation(
+          insertStatement.toString(),
+          insertStatement.getTable(),
+          insertStatement.getColumns(),
+          insertStatement.getItemsList());
+        return insert;
       }
       if (stmt instanceof Delete) {
         Delete deleteStatement = (Delete) stmt;
-        System.out.println(deleteStatement.getWhere());
-        System.out.println(deleteStatement.getTable());
-
+        DeleteCommandRepresentation delete = new DeleteCommandRepresentation(
+          deleteStatement.toString(),
+          deleteStatement.getTable(),
+          new WhereExpression(deleteStatement.getWhere())
+        );
       }
       else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
-        System.out.println(updateStatement.getColumns());
-        System.out.println(updateStatement.getExpressions());
-        Expression where = updateStatement.getWhere();
-        expParse.parseWhereExpression(where);
+        UpdateCommandRepresentation update = new UpdateCommandRepresentation(
+          updateStatement.toString(),
+          updateStatement.getTable(),
+          updateStatement.getColumns(),
+          updateStatement.getExpressions(),
+          new WhereExpression(updateStatement.getWhere())
+        );
+        return update;
       }
       else if(stmt instanceof Select){
         Select selectStatement = (Select) stmt;
@@ -88,18 +104,14 @@ public class Parser {
         System.out.println(selectStatement.getWithItemsList());
       }
       else{
-        System.out.println("I do not recognize");
+        throw new ParseException("Sorry DavisBase does not support this command");
       }
     }
     catch(JSQLParserException e){
       System.out.println("PARSE EXCEPTION " + e.getCause());
-      throw(new ParseException());
+      throw(new ParseException(e.getCause()));
     }
-
-//    throw new NotImplementedException();
-    return new Ast();
+    throw new ParseException("Sorry DavisBase does not support this command");
   }
-
-
 
 }

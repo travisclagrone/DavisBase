@@ -1,4 +1,4 @@
-package edu.utdallas.davisbase.parser;
+package edu.utdallas.davisbase.representation;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.Between;
@@ -10,15 +10,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ExpressionParser {
+public class WhereExpression {
   private String column="";
-  private String operator=""; //=, in, not
+  private String operator="";
   private List<String> values=new ArrayList<>();
   private boolean not = false;
 
-  private static final String[] OPERATOR_VALUES= {"=", "in", "not"};
 
-  public void parseWhereExpression(Expression where){
+  public WhereExpression(Expression where){
     if (where instanceof InExpression){
       InExpression in = (InExpression) where;
       System.out.println(in.getLeftExpression());
@@ -50,7 +49,7 @@ public class ExpressionParser {
       this.not=not.isNot();
       this.operator=not.getStringExpression();
       this.column=not.getLeftExpression().toString();
-      this.values=buildValuesList(not.getRightExpression());
+//      this.values=buildValuesList(not.getRightExpression());
     }
     else if(where instanceof EqualsTo){
       EqualsTo equals = (EqualsTo) where;
@@ -59,7 +58,7 @@ public class ExpressionParser {
       System.out.println(equals.getRightExpression());
       this.operator=equals.getStringExpression();
       this.column=equals.getLeftExpression().toString();
-      this.values=buildValuesList(equals.getRightExpression());
+//      this.values=buildValuesList(equals.getRightExpression());
     }
     else{
       System.out.println("Did not find match");
@@ -71,5 +70,7 @@ public class ExpressionParser {
     String[] values=exp.toString().split(",");
     return Arrays.asList(values);
   }
+
+
 
 }
