@@ -1,10 +1,12 @@
 package edu.utdallas.davisbase.result;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.newInputStream;
 import static java.nio.file.Files.newOutputStream;
+import static java.util.Objects.hash;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -21,9 +23,18 @@ import java.util.Iterator;
 public class SelectResultData implements Iterable<SelectResultDataRow> {
 
   private final Path path;
+  private final int size;
 
-  private SelectResultData(Path path) {
+  private SelectResultData(Path path, int size) {
     this.path = path;
+    this.size = size;
+  }
+
+  /**
+   * @return the number of rows in this data
+   */
+  public int size() {
+    return size;
   }
 
   public Iterator<SelectResultDataRow> iterator() {
@@ -73,18 +84,21 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
     }
 
     SelectResultData other = (SelectResultData) obj;
-    return path.equals(other.path);
+    return
+        path.equals(other.path) &&
+        size == other.size;
   }
 
   @Override
   public int hashCode() {
-    return path.hashCode();
+    return hash(path, size);
   }
 
   @Override
   public String toString() {
     return toStringHelper(SelectResultData.class)
         .add("path", path)
+        .add("size", size)
         .toString();
   }
 
@@ -108,21 +122,25 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
 
     private final Path path;
     private final ObjectOutputStream output;
+    private int rowCount;
 
     public Builder() throws IOException {
       this.path = createTempFile(null, null);
       this.output = new ObjectOutputStream(new BufferedOutputStream(newOutputStream(this.path)));
+      this.rowCount = 0;
     }
 
     public void writeRow(SelectResultDataRow row) throws IOException {
       checkNotNull(row);
+      checkArgument(rowCount < Integer.MAX_VALUE, "Cannot write more than %d rows", Integer.MAX_VALUE);
 
       output.writeObject(row);
+      rowCount += 1;
     }
 
     public SelectResultData build() throws IOException {
       output.close();
-      return new SelectResultData(path);
+      return new SelectResultData(path, rowCount);
     }
 
   }
