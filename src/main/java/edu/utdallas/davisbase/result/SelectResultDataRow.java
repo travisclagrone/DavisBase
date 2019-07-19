@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.result;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
@@ -9,7 +10,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
+import java.util.Arrays;
 import java.util.Iterator;
+
+import com.google.common.base.MoreObjects.ToStringHelper;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -93,6 +97,30 @@ public class SelectResultDataRow implements Serializable {
 
   public Iterator<@Nullable Object> iterator() {
     return asList(values).iterator();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj != null && obj instanceof SelectResultDataRow)) {
+      return false;
+    }
+
+    SelectResultDataRow other = (SelectResultDataRow) obj;
+    return Arrays.equals(values, other.values);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(values);
+  }
+
+  @Override
+  public String toString() {
+    ToStringHelper toStringHelper = toStringHelper(SelectResultDataRow.class);
+    for (@Nullable Object value : values) {
+      toStringHelper.addValue(value);
+    }
+    return toStringHelper.toString();
   }
 
   /**
