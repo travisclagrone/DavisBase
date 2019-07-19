@@ -1,12 +1,15 @@
 package edu.utdallas.davisbase.result;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
+import java.util.Iterator;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -14,9 +17,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * A row of primitive DavisBase values for a {@link SelectResultData} instance.
  */
-public class SelectResultDataRow {
+public class SelectResultDataRow implements Serializable {
 
-  // TODO Implement SelectResultDataRow serializability
+  private static final long serialVersionUID = -4160693623154109607L;
 
   private final @Nullable Object @NonNull [] values;
 
@@ -37,7 +40,61 @@ public class SelectResultDataRow {
     this.values = copyOf(values, values.length);
   }
 
-  // TODO Implement SelectResultDataRow accessors
+  public int size() {
+    return values.length;
+  }
+
+  public @Nullable Object get(int index) {
+    return values[index];
+  }
+
+  public @Nullable Byte getTinyInt(int index) {
+    return (Byte) values[index];
+  }
+
+  public @Nullable Short getSmallInt(int index) {
+    return (Short) values[index];
+  }
+
+  public @Nullable Integer getInt(int index) {
+    return (Integer) values[index];
+  }
+
+  public @Nullable Long getBigInt(int index) {
+    return (Long) values[index];
+  }
+
+  public @Nullable Float getFloat(int index) {
+    return (Float) values[index];
+  }
+
+  public @Nullable Double getDouble(int index) {
+    return (Double) values[index];
+  }
+
+  public @Nullable Year getYear(int index) {
+    return (Year) values[index];
+  }
+
+  public @Nullable LocalTime getTime(int index) {
+    return (LocalTime) values[index];
+  }
+
+  public @Nullable LocalDateTime getDateTime(int index) {
+    return (LocalDateTime) values[index];
+  }
+
+  public @Nullable LocalDate getDate(int index) {
+    return (LocalDate) values[index];
+  }
+
+  public @Nullable String getText(int index) {
+    return (String) values[index];
+  }
+
+  public Iterator<@Nullable Object> iterator() {
+    return asList(values).iterator();
+  }
 
   /**
    * A single-use mutable builder of {@link SelectResultDataRow}.
