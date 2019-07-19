@@ -1,6 +1,6 @@
 package edu.utdallas.davisbase.result;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
 
@@ -29,12 +29,11 @@ public class SelectResultDataRow implements Serializable {
    *          the work of actually enforcing this assumption.
    * @implSpec If the runtime type of every element of {@code values} is immutable, then this
    *           {@code SelectResultDataRow} instance MUST be immutable.
-   * @implNote {@code values} is copied into a new array for defensive programming. If this becomes
-   *           a major pain point performance-wise, then with some refactoring of
-   *           {@link SelectResultDataRow.Builder} we could optimize out the copy operation.
+   * @implNote The passed array is copied for defensive-programming purposes so as to fulfill the
+   *           implementation specification of immutability.
    * @param values the (not null) array whose (nullable) values are to constitute this
    *               {@code SelectResultDataRow}
-   * @see SelectResultDataRow.Builder
+   * @see SelectResultDataRow.Builder#build()
    */
   private SelectResultDataRow(@Nullable Object @NonNull [] values) {
     this.values = copyOf(values, values.length);
@@ -119,14 +118,12 @@ public class SelectResultDataRow implements Serializable {
     private int index = 0;
 
     /**
-     * @param columns the count of columns that the {@code SelectResultDataRow} will have (not
+     * @param columns the exact size (in columns) of the {@link SelectResultDataRow}, and so the
+     *                exact number of values that must be added to this
+     *                {@code SelectResultDataRow.Builder} before invoking {@link #build()} (not
      *                negative)
      */
     public Builder(int columns) {
-      checkArgument(0 <= columns,
-          "columns must be nonnegative, but is %d",
-              columns);
-
       this.values = new Object[columns];
     }
 
@@ -134,14 +131,14 @@ public class SelectResultDataRow implements Serializable {
      * Does the actual {@code add} operation.
      * <p>
      * MUST NOT be invoked <i>except</i> from the public strongly-typed {@code add*} methods of
-     * {@link Builder}. Adherence to this delegation pattern ensures that every
-     * added value is an instance of the Java class correctly corresponding to one of the valid
-     * DavisBase {@link edu.utdallas.davisbase.DataType DataType}s.
+     * {@link Builder}. Adherence to this delegation pattern ensures that every added value is an
+     * instance of the Java class correctly corresponding to one of the valid DavisBase
+     * {@link edu.utdallas.davisbase.DataType DataType}s.
      *
      * @apiNote If {@code value} is not null, then it is assumed to be a valid DavisBase data type.
-     * @implSpec If an invocation would result in an {@link ArrayIndexOutOfBoundsException}, then all
-     *           subsequent invocations must be idempotent. In particular, an infinite sequence of
-     *           invocations will not cause {@link #index} to overflow repeatedly, but rather
+     * @implSpec If an invocation would result in an {@link ArrayIndexOutOfBoundsException}, then
+     *           all subsequent invocations must be idempotent. In particular, an infinite sequence
+     *           of invocations will not cause {@link #index} to overflow repeatedly, but rather
      *           {@code index} must converge to an invalid index (a sink state).
      * @implNote {@link #index} is incremented in a <i>separate</i> statement <i>after</i>
      *           {@code value} is assigned to the next element of {@link #values} in order to ensure
@@ -250,7 +247,15 @@ public class SelectResultDataRow implements Serializable {
       add(value);
     }
 
+    /**
+     * @return a {@link SelectResultDataRow} of the specified number of columns containing the added
+     *         values in order (not null)
+     */
     public SelectResultDataRow build() {
+      checkState(index < values.length,
+          "Only %d values have been added, but %d columns were specified",
+              index, values.length);
+
       return new SelectResultDataRow(values);
     }
 
