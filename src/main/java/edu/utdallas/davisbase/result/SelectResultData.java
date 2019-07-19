@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.result;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.newInputStream;
@@ -63,6 +64,28 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
     catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj != null && obj instanceof SelectResultData)) {
+      return false;
+    }
+
+    SelectResultData other = (SelectResultData) obj;
+    return path.equals(other.path);
+  }
+
+  @Override
+  public int hashCode() {
+    return path.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return toStringHelper(SelectResultData.class)
+        .add("path", path)
+        .toString();
   }
 
   /**
