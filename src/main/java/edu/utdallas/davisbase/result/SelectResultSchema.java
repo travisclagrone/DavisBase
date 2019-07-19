@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import com.google.common.base.MoreObjects.ToStringHelper;
 
@@ -43,15 +41,6 @@ public class SelectResultSchema implements Iterable<SelectResultSchemaColumn> {
    */
   public int size() {
     return columns.size();
-  }
-
-  /**
-   * @return {@code true} if this {@link SelectResultSchema} has zero
-   *         {@link SelectResultSchemaColumn}s
-   * @see java.util.List#isEmpty()
-   */
-  public boolean isEmpty() {
-    return columns.isEmpty();
   }
 
   /**
@@ -96,25 +85,9 @@ public class SelectResultSchema implements Iterable<SelectResultSchemaColumn> {
    *         {@link SelectResultSchema} in proper sequence (not null)
    * @see java.util.List#iterator()
    */
+  @Override
   public Iterator<SelectResultSchemaColumn> iterator() {
     return columns.iterator();
-  }
-
-  /**
-   * @return a sequential {@link Stream} over the (nonnull) {@link SelectResultSchemaColumn}s in
-   *         this {@link SelectResultSchema} (not null)
-   * @see java.util.Collection#stream()
-   */
-  public Stream<SelectResultSchemaColumn> stream() {
-    return columns.stream();
-  }
-
-  /**
-   * @param action the action to perform on each {@link SelectResultSchemaColumn} (not null)
-   * @see java.lang.Iterable#forEach(java.util.function.Consumer)
-   */
-  public void forEach(Consumer<? super SelectResultSchemaColumn> action) {
-    columns.forEach(action);
   }
 
   /**
@@ -122,6 +95,7 @@ public class SelectResultSchema implements Iterable<SelectResultSchemaColumn> {
    * @return {@code true} if the specified object is value-equal to this {@link SelectResultSchema}
    * @see java.util.List#equals(java.lang.Object)
    */
+  @Override
   public boolean equals(Object obj) {
     return columns.equals(obj);
   }
@@ -130,6 +104,7 @@ public class SelectResultSchema implements Iterable<SelectResultSchemaColumn> {
    * @return the hash code value for this {@link SelectResultSchema}
    * @see java.util.List#hashCode()
    */
+  @Override
   public int hashCode() {
     return columns.hashCode();
   }
