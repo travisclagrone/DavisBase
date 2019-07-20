@@ -2,6 +2,8 @@ package edu.utdallas.davisbase.parser;
 
 import edu.utdallas.davisbase.representation.*;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.index.CreateIndex;
@@ -49,10 +51,11 @@ public class Parser {
           createTableStatement.getTable(),
           createTableStatement.getColumnDefinitions()
         );
-           }
+        return create;
+      }
       else if(stmt instanceof Drop){ //type determines if index or table
         Drop dropTableStatement = (Drop) stmt;
-        if(dropTableStatement.getType().equalsIgnoreCase("INDEX")){
+        if(dropTableStatement.getType().equalsIgnoreCase("TABLE")){
           DropTableCommandRepresentation dropTable = new DropTableCommandRepresentation(
             dropTableStatement.toString(),
             dropTableStatement.getName()
@@ -84,8 +87,9 @@ public class Parser {
         DeleteCommandRepresentation delete = new DeleteCommandRepresentation(
           deleteStatement.toString(),
           deleteStatement.getTable(),
-          new WhereExpression(deleteStatement.getWhere())
+          parseWhereExpression(deleteStatement.getWhere())
         );
+        return delete;
       }
       else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
@@ -94,24 +98,96 @@ public class Parser {
           updateStatement.getTable(),
           updateStatement.getColumns(),
           updateStatement.getExpressions(),
-          new WhereExpression(updateStatement.getWhere())
+          parseWhereExpression(updateStatement.getWhere())
         );
         return update;
       }
       else if(stmt instanceof Select){
         Select selectStatement = (Select) stmt;
-        System.out.println(selectStatement.getSelectBody());
-        System.out.println(selectStatement.getWithItemsList());
+        SelectCommandRepresentation select = new SelectCommandRepresentation(
+          selectStatement.toString(),
+          selectStatement.getSelectBody()
+        );
+        return select;
       }
       else{
         throw new ParseException("Sorry DavisBase does not support this command");
       }
     }
     catch(JSQLParserException e){
-      System.out.println("PARSE EXCEPTION " + e.getCause());
       throw(new ParseException(e.getCause()));
     }
-    throw new ParseException("Sorry DavisBase does not support this command");
+  }
+
+  public WhereExpression parseWhereExpression(Expression where){
+    WhereExpression whereExpression;
+    if(where instanceof EqualsTo){
+      EqualsTo equals = (EqualsTo) where;
+      whereExpression= new WhereExpression(
+        equals.toString(),
+        equals.isNot(),
+        equals.getLeftExpression(),
+        equals.getStringExpression(),
+        equals.getRightExpression()
+      );
+      return whereExpression;
+    }
+    else if(where instanceof NotEqualsTo){
+      NotEqualsTo notEqualsTo = (NotEqualsTo) where;
+      whereExpression= new WhereExpression(
+        notEqualsTo.toString(),
+        notEqualsTo.isNot(),
+        notEqualsTo.getLeftExpression(),
+        notEqualsTo.getStringExpression(),
+        notEqualsTo.getRightExpression()
+      );
+      return whereExpression;
+    }
+    else if(where instanceof GreaterThan){
+      GreaterThan greaterThan = (GreaterThan)where;
+      whereExpression= new WhereExpression(
+        greaterThan.toString(),
+        greaterThan.isNot(),
+        greaterThan.getLeftExpression(),
+        greaterThan.getStringExpression(),
+        greaterThan.getRightExpression()
+      );
+      return whereExpression;
+    }
+    else if(where instanceof GreaterThanEquals){
+      GreaterThanEquals greaterThanEquals = (GreaterThanEquals)where;
+      whereExpression= new WhereExpression(
+        greaterThanEquals.toString(),
+        greaterThanEquals.isNot(),
+        greaterThanEquals.getLeftExpression(),
+        greaterThanEquals.getStringExpression(),
+        greaterThanEquals.getRightExpression()
+      );
+      return whereExpression;
+    }
+    else if(where instanceof MinorThan){
+      MinorThan minorThan = (MinorThan)where;
+      whereExpression= new WhereExpression(
+        minorThan.toString(),
+        minorThan.isNot(),
+        minorThan.getLeftExpression(),
+        minorThan.getStringExpression(),
+        minorThan.getRightExpression()
+      );
+      return whereExpression;
+    }
+    else { //if(where instanceof MinorThanEquals)
+      MinorThanEquals minorThanEquals = (MinorThanEquals)where;
+      whereExpression= new WhereExpression(
+        minorThanEquals.toString(),
+        minorThanEquals.isNot(),
+        minorThanEquals.getLeftExpression(),
+        minorThanEquals.getStringExpression(),
+        minorThanEquals.getRightExpression()
+      );
+      return whereExpression;
+    }
+
   }
 
 }
