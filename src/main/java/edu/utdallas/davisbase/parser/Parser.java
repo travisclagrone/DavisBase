@@ -119,6 +119,10 @@ public class Parser {
     }
   }
 
+  /**
+   * @param where clause to parse
+   * @return WhereExpression representation of the expression
+   */
   public WhereExpression parseWhereExpression(Expression where){
     WhereExpression whereExpression;
     if(where instanceof EqualsTo){
