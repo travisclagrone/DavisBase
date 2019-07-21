@@ -134,7 +134,7 @@ public class Parser {
         for(String col:splitValues){
             try {
               exp = CCJSqlParserUtil.parseExpression(col);
-              if(isUnsupportedExpression(exp)) {
+              if(!(exp instanceof Column)){
                 throw new ParseException(exp + "is not a supported expression in Davisbase");
               }
             }catch(JSQLParserException e){
@@ -238,17 +238,5 @@ public class Parser {
     else{
       throw new ParseWhereException("Sorry we do not support that where expression");
     }
-  }
-
-  public boolean isUnsupportedExpression(Expression exp){
-    if(exp instanceof Addition ||
-      exp instanceof Multiplication ||
-      exp instanceof Division ||
-      exp instanceof Subtraction ||
-      exp instanceof AndExpression ||
-      exp instanceof OrExpression) {
-      return true;
-    }
-    return false;
   }
 }
