@@ -14,7 +14,6 @@ import edu.utdallas.davisbase.NotImplementedException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
 
 /**
  * A DavisBase "Table" file.
@@ -36,17 +35,12 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 public class TableFile implements Closeable {
 
   protected final RandomAccessFile file;
-  protected short rootPageId;
-  // TODO Add current state
 
-  public TableFile(RandomAccessFile file, short rootPageId) {
+  public TableFile(RandomAccessFile file) {
     checkNotNull(file);
     checkArgument(file.getChannel().isOpen());
 
-    checkElementIndex(rootPageId, Short.MAX_VALUE);
-
     this.file = file;
-    this.rootPageId = rootPageId;
   }
 
   @Override
