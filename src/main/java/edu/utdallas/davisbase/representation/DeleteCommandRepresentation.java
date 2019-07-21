@@ -1,16 +1,14 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.schema.Table;
-
 public class DeleteCommandRepresentation implements CommandRepresentation {
 
   private String command;
   private String table;
   private WhereExpression whereClause;
 
-  public DeleteCommandRepresentation(String command, Table table, WhereExpression whereClause) {
+  public DeleteCommandRepresentation(String command, String table, WhereExpression whereClause) {
     this.command = command;
-    this.table = table.toString();
+    this.table = table;
     this.whereClause = whereClause;
   }
 

@@ -1,11 +1,5 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.expression.operators.relational.ItemsList;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.Table;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class InsertCommandRepresentation implements CommandRepresentation {
@@ -14,17 +8,11 @@ public class InsertCommandRepresentation implements CommandRepresentation {
   private List<String> columns;
   private List<String> values;
 
-  public InsertCommandRepresentation(String command, Table table, List<Column> columns, ItemsList values) {
+  public InsertCommandRepresentation(String command, String table, List<String> columns, List<String> values) {
     this.command= command;
-    this.table = table.getName();
-    List<String> cols = new ArrayList<>();
-    for(Column c: columns){
-      cols.add(c.getColumnName());
-    }
-    this.columns = cols;
-    String vals = values.toString().replaceAll("[('')]", "");
-    String[] splitValues=vals.trim().split("\\s*,\\s*");
-    this.values = Arrays.asList(splitValues);
+    this.table = table;
+    this.columns = columns;
+    this.values = values;
   }
 
   public String getTable() {

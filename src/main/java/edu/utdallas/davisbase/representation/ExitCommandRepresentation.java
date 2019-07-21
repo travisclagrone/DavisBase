@@ -4,11 +4,16 @@ public class ExitCommandRepresentation implements CommandRepresentation {
 
   @Override
   public String getFullCommand() {
-    return "EXIT";
+    return "EXIT;";
   }
 
   @Override
   public String getOperation() {
     return "EXIT";
+  }
+
+  @Override
+  public String toString() {
+    return "ExitCommandRepresentation{}";
   }
 }

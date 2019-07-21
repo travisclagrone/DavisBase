@@ -1,8 +1,5 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.statement.select.SelectBody;
-
-import java.util.Arrays;
 import java.util.List;
 
 public class SelectCommandRepresentation implements CommandRepresentation {
@@ -10,18 +7,12 @@ public class SelectCommandRepresentation implements CommandRepresentation {
   String command;
   List<String> columns;
   String table;
-  boolean all=false;
+  boolean all;
 
-  public SelectCommandRepresentation(String command, SelectBody selectBody){
+  public SelectCommandRepresentation(String command, String table, List<String> columns, boolean all){
     this.command=command;
-    String select = selectBody.toString();
-    String[] splitStr = select.trim().split("SELECT |FROM ");
-    String[] splitValues=splitStr[1].trim().split("\\s*,\\s*");
-    this.columns = Arrays.asList(splitValues);
-    if(splitValues[0].equalsIgnoreCase("*")){
-      all=true;
-    }
-    this.table=splitStr[2];
+    this.columns = columns;
+    this.table=table;
   }
 
   @Override

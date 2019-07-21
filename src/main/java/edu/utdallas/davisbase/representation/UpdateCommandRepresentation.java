@@ -1,11 +1,5 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.Table;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class UpdateCommandRepresentation implements CommandRepresentation {
@@ -16,17 +10,11 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
   private List<String> values;
   private WhereExpression whereClause;
 
-  public UpdateCommandRepresentation(String command, Table table, List<Column> columns, List<Expression> values, WhereExpression whereClause) {
+  public UpdateCommandRepresentation(String command, String table, List<String> columns, List<String> values, WhereExpression whereClause) {
     this.command = command;
-    this.table = table.toString();
-    List<String> cols = new ArrayList<>();
-    for(Column c: columns){
-      cols.add(c.getColumnName());
-    }
-    this.columns = cols;
-    String vals = values.toString().replaceAll("[\\[''\\]]", "");
-    String[] splitValues=vals.trim().split("\\s*,\\s*");
-    this.values = Arrays.asList(splitValues);
+    this.table = table;
+    this.columns = columns;
+    this.values = values;
     this.whereClause = whereClause;
   }
 

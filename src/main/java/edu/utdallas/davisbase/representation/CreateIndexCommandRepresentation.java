@@ -1,17 +1,14 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.create.table.Index;
-
 public class CreateIndexCommandRepresentation implements CommandRepresentation {
   private String command;
   private String table;
   private String index;
 
-  public CreateIndexCommandRepresentation(String command, Table table, Index index) {
+  public CreateIndexCommandRepresentation(String command, String table, String index) {
     this.command = command;
-    this.table = table.getName();
-    this.index = index.getName();
+    this.table = table;
+    this.index = index;
   }
 
   public String getTable() {

@@ -12,4 +12,8 @@ public class ShowTablesCommandRepresentation implements CommandRepresentation {
   public String getOperation() {
     return "SHOW TABLES";
   }
+
+  public String toString() {
+    return "ShowTablesCommandRepresentation{}";
+  }
 }
