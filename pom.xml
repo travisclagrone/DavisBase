@@ -15,6 +15,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Use Java 8 (LTS -1) instead of Java 11 (LTS -0) because most dependencies don't support Java 11 yet. -->
     <annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
+    <junit.jupiter.version>5.1.1</junit.jupiter.version>
   </properties>
 
   <dependencies>
@@ -42,13 +43,13 @@
     <dependency><!-- junit-jupiter-api is required to write JUnit 5 tests. -->
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.5.1</version>
+      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency><!-- junit-jupiter-engine is required to run JUnit 5 tests. -->
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
-      <version>5.5.1</version>
+      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency><!-- hamcrest is required for fluent assertions and matchers. (JUnit spun this off between v4-v5) -->
