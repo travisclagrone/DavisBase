@@ -4,7 +4,7 @@ import java.util.List;
 
 public class UpdateCommandRepresentation implements CommandRepresentation {
 
-  String command;
+  private String command;
   private String table;
   private List<String> columns;
   private List<String> values;
