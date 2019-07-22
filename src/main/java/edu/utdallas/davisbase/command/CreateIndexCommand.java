@@ -6,4 +6,6 @@ public class CreateIndexCommand implements Command {
   private String indexName;
   private String columnName;
 
+  // TODO Implement CreateIndexCommand
+
 }

@@ -7,4 +7,6 @@ public class SelectCommand implements Command {
   private String table;
   private List<String> columnIds;
 
+  // TODO Implement SelectCommand
+
 }

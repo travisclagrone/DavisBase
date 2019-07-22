@@ -8,4 +8,6 @@ public class InsertCommand implements Command {
   private List<String> columnIds;
   private List<String> values;
 
+  // TODO Implement InsertCommand
+
 }

@@ -9,4 +9,6 @@ public class UpdateCommand implements Command {
   private List<String> values;
   //TODO: How should where expression be represented?
 
+  // TODO Implement UpdateCommand
+
 }
