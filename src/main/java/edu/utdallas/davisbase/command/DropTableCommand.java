@@ -6,6 +6,8 @@ import edu.utdallas.davisbase.storage.Storage;
 
 public class DropTableCommand implements Command {
 
+  private String tableName;
+
   @Override
   public DropTableResult execute(Storage storage) throws ExecuteException {
     // TODO Implement DropTableCommand.execute(Storage)

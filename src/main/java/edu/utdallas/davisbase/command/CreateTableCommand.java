@@ -6,6 +6,8 @@ import edu.utdallas.davisbase.storage.Storage;
 
 public class CreateTableCommand implements Command {
 
+  private String tableName;
+
   @Override
   public CreateTableResult execute(Storage storage) throws ExecuteException {
     // TODO Implement CreateTableCommand.execute(Storage)
