@@ -321,3 +321,4 @@ src/main/java/com/*
 
 
 # End of https://www.gitignore.io/api/git,jenv,java,maven,jgiven,code,eclipse,jetbrains,netbeans,jdeveloper,emacs,vim
+src/main/java/test/
