@@ -1,7 +1,5 @@
 package edu.utdallas.davisbase.parser;
 
-import edu.utdallas.davisbase.DavisBaseException;
-
 public class ParseWhereException extends ParseException {
 
   private static final long serialVersionUID = -518391964966191323L;
