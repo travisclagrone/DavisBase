@@ -4,6 +4,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -100,6 +101,7 @@ public class SelectResultDataRow implements Serializable {
   }
 
   @Override
+  @SuppressWarnings("nullness")  // Necessary since Arrays.equals(Object[], Object[]) is annotated @NonNull Object @NonNull [] when it can actually take @Nullable Object @NonNull [].
   public boolean equals(Object obj) {
     if (!(obj != null && obj instanceof SelectResultDataRow)) {
       return false;
@@ -110,6 +112,7 @@ public class SelectResultDataRow implements Serializable {
   }
 
   @Override
+  @SuppressWarnings("nullness")  // Necessary since Arrays.hashCode(Object[]) is annotated @NonNull Object @NonNull [] when it can actually take @Nullable Object @NonNull [].
   public int hashCode() {
     return Arrays.hashCode(values);
   }
