@@ -124,6 +124,7 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
     private final ObjectOutputStream output;
     private int rowCount;
 
+    @SuppressWarnings("nullness")  // Necessary since createTempFile(String, String) is annotated @NotNull String but explicitly _does_ accept null.
     public Builder() throws IOException {
       this.path = createTempFile(null, null);
       this.output = new ObjectOutputStream(new BufferedOutputStream(newOutputStream(this.path)));
