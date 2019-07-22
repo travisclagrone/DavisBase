@@ -39,10 +39,16 @@
     </dependency>
 
     <!-- #region Testing -->
-    <dependency><!-- JUnit is a unit testing framework and test runner. -->
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>      <!-- Don't upgrade to JUnit5 edition because other tools don't integrate with it yet. -->
-      <version>4.12</version>
+    <dependency><!-- junit-jupiter-api is required to write JUnit 5 tests. -->
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.5.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency><!-- junit-jupiter-engine is required to run JUnit 5 tests. -->
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.5.1</version>
       <scope>test</scope>
     </dependency>
     <dependency><!-- Mockito is a test mocking framework. -->
