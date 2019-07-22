@@ -2,7 +2,7 @@ package edu.utdallas.davisbase.parser;
 
 import edu.utdallas.davisbase.representation.*;
 import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -15,6 +15,7 @@ import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.update.Update;
+import org.checkerframework.common.value.qual.StringVal;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -164,12 +165,13 @@ public class Parser {
     WhereExpression whereExpression;
     if(where instanceof EqualsTo){
       EqualsTo equals = (EqualsTo) where;
+
       whereExpression= new WhereExpression(
         equals.toString(),
         equals.isNot(),
         equals.getLeftExpression(),
         WhereExpression.Operator.EQUALSTO,
-        equals.getRightExpression()
+        getExpressionInstance(equals.getRightExpression())
       );
       return whereExpression;
     }
@@ -180,7 +182,7 @@ public class Parser {
         notEqualsTo.isNot(),
         notEqualsTo.getLeftExpression(),
         WhereExpression.Operator.NOTEQUALTO,
-        notEqualsTo.getRightExpression()
+        getExpressionInstance(notEqualsTo.getRightExpression())
       );
       return whereExpression;
     }
@@ -191,7 +193,7 @@ public class Parser {
         greaterThan.isNot(),
         greaterThan.getLeftExpression(),
         WhereExpression.Operator.GREATERTHAN,
-        greaterThan.getRightExpression()
+        getExpressionInstance(greaterThan.getRightExpression())
       );
       return whereExpression;
     }
@@ -202,7 +204,7 @@ public class Parser {
         greaterThanEquals.isNot(),
         greaterThanEquals.getLeftExpression(),
         WhereExpression.Operator.GREATERTHANEQUALS,
-        greaterThanEquals.getRightExpression()
+        getExpressionInstance(greaterThanEquals.getRightExpression())
       );
       return whereExpression;
     }
@@ -213,7 +215,7 @@ public class Parser {
         minorThan.isNot(),
         minorThan.getLeftExpression(),
         WhereExpression.Operator.LESSTHAN,
-        minorThan.getRightExpression()
+        getExpressionInstance(minorThan.getRightExpression())
       );
       return whereExpression;
     }
@@ -224,12 +226,43 @@ public class Parser {
         minorThanEquals.isNot(),
         minorThanEquals.getLeftExpression(),
         WhereExpression.Operator.LESSTHANEQUALS,
-        minorThanEquals.getRightExpression()
+        getExpressionInstance(minorThanEquals.getRightExpression())
       );
       return whereExpression;
     }
     else{
       throw new ParseWhereException("Sorry we do not support that where expression");
+    }
+  }
+
+  public Expression getExpressionInstance(Expression value) throws ParseWhereException{
+    if(value instanceof DoubleValue){
+      DoubleValue doubleValue = (DoubleValue) value;
+      return doubleValue;
+    }
+    else if(value instanceof LongValue){
+      LongValue longValue = (LongValue) value;
+      return longValue;
+    }
+    else if (value instanceof DateValue){
+      DateValue dateValue = (DateValue) value;
+      return dateValue;
+    }
+    else if(value instanceof TimestampValue){
+      TimestampValue timestampValue = (TimestampValue) value;
+      return timestampValue;
+    }
+    else if(value instanceof TimeValue){
+      TimeValue timeValue = (TimeValue) value;
+      return timeValue;
+    }
+    else if(value instanceof StringValue){
+      StringValue stringValue = (StringValue) value;
+      return stringValue;
+
+    }
+    else{
+      throw new ParseWhereException("Invalid value in expression");
     }
   }
 }
