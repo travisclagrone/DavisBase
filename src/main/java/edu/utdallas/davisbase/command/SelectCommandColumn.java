@@ -63,22 +63,22 @@ public class SelectCommandColumn {
 
     SelectCommandColumn other = (SelectCommandColumn) obj;
     return
-        index == other.getIndex() &&
-        name.equals(other.getName()) &&
-        dataType.equals(other.getDataType());
+        getIndex() == other.getIndex() &&
+        getName().equals(other.getName()) &&
+        getDataType().equals(other.getDataType());
   }
 
   @Override
   public int hashCode() {
-    return hash(index, name, dataType);
+    return hash(getIndex(), getName(), getDataType());
   }
 
   @Override
   public String toString() {
     return toStringHelper(SelectCommandColumn.class)
-        .add("index", index)
-        .add("name", name)
-        .add("dataType", dataType)
+        .add("index", getIndex())
+        .add("name", getName())
+        .add("dataType", getDataType())
         .toString();
   }
 
