@@ -4,11 +4,13 @@ public class CreateIndexCommandRepresentation implements CommandRepresentation {
   private String command;
   private String table;
   private String index;
+  private String column;
 
-  public CreateIndexCommandRepresentation(String command, String table, String index) {
+  public CreateIndexCommandRepresentation(String command, String table, String index, String column) {
     this.command = command;
     this.table = table;
     this.index = index;
+    this.column = column;
   }
 
   public String getTable() {
@@ -25,6 +27,14 @@ public class CreateIndexCommandRepresentation implements CommandRepresentation {
 
   public void setIndex(String index) {
     this.index = index;
+  }
+
+  public String getColumn() {
+    return column;
+  }
+
+  public void setColumn(String column) {
+    this.column = column;
   }
 
   @Override
