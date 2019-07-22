@@ -3,7 +3,7 @@ package edu.utdallas.davisbase.command;
 public class CreateTableCommand implements Command {
 
   private String tableName;
-  //TODO: How do we want to represent column definitions
+  // QUESTION How should we represent column definition expressions in a CREATE TABLE statement?
 
   // TODO Implement CreateTableCommand
 

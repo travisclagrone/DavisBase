@@ -3,8 +3,8 @@ package edu.utdallas.davisbase.command;
 public class DeleteCommand implements Command {
 
   private String tableName;
-  //TODO: How should where expression be represented?
+  // QUESTION How should the where expression be represented?
 
-  // TODO Implement DeleteCommand
+  // COMBAK Implement DeleteCommand
 
 }

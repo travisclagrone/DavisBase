@@ -5,10 +5,10 @@ import java.util.List;
 public class UpdateCommand implements Command {
 
   private String tableName;
-  private List<String> columnIds;
-  private List<String> values;
-  //TODO: How should where expression be represented?
+  private List<String> columnIds;  // COMBAK Split columnIds field into a list column name strings and a list of column id bytes.
+  private List<String> values;  // COMBAK Refactor values field to use structured objects vs. raw strings.
+  // QUESTION How should the where expression be represented?
 
-  // TODO Implement UpdateCommand
+  // COMBAK Implement UpdateCommand
 
 }
