@@ -3,13 +3,18 @@ package edu.utdallas.davisbase.representation;
 import net.sf.jsqlparser.expression.Expression;
 
 public class WhereExpression {
+  public enum Operator
+  {
+    EQUALSTO, NOTEQUALTO, GREATERTHAN, GREATERTHANEQUALS, LESSTHAN, LESSTHANEQUALS;
+  }
+
   String expression;
   private boolean not;
   private String column;
-  private String operator;
-  private String value;
+  private Operator operator;
+  private final String value;
 
-  public WhereExpression(String expression, boolean not, Expression column, String operator, Expression value) {
+  public WhereExpression(String expression, boolean not, Expression column, Operator operator, Expression value) {
     this.expression= expression;
     this.not = not;
     this.column = column.toString();

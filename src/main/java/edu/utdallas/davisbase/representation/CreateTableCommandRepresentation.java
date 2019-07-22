@@ -16,6 +16,14 @@ public class CreateTableCommandRepresentation implements CommandRepresentation {
     this.definitions = definitions;
   }
 
+  public String getTable() {
+    return table;
+  }
+
+  public List<ColumnDefinition> getDefinitions() {
+    return definitions;
+  }
+
   @Override
   public String getFullCommand() {
     return command;

@@ -12,6 +12,14 @@ public class DeleteCommandRepresentation implements CommandRepresentation {
     this.whereClause = whereClause;
   }
 
+  public String getTable() {
+    return table;
+  }
+
+  public WhereExpression getWhereClause() {
+    return whereClause;
+  }
+
   @Override
   public String getFullCommand() {
     return command;

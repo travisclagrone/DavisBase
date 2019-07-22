@@ -20,6 +20,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -40,10 +41,10 @@ public class Parser {
    */
   public CommandRepresentation parse(String statement) throws ParseException {
     try {
-      if(statement.trim().replaceAll("\\s+", " ").equalsIgnoreCase(new ExitCommandRepresentation().getFullCommand())){
+      if (Pattern.matches("(?i)\\s*EXIT\\s*;\\s*", statement)){
         return new ExitCommandRepresentation();
       }
-      if(statement.trim().replaceAll("\\s+", " ").equalsIgnoreCase(new ShowTablesCommandRepresentation().getFullCommand())){
+      if (Pattern.matches("(?i)\\s*SHOW\\s+TABLES\\s*;\\s*", statement)) {
         return new ShowTablesCommandRepresentation();
       }
       CCJSqlParserManager pm = new CCJSqlParserManager();
@@ -77,7 +78,6 @@ public class Parser {
         );
         return createIndex;
       }
-
       else if (stmt instanceof Insert) {
         Insert insertStatement = (Insert) stmt;
         List<String> cols = new ArrayList<>();
@@ -94,7 +94,7 @@ public class Parser {
         );
         return insert;
       }
-      if (stmt instanceof Delete) {
+      else if (stmt instanceof Delete) {
         Delete deleteStatement = (Delete) stmt;
         DeleteCommandRepresentation delete = new DeleteCommandRepresentation(
           deleteStatement.toString(),
@@ -153,9 +153,7 @@ public class Parser {
     catch(JSQLParserException e){
       throw(new ParseException(e.getCause()));
     }
-    catch(ParseWhereException e){
-      throw(new ParseException(e.getCause()));
-    }
+    throw new ParseException();
   }
 
   /**
@@ -170,7 +168,7 @@ public class Parser {
         equals.toString(),
         equals.isNot(),
         equals.getLeftExpression(),
-        equals.getStringExpression(),
+        WhereExpression.Operator.EQUALSTO,
         equals.getRightExpression()
       );
       return whereExpression;
@@ -181,7 +179,7 @@ public class Parser {
         notEqualsTo.toString(),
         notEqualsTo.isNot(),
         notEqualsTo.getLeftExpression(),
-        notEqualsTo.getStringExpression(),
+        WhereExpression.Operator.NOTEQUALTO,
         notEqualsTo.getRightExpression()
       );
       return whereExpression;
@@ -192,7 +190,7 @@ public class Parser {
         greaterThan.toString(),
         greaterThan.isNot(),
         greaterThan.getLeftExpression(),
-        greaterThan.getStringExpression(),
+        WhereExpression.Operator.GREATERTHAN,
         greaterThan.getRightExpression()
       );
       return whereExpression;
@@ -203,7 +201,7 @@ public class Parser {
         greaterThanEquals.toString(),
         greaterThanEquals.isNot(),
         greaterThanEquals.getLeftExpression(),
-        greaterThanEquals.getStringExpression(),
+        WhereExpression.Operator.GREATERTHANEQUALS,
         greaterThanEquals.getRightExpression()
       );
       return whereExpression;
@@ -214,7 +212,7 @@ public class Parser {
         minorThan.toString(),
         minorThan.isNot(),
         minorThan.getLeftExpression(),
-        minorThan.getStringExpression(),
+        WhereExpression.Operator.LESSTHAN,
         minorThan.getRightExpression()
       );
       return whereExpression;
@@ -225,7 +223,7 @@ public class Parser {
         minorThanEquals.toString(),
         minorThanEquals.isNot(),
         minorThanEquals.getLeftExpression(),
-        minorThanEquals.getStringExpression(),
+        WhereExpression.Operator.LESSTHANEQUALS,
         minorThanEquals.getRightExpression()
       );
       return whereExpression;
