@@ -51,6 +51,12 @@
       <version>5.5.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency><!-- hamcrest is required for fluent assertions and matchers. (JUnit spun this off between v4-v5) -->
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <version>2.1</version>
+      <scope>test</scope>
+    </dependency>
     <dependency><!-- Mockito is a test mocking framework. -->
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
