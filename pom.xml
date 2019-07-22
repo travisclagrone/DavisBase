@@ -66,6 +66,11 @@
       <plugins>
 
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-help-plugin</artifactId>
+          <version>3.2.0</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>3.0.0-M2</version>
           <executions>
@@ -122,6 +127,14 @@
         </plugin>
 
         <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>3.1.0</version>
+          <configuration>
+            <configLocation>google_checks.xml</configLocation>
+          </configuration>
+        </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.1.0</version>
