@@ -7,6 +7,7 @@ import edu.utdallas.davisbase.storage.Storage;
 public class CreateTableCommand implements Command {
 
   private String tableName;
+  //TODO: How do we want to represent column definitions
 
   @Override
   public CreateTableResult execute(Storage storage) throws ExecuteException {
