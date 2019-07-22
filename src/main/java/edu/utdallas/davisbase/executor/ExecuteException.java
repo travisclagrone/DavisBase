@@ -1,4 +1,4 @@
-package edu.utdallas.davisbase.command;
+package edu.utdallas.davisbase.executor;
 
 import edu.utdallas.davisbase.DavisBaseException;
 
