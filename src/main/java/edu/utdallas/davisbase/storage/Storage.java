@@ -1,7 +1,6 @@
 package edu.utdallas.davisbase.storage;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -26,9 +25,8 @@ public class Storage {
     throw new NotImplementedException();
   }
 
-  public TableFile openTableFile(String tableName, short rootPageId) throws IOException {
+  public TableFile openTableFile(String tableName) throws IOException {
     checkNotNull(tableName);
-    checkElementIndex(rootPageId, Short.MAX_VALUE);
 
     final String tableFileName = tableName + configuration.getTableFileExtension();
     final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
@@ -48,13 +46,8 @@ public class Storage {
         String.format("File length %d is not a multiple of page size %d.",
             length,
             configuration.getPageSize()));
-    checkState(rootPageId < (length / configuration.getPageSize()),
-        String.format("Root page id %d is out of file length %d given page size %d.",
-            rootPageId,
-            length,
-            configuration.getPageSize()));
 
-    return new TableFile(randomAccessFile, rootPageId);
+    return new TableFile(randomAccessFile);
   }
 
 }

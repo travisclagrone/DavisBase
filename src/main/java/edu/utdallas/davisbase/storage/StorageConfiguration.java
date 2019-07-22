@@ -105,6 +105,11 @@ public class StorageConfiguration {
         catalogColumnsTableName = this.catalogColumnsTableName;
       }
 
+      int pageSize = getDefaultPageSize();
+      if (this.pageSize != null) {
+        pageSize = this.pageSize;
+      }
+
       return new StorageConfiguration(
           dataDirectoryName,
           tableFileExtension,
