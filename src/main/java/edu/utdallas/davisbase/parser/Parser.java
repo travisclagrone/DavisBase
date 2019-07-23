@@ -71,6 +71,9 @@ public class Parser {
 
       } else if (stmt instanceof CreateIndex) {
         CreateIndex createIndexStatement = (CreateIndex) stmt;
+        if(  createIndexStatement.getIndex().getColumnsNames().size() > 1){
+          throw new ParseException("DavisBase does not support multi-column indexes");
+        }
         CreateIndexCommandRepresentation createIndex = new CreateIndexCommandRepresentation(
           createIndexStatement.toString(),
           createIndexStatement.getTable().getName(),
@@ -113,7 +116,7 @@ public class Parser {
           for (SelectItem item : pSelect.getSelectItems()) {
             if (!(item instanceof SelectExpressionItem && ((SelectExpressionItem) item).getExpression() instanceof Column)) {
               if (!(pSelect.getSelectItems().get(0) instanceof AllColumns)) {
-                throw new ParseException("Davisbase accepts simple column references");
+                throw new ParseException("DavisBase accepts simple column references");
               }
             }
           }

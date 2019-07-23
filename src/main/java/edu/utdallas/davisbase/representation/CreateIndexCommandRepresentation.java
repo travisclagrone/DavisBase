@@ -41,6 +41,7 @@ public class CreateIndexCommandRepresentation implements CommandRepresentation {
       "command='" + command + '\'' +
       ", table='" + table + '\'' +
       ", index='" + index + '\'' +
+      ", column='" + column + '\'' +
       '}';
   }
 }
