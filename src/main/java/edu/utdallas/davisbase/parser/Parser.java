@@ -38,7 +38,7 @@ public class Parser {
    */
   public CommandRepresentation parse(String statement) throws ParseException {
     try {
-      if (Pattern.matches("(?i)\\s*EXIT\\s*;\\s*", statement)){
+      if (Pattern.matches("(?i)\\s*EXIT\\s*;\\s*", statement)) {
         return new ExitCommandRepresentation();
       }
       if (Pattern.matches("(?i)\\s*SHOW\\s+TABLES\\s*;\\s*", statement)) {
@@ -46,7 +46,7 @@ public class Parser {
       }
       CCJSqlParserManager pm = new CCJSqlParserManager();
       Statement stmt = pm.parse(new StringReader(statement));
-      if(stmt instanceof CreateTable){
+      if (stmt instanceof CreateTable) {
         CreateTable createTableStatement = (CreateTable) stmt;
         CreateTableCommandRepresentation create = new CreateTableCommandRepresentation(
           createTableStatement.toString(),
@@ -54,26 +54,22 @@ public class Parser {
           createTableStatement.getColumnDefinitions()
         );
         return create;
-      }
-      else if(stmt instanceof Drop){ //type determines if index or table
+      } else if (stmt instanceof Drop) { //type determines if index or table
         Drop dropTableStatement = (Drop) stmt;
-        if(dropTableStatement.getType().equalsIgnoreCase("TABLE")){
+        if (dropTableStatement.getType().equalsIgnoreCase("TABLE")) {
           DropTableCommandRepresentation dropTable = new DropTableCommandRepresentation(
             dropTableStatement.toString(),
             dropTableStatement.getName().getName()
           );
           return dropTable;
-        }
-        else if (dropTableStatement.getType().equalsIgnoreCase("INDEX")) {
+        } else if (dropTableStatement.getType().equalsIgnoreCase("INDEX")) {
           throw new NotImplementedException("DROP INDEX");  // TODO Implement DROP INDEX parsing (project part 2)
           // return dropIndex;
-        }
-        else {
+        } else {
           throw new ParseException(String.format("DavisBase does not support the '%s' command", dropTableStatement.getType()));
         }
 
-      }
-      else if(stmt instanceof CreateIndex){
+      } else if (stmt instanceof CreateIndex) {
         CreateIndex createIndexStatement = (CreateIndex) stmt;
         CreateIndexCommandRepresentation createIndex = new CreateIndexCommandRepresentation(
           createIndexStatement.toString(),
@@ -82,8 +78,7 @@ public class Parser {
           createIndexStatement.getIndex().getColumnsNames().get(0)
         );
         return createIndex;
-      }
-      else if (stmt instanceof Insert) {
+      } else if (stmt instanceof Insert) {
         Insert insertStatement = (Insert) stmt;
         InsertCommandRepresentation insert = new InsertCommandRepresentation(
           insertStatement.toString(),
@@ -92,8 +87,7 @@ public class Parser {
           ((ExpressionList) insertStatement.getItemsList()).getExpressions()
         );
         return insert;
-      }
-      else if (stmt instanceof Delete) {
+      } else if (stmt instanceof Delete) {
         Delete deleteStatement = (Delete) stmt;
         DeleteCommandRepresentation delete = new DeleteCommandRepresentation(
           deleteStatement.toString(),
@@ -101,8 +95,7 @@ public class Parser {
           parseWhereExpression(deleteStatement.getWhere())
         );
         return delete;
-      }
-      else if (stmt instanceof Update) {
+      } else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
         UpdateCommandRepresentation update = new UpdateCommandRepresentation(
           updateStatement.toString(),
@@ -112,22 +105,20 @@ public class Parser {
           parseWhereExpression(updateStatement.getWhere())
         );
         return update;
-      }
-      else if(stmt instanceof Select){
+      } else if (stmt instanceof Select) {
         Select selectStatement = (Select) stmt;
         PlainSelect pSelect;
-        if(selectStatement.getSelectBody() instanceof PlainSelect){
-          pSelect= (PlainSelect)selectStatement.getSelectBody();
-          for(SelectItem item: pSelect.getSelectItems()){
-            if(!(item instanceof SelectExpressionItem && ((SelectExpressionItem) item).getExpression() instanceof Column)) {
-              if(!(pSelect.getSelectItems().get(0) instanceof AllColumns)){
+        if (selectStatement.getSelectBody() instanceof PlainSelect) {
+          pSelect = (PlainSelect) selectStatement.getSelectBody();
+          for (SelectItem item : pSelect.getSelectItems()) {
+            if (!(item instanceof SelectExpressionItem && ((SelectExpressionItem) item).getExpression() instanceof Column)) {
+              if (!(pSelect.getSelectItems().get(0) instanceof AllColumns)) {
                 throw new ParseException("Davisbase accepts simple column references");
               }
             }
           }
 
-        }
-        else{
+        } else {
           throw new ParseException("DavisBase only supports simple select statements");
         }
         SelectCommandRepresentation select = new SelectCommandRepresentation(
@@ -137,13 +128,11 @@ public class Parser {
           (pSelect.getSelectItems().get(0) instanceof AllColumns)
         );
         return select;
-      }
-      else{
+      } else {
         throw new ParseException("Sorry DavisBase does not support this command");
       }
-    }
-    catch(JSQLParserException e){
-      throw(new ParseException(e.getCause()));
+    } catch (JSQLParserException e) {
+      throw (new ParseException(e.getCause()));
     }
   }
 
@@ -151,12 +140,12 @@ public class Parser {
    * @param where clause to parse
    * @return WhereExpression representation of the expression
    */
-  public WhereExpression parseWhereExpression(Expression where) throws ParseWhereException{
+  public WhereExpression parseWhereExpression(Expression where) throws ParseWhereException {
     WhereExpression whereExpression;
-    if(where instanceof EqualsTo){
+    if (where instanceof EqualsTo) {
       EqualsTo equals = (EqualsTo) where;
-
-      whereExpression= new WhereExpression(
+      validateLeftExpression(equals);
+      whereExpression = new WhereExpression(
         equals.toString(),
         equals.isNot(),
         equals.getLeftExpression(),
@@ -164,10 +153,10 @@ public class Parser {
         getExpressionInstance(equals.getRightExpression())
       );
       return whereExpression;
-    }
-    else if(where instanceof NotEqualsTo){
+    } else if (where instanceof NotEqualsTo) {
       NotEqualsTo notEqualsTo = (NotEqualsTo) where;
-      whereExpression= new WhereExpression(
+      validateLeftExpression(notEqualsTo);
+      whereExpression = new WhereExpression(
         notEqualsTo.toString(),
         notEqualsTo.isNot(),
         notEqualsTo.getLeftExpression(),
@@ -175,10 +164,10 @@ public class Parser {
         getExpressionInstance(notEqualsTo.getRightExpression())
       );
       return whereExpression;
-    }
-    else if(where instanceof GreaterThan){
-      GreaterThan greaterThan = (GreaterThan)where;
-      whereExpression= new WhereExpression(
+    } else if (where instanceof GreaterThan) {
+      GreaterThan greaterThan = (GreaterThan) where;
+      validateLeftExpression(greaterThan);
+      whereExpression = new WhereExpression(
         greaterThan.toString(),
         greaterThan.isNot(),
         greaterThan.getLeftExpression(),
@@ -186,10 +175,10 @@ public class Parser {
         getExpressionInstance(greaterThan.getRightExpression())
       );
       return whereExpression;
-    }
-    else if(where instanceof GreaterThanEquals){
-      GreaterThanEquals greaterThanEquals = (GreaterThanEquals)where;
-      whereExpression= new WhereExpression(
+    } else if (where instanceof GreaterThanEquals) {
+      GreaterThanEquals greaterThanEquals = (GreaterThanEquals) where;
+      validateLeftExpression(greaterThanEquals);
+      whereExpression = new WhereExpression(
         greaterThanEquals.toString(),
         greaterThanEquals.isNot(),
         greaterThanEquals.getLeftExpression(),
@@ -197,10 +186,10 @@ public class Parser {
         getExpressionInstance(greaterThanEquals.getRightExpression())
       );
       return whereExpression;
-    }
-    else if(where instanceof MinorThan){
-      MinorThan minorThan = (MinorThan)where;
-      whereExpression= new WhereExpression(
+    } else if (where instanceof MinorThan) {
+      MinorThan minorThan = (MinorThan) where;
+      validateLeftExpression(minorThan);
+      whereExpression = new WhereExpression(
         minorThan.toString(),
         minorThan.isNot(),
         minorThan.getLeftExpression(),
@@ -208,10 +197,10 @@ public class Parser {
         getExpressionInstance(minorThan.getRightExpression())
       );
       return whereExpression;
-    }
-    else if(where instanceof MinorThanEquals){
-      MinorThanEquals minorThanEquals = (MinorThanEquals)where;
-      whereExpression= new WhereExpression(
+    } else if (where instanceof MinorThanEquals) {
+      MinorThanEquals minorThanEquals = (MinorThanEquals) where;
+      validateLeftExpression(minorThanEquals);
+      whereExpression = new WhereExpression(
         minorThanEquals.toString(),
         minorThanEquals.isNot(),
         minorThanEquals.getLeftExpression(),
@@ -219,44 +208,43 @@ public class Parser {
         getExpressionInstance(minorThanEquals.getRightExpression())
       );
       return whereExpression;
-    }
-    else{
+    } else {
       throw new ParseWhereException("Sorry we do not support that where expression");
     }
   }
 
-  public Expression getExpressionInstance(Expression value) throws ParseWhereException{
-    if(value instanceof DoubleValue){
+  public Expression getExpressionInstance(Expression value) throws ParseWhereException {
+    if (value instanceof DoubleValue) {
       DoubleValue doubleValue = (DoubleValue) value;
       return doubleValue;
-    }
-    else if(value instanceof LongValue){
+    } else if (value instanceof LongValue) {
       LongValue longValue = (LongValue) value;
       return longValue;
-    }
-    else if (value instanceof DateValue){
+    } else if (value instanceof DateValue) {
       DateValue dateValue = (DateValue) value;
       return dateValue;
-    }
-    else if(value instanceof TimestampValue){
+    } else if (value instanceof TimestampValue) {
       TimestampValue timestampValue = (TimestampValue) value;
       return timestampValue;
-    }
-    else if(value instanceof TimeValue){
+    } else if (value instanceof TimeValue) {
       TimeValue timeValue = (TimeValue) value;
       return timeValue;
-    }
-    else if(value instanceof StringValue){
+    } else if (value instanceof StringValue) {
       StringValue stringValue = (StringValue) value;
       return stringValue;
 
-    }
-    else if(value instanceof Column){
+    } else if (value instanceof Column) {
       Column columnValue = (Column) value;
       return columnValue;
-    }
-    else{
+    } else {
       throw new ParseWhereException("Invalid value in expression");
     }
   }
+  public void validateLeftExpression(BinaryExpression where) throws ParseWhereException{
+    if(!(where.getLeftExpression() instanceof Column)){
+      throw new ParseWhereException("Invalid where expression. Must be column reference.");
+    }
+  }
+
 }
+
