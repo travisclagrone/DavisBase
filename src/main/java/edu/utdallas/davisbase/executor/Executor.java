@@ -98,8 +98,7 @@ public class Executor {
   }
 
   public ExitResult execute(ExitCommand command, Storage context) throws ExecuteException, StorageException {
-    // TODO Implement Executor.execute(ExitCommand, Storage)
-    throw new NotImplementedException();
+    return new ExitResult();
   }
 
   public InsertResult execute(InsertCommand command, Storage context) throws ExecuteException, StorageException {
