@@ -1,6 +1,5 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 import java.util.ArrayList;
