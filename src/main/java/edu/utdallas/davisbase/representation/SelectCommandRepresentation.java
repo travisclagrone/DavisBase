@@ -1,5 +1,8 @@
 package edu.utdallas.davisbase.representation;
 
+import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.SelectItem;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -7,23 +10,23 @@ import java.util.List;
 public class SelectCommandRepresentation implements CommandRepresentation {
 
   private final String command;
-  private final List<String> columns;
-  private final String table;
+  private final List<SelectItem> columns;
+  private final FromItem table;
   private final boolean all;
   //professor indicated where expression would not be tested for part 1
 
-  public SelectCommandRepresentation(String command, String table, List<String> columns, boolean all){
+  public SelectCommandRepresentation(String command, FromItem table, List<SelectItem> columns, boolean all){
     this.command=command;
     this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
     this.table=table;
     this.all=all;
   }
 
-  public List<String> getColumns() {
+  public List<SelectItem> getColumns() {
     return columns;
   }
 
-  public String getTable() {
+  public FromItem getTable() {
     return table;
   }
 

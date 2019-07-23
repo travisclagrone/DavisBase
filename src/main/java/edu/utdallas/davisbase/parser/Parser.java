@@ -14,12 +14,13 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
+import net.sf.jsqlparser.statement.select.AllColumns;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.update.Update;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -120,27 +121,18 @@ public class Parser {
       }
       else if(stmt instanceof Select){
         Select selectStatement = (Select) stmt;
-        String selectBody = selectStatement.getSelectBody().toString();
-        String[] splitStr = selectBody.trim().split("SELECT |FROM ");
-        String[] splitValues=splitStr[1].trim().split("\\s*,\\s*");
-        Expression exp;
-        for(String col:splitValues){
-            try {
-              exp = CCJSqlParserUtil.parseExpression(col);
-              if(!(exp instanceof Column)){
-                throw new ParseException(exp + "is not a supported expression in Davisbase");
-              }
-            }catch(JSQLParserException e){
-              if(!col.equalsIgnoreCase("*")){
-                throw new ParseException(e);
-              }
-          }
+        PlainSelect pSelect;
+        if(selectStatement.getSelectBody() instanceof PlainSelect){
+          pSelect= (PlainSelect)selectStatement.getSelectBody();
+        }
+        else{
+          throw new ParseException("DavisBase only supports simple select statements");
         }
         SelectCommandRepresentation select = new SelectCommandRepresentation(
           selectStatement.toString(),
-          splitStr[2],
-          Arrays.asList(splitValues),
-          splitValues[0].equalsIgnoreCase("*") ? true : false
+          pSelect.getFromItem(),
+          pSelect.getSelectItems(),
+          (pSelect.getSelectItems().get(0) instanceof AllColumns)
         );
         return select;
       }
