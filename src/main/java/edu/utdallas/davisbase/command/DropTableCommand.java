@@ -6,4 +6,7 @@ public class DropTableCommand implements Command {
 
   // COMBAK Implement DropTableCommand
 
+  public DropTableCommand(String tableName) {
+    this.tableName = tableName;
+  }
 }

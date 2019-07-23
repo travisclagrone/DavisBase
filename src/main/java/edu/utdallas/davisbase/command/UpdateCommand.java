@@ -11,4 +11,9 @@ public class UpdateCommand implements Command {
 
   // COMBAK Implement UpdateCommand
 
+  public UpdateCommand(String tableName, List<String> columnIds, List<String> values) {
+    this.tableName = tableName;
+    this.columnIds = columnIds;
+    this.values = values;
+  }
 }
