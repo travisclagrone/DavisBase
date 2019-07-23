@@ -109,12 +109,11 @@ public class Parser {
       }
       else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
-        String vals = updateStatement.getExpressions().toString().replaceAll("[\\[''\\]]", "");
         UpdateCommandRepresentation update = new UpdateCommandRepresentation(
           updateStatement.toString(),
           updateStatement.getTables().get(0).getName(),
           updateStatement.getColumns(),
-          getExpressions(vals),
+          updateStatement.getExpressions(),
           parseWhereExpression(updateStatement.getWhere())
         );
         return update;
@@ -130,7 +129,7 @@ public class Parser {
         }
         SelectCommandRepresentation select = new SelectCommandRepresentation(
           selectStatement.toString(),
-          pSelect.getFromItem(),
+          pSelect.getFromItem().toString(),
           pSelect.getSelectItems(),
           (pSelect.getSelectItems().get(0) instanceof AllColumns)
         );
@@ -144,23 +143,7 @@ public class Parser {
       throw(new ParseException(e.getCause()));
     }
   }
-
-  private List<Expression> getExpressions(String vals) throws ParseException {
-    String[] splitValues=vals.trim().split("\\s*,\\s*");
-    List<Expression> valuesExpressions = new ArrayList<>();
-    Expression exp;
-    try{
-      for(String val: splitValues) {
-        exp = CCJSqlParserUtil.parseExpression(val);
-        valuesExpressions.add(getExpressionInstance(exp));
-      }
-    }
-    catch (JSQLParserException e){
-      throw new ParseException(e);
-    }
-    return valuesExpressions;
-  }
-
+  
   /**
    * @param where clause to parse
    * @return WhereExpression representation of the expression

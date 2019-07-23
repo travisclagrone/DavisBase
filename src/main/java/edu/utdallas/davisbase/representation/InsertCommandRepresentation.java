@@ -3,6 +3,8 @@ package edu.utdallas.davisbase.representation;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Column;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class InsertCommandRepresentation implements CommandRepresentation {
@@ -14,7 +16,7 @@ public class InsertCommandRepresentation implements CommandRepresentation {
   public InsertCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values) {
     this.command= command;
     this.table = table;
-    this.columns = columns;
+    this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
     this.values = values;
   }
 

@@ -11,11 +11,11 @@ public class SelectCommandRepresentation implements CommandRepresentation {
 
   private final String command;
   private final List<SelectItem> columns;
-  private final FromItem table;
+  private final String table;
   private final boolean all;
   //professor indicated where expression would not be tested for part 1
 
-  public SelectCommandRepresentation(String command, FromItem table, List<SelectItem> columns, boolean all){
+  public SelectCommandRepresentation(String command, String table, List<SelectItem> columns, boolean all){
     this.command=command;
     this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
     this.table=table;
@@ -26,7 +26,7 @@ public class SelectCommandRepresentation implements CommandRepresentation {
     return columns;
   }
 
-  public FromItem getTable() {
+  public String getTable() {
     return table;
   }
 
