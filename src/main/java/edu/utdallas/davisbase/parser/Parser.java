@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.parser;
 
+import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.representation.*;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.*;
@@ -67,6 +68,14 @@ public class Parser {
           );
           return dropTable;
         }
+        else if (dropTableStatement.getType().equalsIgnoreCase("INDEX")) {
+          throw new NotImplementedException("DROP INDEX");  // TODO Implement DROP INDEX parsing (project part 2)
+          // return dropIndex;
+        }
+        else {
+          throw new ParseException(String.format("DavisBase does not support the '%s' command", dropTableStatement.getType()));
+        }
+
       }
       else if(stmt instanceof CreateIndex){
         CreateIndex createIndexStatement = (CreateIndex) stmt;
@@ -143,7 +152,6 @@ public class Parser {
     catch(JSQLParserException e){
       throw(new ParseException(e.getCause()));
     }
-    throw new ParseException();
   }
 
   private List<Expression> getExpressions(String vals) throws ParseException {
