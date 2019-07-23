@@ -19,7 +19,7 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     this.command = command;
     this.table = table;
     this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
-    this.values = values;
+    this.values = Collections.unmodifiableList(new ArrayList<>(values));
     this.whereClause = whereClause;
   }
 
