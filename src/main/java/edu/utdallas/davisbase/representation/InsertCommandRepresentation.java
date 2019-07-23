@@ -9,7 +9,7 @@ public class InsertCommandRepresentation implements CommandRepresentation {
   private final String command;
   private final String table;
   private final List<Column> columns;
-  private List<Expression> values; //TODO:MAKE SURE THIS WORKS
+  private List<Expression> values;
 
   public InsertCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values) {
     this.command= command;
