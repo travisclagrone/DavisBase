@@ -32,7 +32,7 @@ import edu.utdallas.davisbase.storage.StorageException;
  */
 public class Executor {
 
-  private final ExecutorConfiguration configuration;
+  protected final ExecutorConfiguration configuration;
 
   public Executor(ExecutorConfiguration configuration) {
     checkNotNull(configuration, "configuration");
@@ -42,6 +42,7 @@ public class Executor {
 
   public Result execute(Command command, Storage context) throws ExecuteException, StorageException {
     checkNotNull(command, "command");
+    checkNotNull(context, "context");
 
     Result result;
     if (command instanceof CreateIndexCommand) {
@@ -77,46 +78,73 @@ public class Executor {
     return result;
   }
 
-  public CreateIndexResult execute(CreateIndexCommand command, Storage context) throws ExecuteException, StorageException {
+  protected CreateIndexResult execute(CreateIndexCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // COMBAK Implement Executor.execute(CreateIndexCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public CreateTableResult execute(CreateTableCommand command, Storage context) throws ExecuteException, StorageException {
+  protected CreateTableResult execute(CreateTableCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // TODO Implement Executor.execute(CreateTableCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public DeleteResult execute(DeleteCommand command, Storage context) throws ExecuteException, StorageException {
+  protected DeleteResult execute(DeleteCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // COMBAK Implement Executor.execute(DeleteCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public DropTableResult execute(DropTableCommand command, Storage context) throws ExecuteException, StorageException {
+  protected DropTableResult execute(DropTableCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // COMBAK Implement Executor.execute(DropTableCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public ExitResult execute(ExitCommand command, Storage context) throws ExecuteException, StorageException {
+  protected ExitResult execute(ExitCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     return new ExitResult();
   }
 
-  public InsertResult execute(InsertCommand command, Storage context) throws ExecuteException, StorageException {
+  protected InsertResult execute(InsertCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // TODO Implement Executor.execute(InsertCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public SelectResult execute(SelectCommand command, Storage context) throws ExecuteException, StorageException {
+  protected SelectResult execute(SelectCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // TODO Implement Executor.execute(SelectCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public ShowTablesResult execute(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException {
+  protected ShowTablesResult execute(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // TODO Implement Executor.execute(ShowTablesCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public UpdateResult execute(UpdateCommand command, Storage context) throws ExecuteException, StorageException {
+  protected UpdateResult execute(UpdateCommand command, Storage context) throws ExecuteException, StorageException {
+    assert command != null : "command should not be null";
+    assert context != null : "context should not be null";
+
     // COMBAK Implement Executor.execute(UpdateCommand, Storage)
     throw new NotImplementedException();
   }
