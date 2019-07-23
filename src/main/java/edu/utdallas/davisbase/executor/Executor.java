@@ -24,6 +24,7 @@ import edu.utdallas.davisbase.result.SelectResult;
 import edu.utdallas.davisbase.result.ShowTablesResult;
 import edu.utdallas.davisbase.result.UpdateResult;
 import edu.utdallas.davisbase.storage.Storage;
+import edu.utdallas.davisbase.storage.StorageException;
 
 /**
  * An executor of {@link Command}s against a {@link Storage} context, and thereby a producer of
@@ -39,36 +40,36 @@ public class Executor {
     this.configuration = configuration;
   }
 
-  public Result execute(Command command) throws ExecuteException {
+  public Result execute(Command command, Storage context) throws ExecuteException, StorageException {
     checkNotNull(command, "command");
 
     Result result;
     if (command instanceof CreateIndexCommand) {
-      result = execute((CreateIndexCommand) command);
+      result = execute((CreateIndexCommand) command, context);
     }
     else if (command instanceof CreateTableCommand) {
-      result = execute((CreateTableCommand) command);
+      result = execute((CreateTableCommand) command, context);
     }
     else if (command instanceof DeleteCommand) {
-      result = execute((DeleteCommand) command);
+      result = execute((DeleteCommand) command, context);
     }
     else if (command instanceof DropTableCommand) {
-      result = execute((DropTableCommand) command);
+      result = execute((DropTableCommand) command, context);
     }
     else if (command instanceof ExitCommand) {
-      result = execute((ExitCommand) command);
+      result = execute((ExitCommand) command, context);
     }
     else if (command instanceof InsertCommand) {
-      result = execute((InsertCommand) command);
+      result = execute((InsertCommand) command, context);
     }
     else if (command instanceof SelectCommand) {
-      result = execute((SelectCommand) command);
+      result = execute((SelectCommand) command, context);
     }
     else if (command instanceof ShowTablesCommand) {
-      result = execute((ShowTablesCommand) command);
+      result = execute((ShowTablesCommand) command, context);
     }
     else if (command instanceof UpdateCommand) {
-      result = execute((UpdateCommand) command);
+      result = execute((UpdateCommand) command, context);
     }
     else {
       throw new ExecuteException(format("Unimplemented command type: %s", command.getClass().getName()));
@@ -76,48 +77,48 @@ public class Executor {
     return result;
   }
 
-  public CreateIndexResult execute(CreateIndexCommand command) throws ExecuteException {
-    // COMBAK Implement Executor.execute(CreateIndexCommand)
+  public CreateIndexResult execute(CreateIndexCommand command, Storage context) throws ExecuteException, StorageException {
+    // COMBAK Implement Executor.execute(CreateIndexCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public CreateTableResult execute(CreateTableCommand command) throws ExecuteException {
-    // TODO Implement Executor.execute(CreateTableCommand)
+  public CreateTableResult execute(CreateTableCommand command, Storage context) throws ExecuteException, StorageException {
+    // TODO Implement Executor.execute(CreateTableCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public DeleteResult execute(DeleteCommand command) throws ExecuteException {
-    // COMBAK Implement Executor.execute(DeleteCommand)
+  public DeleteResult execute(DeleteCommand command, Storage context) throws ExecuteException, StorageException {
+    // COMBAK Implement Executor.execute(DeleteCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public DropTableResult execute(DropTableCommand command) throws ExecuteException {
-    // COMBAK Implement Executor.execute(DropTableCommand)
+  public DropTableResult execute(DropTableCommand command, Storage context) throws ExecuteException, StorageException {
+    // COMBAK Implement Executor.execute(DropTableCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public ExitResult execute(ExitCommand command) throws ExecuteException {
-    // TODO Implement Executor.execute(ExitCommand)
+  public ExitResult execute(ExitCommand command, Storage context) throws ExecuteException, StorageException {
+    // TODO Implement Executor.execute(ExitCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public InsertResult execute(InsertCommand command) throws ExecuteException {
-    // TODO Implement Executor.execute(InsertCommand)
+  public InsertResult execute(InsertCommand command, Storage context) throws ExecuteException, StorageException {
+    // TODO Implement Executor.execute(InsertCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public SelectResult execute(SelectCommand command) throws ExecuteException {
-    // TODO Implement Executor.execute(SelectCommand)
+  public SelectResult execute(SelectCommand command, Storage context) throws ExecuteException, StorageException {
+    // TODO Implement Executor.execute(SelectCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public ShowTablesResult execute(ShowTablesCommand command) throws ExecuteException {
-    // TODO Implement Executor.execute(ShowTablesCommand)
+  public ShowTablesResult execute(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException {
+    // TODO Implement Executor.execute(ShowTablesCommand, Storage)
     throw new NotImplementedException();
   }
 
-  public UpdateResult execute(UpdateCommand command) throws ExecuteException {
-    // COMBAK Implement Executor.execute(UpdateCommand)
+  public UpdateResult execute(UpdateCommand command, Storage context) throws ExecuteException, StorageException {
+    // COMBAK Implement Executor.execute(UpdateCommand, Storage)
     throw new NotImplementedException();
   }
 
