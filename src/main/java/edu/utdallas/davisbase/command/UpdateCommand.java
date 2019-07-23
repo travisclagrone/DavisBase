@@ -1,15 +1,14 @@
 package edu.utdallas.davisbase.command;
 
-import edu.utdallas.davisbase.NotImplementedException;
-import edu.utdallas.davisbase.result.UpdateResult;
-import edu.utdallas.davisbase.storage.Storage;
+import java.util.List;
 
 public class UpdateCommand implements Command {
 
-  @Override
-  public UpdateResult execute(Storage storage) throws ExecuteException {
-    // TODO Implement UpdateCommand.execute(Storage)
-    throw new NotImplementedException();
-  }
+  private String tableName;
+  private List<String> columnIds;  // COMBAK Split columnIds field into a list column name strings and a list of column id bytes.
+  private List<String> values;  // COMBAK Refactor values field to use structured objects vs. raw strings.
+  // QUESTION How should the where expression be represented?
+
+  // COMBAK Implement UpdateCommand
 
 }
