@@ -235,10 +235,10 @@ public class Parser {
     } else if (value instanceof StringValue) {
       StringValue stringValue = (StringValue) value;
       return stringValue;
-    } else if (value instanceof Column) {
-      Column columnValue = (Column) value;
-      return columnValue;
-    } else {
+    }else if (value instanceof NullValue) {
+      NullValue nullValue = (NullValue) value;
+      return nullValue;
+    }else {
       throw new ParseWhereException("Invalid value in expression");
     }
   }
