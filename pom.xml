@@ -19,6 +19,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.github.jsqlparser</groupId>
+      <artifactId>jsqlparser</artifactId>
+      <version>1.4</version>
+    </dependency>
 
     <!-- #region Checker Framework (primarily for compile-time null checking) -->
     <dependency>
