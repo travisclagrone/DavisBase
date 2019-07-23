@@ -7,8 +7,6 @@ import edu.utdallas.davisbase.DataType;
  */
 public interface CatalogTableColumn {
 
-  public CatalogTable getTable();
-
   public String getName();
 
   public DataType getDataType();
