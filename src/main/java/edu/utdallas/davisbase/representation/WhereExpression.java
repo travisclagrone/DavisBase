@@ -4,8 +4,8 @@ import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.schema.Column;
 
 public class WhereExpression {
-  public enum Operator
-  {
+
+  public static enum Operator {
     EQUALSTO, NOTEQUALTO, GREATERTHAN, GREATERTHANEQUALS, LESSTHAN, LESSTHANEQUALS;
   }
 
