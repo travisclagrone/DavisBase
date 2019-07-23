@@ -1,13 +1,13 @@
 package edu.utdallas.davisbase.compiler;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.command.Command;
-import edu.utdallas.davisbase.parser.Ast;
+import edu.utdallas.davisbase.representation.CommandRepresentation;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * A compiler of {@link edu.utdallas.davisbase.parser.Ast Ast} to
+ * A compiler of {@link edu.utdallas.davisbase.representation.CommandRepresentation CommandRepresentation} to
  * {@link edu.utdallas.davisbase.command.Command Command}.
  */
 public class Compiler {
@@ -19,8 +19,8 @@ public class Compiler {
     this.configuration = configuration;
   }
 
-  public Command compile(Ast ast) throws CompileException {
-    // TODO Implement Compiler.compile(Ast)
+  public Command compile(CommandRepresentation command) throws CompileException {
+    // TODO Implement Compiler.compile(CommandRepresentation)
     throw new NotImplementedException();
   }
 }
