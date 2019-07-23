@@ -1,6 +1,7 @@
 package edu.utdallas.davisbase.representation;
 
 import net.sf.jsqlparser.expression.*;
+import net.sf.jsqlparser.schema.Column;
 
 public class WhereExpression {
   public enum Operator
@@ -10,14 +11,14 @@ public class WhereExpression {
 
   private final String expression;
   private final boolean not;
-  private final String column;
+  private final Column column;
   private final Operator operator;
   private final Expression value;
 
-  public WhereExpression(String expression, boolean not, Expression column, Operator operator, Expression value) {
+  public WhereExpression(String expression, boolean not, Column column, Operator operator, Expression value) {
     this.expression= expression;
     this.not = not;
-    this.column = column.toString();
+    this.column = column;
     this.operator = operator;
     this.value=value;
   }
@@ -30,7 +31,7 @@ public class WhereExpression {
     return not;
   }
 
-  public String getColumn() {
+  public Column getColumn() {
     return column;
   }
 

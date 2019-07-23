@@ -151,7 +151,7 @@ public class Parser {
       whereExpression = new WhereExpression(
         equals.toString(),
         equals.isNot(),
-        equals.getLeftExpression(),
+        (Column)equals.getLeftExpression(),
         WhereExpression.Operator.EQUALSTO,
         getExpressionInstance(equals.getRightExpression())
       );
@@ -162,7 +162,7 @@ public class Parser {
       whereExpression = new WhereExpression(
         notEqualsTo.toString(),
         notEqualsTo.isNot(),
-        notEqualsTo.getLeftExpression(),
+        (Column)notEqualsTo.getLeftExpression(),
         WhereExpression.Operator.NOTEQUALTO,
         getExpressionInstance(notEqualsTo.getRightExpression())
       );
@@ -173,7 +173,7 @@ public class Parser {
       whereExpression = new WhereExpression(
         greaterThan.toString(),
         greaterThan.isNot(),
-        greaterThan.getLeftExpression(),
+        (Column)greaterThan.getLeftExpression(),
         WhereExpression.Operator.GREATERTHAN,
         getExpressionInstance(greaterThan.getRightExpression())
       );
@@ -184,7 +184,7 @@ public class Parser {
       whereExpression = new WhereExpression(
         greaterThanEquals.toString(),
         greaterThanEquals.isNot(),
-        greaterThanEquals.getLeftExpression(),
+        (Column)greaterThanEquals.getLeftExpression(),
         WhereExpression.Operator.GREATERTHANEQUALS,
         getExpressionInstance(greaterThanEquals.getRightExpression())
       );
@@ -195,7 +195,7 @@ public class Parser {
       whereExpression = new WhereExpression(
         minorThan.toString(),
         minorThan.isNot(),
-        minorThan.getLeftExpression(),
+        (Column)minorThan.getLeftExpression(),
         WhereExpression.Operator.LESSTHAN,
         getExpressionInstance(minorThan.getRightExpression())
       );
@@ -206,7 +206,7 @@ public class Parser {
       whereExpression = new WhereExpression(
         minorThanEquals.toString(),
         minorThanEquals.isNot(),
-        minorThanEquals.getLeftExpression(),
+        (Column)minorThanEquals.getLeftExpression(),
         WhereExpression.Operator.LESSTHANEQUALS,
         getExpressionInstance(minorThanEquals.getRightExpression())
       );
@@ -235,7 +235,6 @@ public class Parser {
     } else if (value instanceof StringValue) {
       StringValue stringValue = (StringValue) value;
       return stringValue;
-
     } else if (value instanceof Column) {
       Column columnValue = (Column) value;
       return columnValue;
