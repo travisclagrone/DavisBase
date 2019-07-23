@@ -23,7 +23,6 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     this.whereClause = whereClause;
   }
 
-
   public String getTable() {
     return table;
   }

@@ -2,7 +2,6 @@ package edu.utdallas.davisbase.representation;
 
 public class ShowTablesCommandRepresentation implements CommandRepresentation {
 
-
   @Override
   public String getFullCommand() {
     return "SHOW TABLES;";
