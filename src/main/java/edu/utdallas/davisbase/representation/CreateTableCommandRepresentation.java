@@ -2,18 +2,20 @@ package edu.utdallas.davisbase.representation;
 
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class CreateTableCommandRepresentation implements CommandRepresentation {
 
-    private String command;
-    private String table;
-    private List<ColumnDefinition> definitions;
+    private final String command;
+    private final String table;
+    private final List<ColumnDefinition> definitions;
 
   public CreateTableCommandRepresentation(String command, String table, List<ColumnDefinition> definitions) {
     this.command = command;
     this.table = table;
-    this.definitions = definitions;
+    this.definitions = Collections.unmodifiableList(new ArrayList<>(definitions));
   }
 
   public String getTable() {

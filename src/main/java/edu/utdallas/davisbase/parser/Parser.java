@@ -15,7 +15,6 @@ import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.update.Update;
-import org.checkerframework.common.value.qual.StringVal;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -81,17 +80,12 @@ public class Parser {
       }
       else if (stmt instanceof Insert) {
         Insert insertStatement = (Insert) stmt;
-        List<String> cols = new ArrayList<>();
-        for(Column c: insertStatement.getColumns()){
-          cols.add(c.getColumnName());
-        }
         String vals = insertStatement.getItemsList().toString().replaceAll("[('')]", "");
-        String[] splitValues=vals.trim().split("\\s*,\\s*");
         InsertCommandRepresentation insert = new InsertCommandRepresentation(
           insertStatement.toString(),
           insertStatement.getTable().getName(),
-          cols,
-          Arrays.asList(splitValues)
+          insertStatement.getColumns(),
+          getExpressions(vals)
         );
         return insert;
       }
@@ -106,17 +100,12 @@ public class Parser {
       }
       else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
-        List<String> cols = new ArrayList<>();
-        for(Column c: updateStatement.getColumns()){
-          cols.add(c.getColumnName());
-        }
         String vals = updateStatement.getExpressions().toString().replaceAll("[\\[''\\]]", "");
-        String[] splitValues=vals.trim().split("\\s*,\\s*");
         UpdateCommandRepresentation update = new UpdateCommandRepresentation(
           updateStatement.toString(),
           updateStatement.getTables().get(0).getName(),
-          cols,
-          Arrays.asList(splitValues),
+          updateStatement.getColumns(),
+          getExpressions(vals),
           parseWhereExpression(updateStatement.getWhere())
         );
         return update;
@@ -155,6 +144,22 @@ public class Parser {
       throw(new ParseException(e.getCause()));
     }
     throw new ParseException();
+  }
+
+  private List<Expression> getExpressions(String vals) throws ParseException {
+    String[] splitValues=vals.trim().split("\\s*,\\s*");
+    List<Expression> valuesExpressions = new ArrayList<>();
+    Expression exp;
+    try{
+      for(String val: splitValues) {
+        exp = CCJSqlParserUtil.parseExpression(val);
+        valuesExpressions.add(getExpressionInstance(exp));
+      }
+    }
+    catch (JSQLParserException e){
+      throw new ParseException(e);
+    }
+    return valuesExpressions;
   }
 
   /**
@@ -260,6 +265,10 @@ public class Parser {
       StringValue stringValue = (StringValue) value;
       return stringValue;
 
+    }
+    else if(value instanceof Column){
+      Column columnValue = (Column) value;
+      return columnValue;
     }
     else{
       throw new ParseWhereException("Invalid value in expression");

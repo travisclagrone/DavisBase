@@ -1,8 +1,8 @@
 package edu.utdallas.davisbase.representation;
 
 public class DropTableCommandRepresentation implements CommandRepresentation {
-  private String command;
-  private String table;
+  private final String command;
+  private final String table;
 
   public DropTableCommandRepresentation(String command,String table) {
     this.command= command;
@@ -11,10 +11,6 @@ public class DropTableCommandRepresentation implements CommandRepresentation {
 
   public String getTable() {
     return table;
-  }
-
-  public void setTable(String table) {
-    this.table = table;
   }
 
   @Override

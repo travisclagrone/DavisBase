@@ -1,14 +1,17 @@
 package edu.utdallas.davisbase.representation;
 
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.schema.Column;
+
 import java.util.List;
 
 public class InsertCommandRepresentation implements CommandRepresentation {
-  private String command;
-  private String table;
-  private List<String> columns;
-  private List<String> values;
+  private final String command;
+  private final String table;
+  private final List<Column> columns;
+  private List<Expression> values; //TODO:MAKE SURE THIS WORKS
 
-  public InsertCommandRepresentation(String command, String table, List<String> columns, List<String> values) {
+  public InsertCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values) {
     this.command= command;
     this.table = table;
     this.columns = columns;
@@ -19,25 +22,14 @@ public class InsertCommandRepresentation implements CommandRepresentation {
     return table;
   }
 
-  public void setTable(String table) {
-    this.table = table;
-  }
-
-  public List<String> getColumns() {
+  public List<Column> getColumns() {
     return columns;
   }
 
-  public void setColumns(List<String> columns) {
-    this.columns = columns;
-  }
-
-  public List<String> getValues() {
+  public List<Expression> getValues() {
     return values;
   }
 
-  public void setValues(List<String> values) {
-    this.values = values;
-  }
 
   @Override
   public String getFullCommand() {

@@ -2,9 +2,9 @@ package edu.utdallas.davisbase.representation;
 
 public class DeleteCommandRepresentation implements CommandRepresentation {
 
-  private String command;
-  private String table;
-  private WhereExpression whereClause;
+  private final String command;
+  private final String table;
+  private final WhereExpression whereClause;
 
   public DeleteCommandRepresentation(String command, String table, WhereExpression whereClause) {
     this.command = command;

@@ -1,18 +1,20 @@
 package edu.utdallas.davisbase.representation;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SelectCommandRepresentation implements CommandRepresentation {
 
-  private String command;
-  private List<String> columns;
-  private String table;
-  private boolean all;
+  private final String command;
+  private final List<String> columns;
+  private final String table;
+  private final boolean all;
   //professor indicated where expression would not be tested for part 1
 
   public SelectCommandRepresentation(String command, String table, List<String> columns, boolean all){
     this.command=command;
-    this.columns = columns;
+    this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
     this.table=table;
     this.all=all;
   }

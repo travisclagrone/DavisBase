@@ -1,16 +1,19 @@
 package edu.utdallas.davisbase.representation;
 
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.schema.Column;
+
 import java.util.List;
 
 public class UpdateCommandRepresentation implements CommandRepresentation {
 
-  private String command;
-  private String table;
-  private List<String> columns;
-  private List<String> values;
-  private WhereExpression whereClause;
+  private final String command;
+  private final String table;
+  private final List<Column> columns;
+  private final List<Expression> values;
+  private final WhereExpression whereClause;
 
-  public UpdateCommandRepresentation(String command, String table, List<String> columns, List<String> values, WhereExpression whereClause) {
+  public UpdateCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values, WhereExpression whereClause) {
     this.command = command;
     this.table = table;
     this.columns = columns;
@@ -23,20 +26,16 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     return table;
   }
 
-  public List<String> getColumns() {
+  public List<Column> getColumns() {
     return columns;
   }
 
-  public List<String> getValues() {
+  public List<Expression> getValues() {
     return values;
   }
 
   public WhereExpression getWhereClause() {
     return whereClause;
-  }
-
-  public void setWhereClause(WhereExpression whereClause) {
-    this.whereClause = whereClause;
   }
 
   @Override

@@ -1,10 +1,10 @@
 package edu.utdallas.davisbase.representation;
 
 public class CreateIndexCommandRepresentation implements CommandRepresentation {
-  private String command;
-  private String table;
-  private String index;
-  private String column;
+  private final String command;
+  private final String table;
+  private final String index;
+  private final String column;
 
   public CreateIndexCommandRepresentation(String command, String table, String index, String column) {
     this.command = command;
@@ -17,24 +17,12 @@ public class CreateIndexCommandRepresentation implements CommandRepresentation {
     return table;
   }
 
-  public void setTable(String table) {
-    this.table = table;
-  }
-
   public String getIndex() {
     return index;
   }
 
-  public void setIndex(String index) {
-    this.index = index;
-  }
-
   public String getColumn() {
     return column;
-  }
-
-  public void setColumn(String column) {
-    this.column = column;
   }
 
   @Override

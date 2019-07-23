@@ -8,10 +8,10 @@ public class WhereExpression {
     EQUALSTO, NOTEQUALTO, GREATERTHAN, GREATERTHANEQUALS, LESSTHAN, LESSTHANEQUALS;
   }
 
-  String expression;
-  private boolean not;
-  private String column;
-  private Operator operator;
+  private final String expression;
+  private final boolean not;
+  private final String column;
+  private final Operator operator;
   private final Expression value;
 
   public WhereExpression(String expression, boolean not, Expression column, Operator operator, Expression value) {
