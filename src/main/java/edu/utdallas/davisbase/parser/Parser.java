@@ -89,12 +89,11 @@ public class Parser {
       }
       else if (stmt instanceof Insert) {
         Insert insertStatement = (Insert) stmt;
-        String vals = insertStatement.getItemsList().toString().replaceAll("[('')]", "");
         InsertCommandRepresentation insert = new InsertCommandRepresentation(
           insertStatement.toString(),
           insertStatement.getTable().getName(),
           insertStatement.getColumns(),
-          getExpressions(vals)
+          ((ExpressionList) insertStatement.getItemsList()).getExpressions()
         );
         return insert;
       }
