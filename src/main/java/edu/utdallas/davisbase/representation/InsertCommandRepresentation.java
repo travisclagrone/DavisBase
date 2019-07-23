@@ -11,13 +11,13 @@ public class InsertCommandRepresentation implements CommandRepresentation {
   private final String command;
   private final String table;
   private final List<Column> columns;
-  private List<Expression> values;
+  private final List<Expression> values;
 
   public InsertCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values) {
     this.command= command;
     this.table = table;
     this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
-    this.values = values;
+    this.values = Collections.unmodifiableList(new ArrayList<>(values));
   }
 
   public String getTable() {
@@ -31,7 +31,6 @@ public class InsertCommandRepresentation implements CommandRepresentation {
   public List<Expression> getValues() {
     return values;
   }
-
 
   @Override
   public String getFullCommand() {
