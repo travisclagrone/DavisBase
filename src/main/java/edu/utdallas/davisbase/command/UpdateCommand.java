@@ -2,6 +2,7 @@ package edu.utdallas.davisbase.command;
 
 import java.util.List;
 
+@SuppressWarnings("nullness")  // COMBAK Unsuppress nullness warnings once we implement UpdateCommand.
 public class UpdateCommand implements Command {
 
   private String tableName;
