@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -79,14 +80,20 @@ public class Compiler {
     }
     else if (command instanceof InsertCommandRepresentation){
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
-      //this is translating
-      List<Byte> colIndexes = getColumIndexes(insert.getColumns()); //COLUMN INDEXES
-      List<Object> values = validateTypeMatchesSchema(insert.getTable(), insert.getValues()); //VALUES ALREADY IN OBJECTS
-      //TODO: ORDER THESE
-
+      List<InsertObject> insertObjects = new ArrayList<>();
+      for(int lcv = 0; lcv<insert.getColumns().size()-1; lcv++){
+        Byte index = getColumnIndexes(insert.getColumns().get(lcv)); //get Column index
+        Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv));
+        insertObjects.add(new InsertObject(index.intValue(), obj));
+      }
+      Collections.sort(insertObjects);
+      List<Object> objects = new ArrayList<>();
+      for(InsertObject obj: insertObjects){
+        objects.add(obj.getObject());
+      }
       return new InsertCommand(
         validateIsDavisBaseTable(insert.getTable()),
-        validateTypeMatchesSchema(insert.getTable(), insert.getValues())
+        objects
       );
     }
     else if (command instanceof SelectCommandRepresentation){
@@ -192,59 +199,55 @@ public class Compiler {
 
   /**
    * @param tableName
-   * @param expressions
-   * @return valid list of expressions to Insert
+   * @param exp
+   * @return valid Object to Insert
    * @throws CompileException
    */
-  public List<Object> validateTypeMatchesSchema(String tableName, List<Expression> expressions)throws CompileException{
-    List<Object> objectValues = new ArrayList<>();
+  public Object validateTypeMatchesSchema(String tableName, Expression exp)throws CompileException{
     DataType convertedType;
-    for(Expression exp: expressions){
-      String value = exp.toString();
-      DataType schemaDefinedColumnType= getColumnType(tableName, value);
-      convertedType = convertToDavisType(exp);
-      if(!schemaDefinedColumnType.equals(convertedType)){
-        convertedType = checkLongValues(schemaDefinedColumnType,convertedType, value);
-      }
-      //TODO: ADD NULL?
-      if(convertedType.equals(DataType.TINYINT)){
-        objectValues.add(Byte.parseByte(value));
-      }
-      else if(convertedType.equals(DataType.SMALLINT)){
-        objectValues.add(Short.parseShort(value));
-      }
-      else if(convertedType.equals(DataType.INT)){
-        objectValues.add(Integer.parseInt(value));
-      }
-      else if(convertedType.equals(DataType.BIGINT)){
-        objectValues.add(Long.parseLong(value));
-      }
-      else if(convertedType.equals(DataType.FLOAT)){
-        objectValues.add(Float.parseFloat(value));
-      }
-      else if(convertedType.equals(DataType.DOUBLE)){
-        objectValues.add(Double.parseDouble(value));
-      }
-      else if(convertedType.equals(DataType.YEAR)){
-        objectValues.add(Year.parse(value));
-      }
-      else if(convertedType.equals(DataType.TIME)){
-        objectValues.add(LocalTime.parse(value));
-      }
-      else if(convertedType.equals(DataType.DATETIME)){
-        objectValues.add(LocalDateTime.parse(value));
-      }
-      else if(convertedType.equals(DataType.DATE)){
-        objectValues.add(LocalDate.parse(value));
-      }
-      else if(convertedType.equals(DataType.TEXT)){
-        objectValues.add(value);
-      }
-      else{
-        throw new CompileException("Not a valid DavisBase data type.");
-      }
+    String value = exp.toString();
+    DataType schemaDefinedColumnType= getColumnType(tableName, value);
+    convertedType = convertToDavisType(exp);
+    if(!schemaDefinedColumnType.equals(convertedType)){
+      convertedType = checkLongValues(schemaDefinedColumnType,convertedType, value);
     }
-    return objectValues;
+    //TODO: ADD NULL?
+    if(convertedType.equals(DataType.TINYINT)){
+      return (Byte.parseByte(value));
+    }
+    else if(convertedType.equals(DataType.SMALLINT)){
+      return(Short.parseShort(value));
+    }
+    else if(convertedType.equals(DataType.INT)){
+      return(Integer.parseInt(value));
+    }
+    else if(convertedType.equals(DataType.BIGINT)){
+      return(Long.parseLong(value));
+    }
+    else if(convertedType.equals(DataType.FLOAT)){
+      return(Float.parseFloat(value));
+    }
+    else if(convertedType.equals(DataType.DOUBLE)){
+      return(Double.parseDouble(value));
+    }
+    else if(convertedType.equals(DataType.YEAR)){
+      return(Year.parse(value));
+    }
+    else if(convertedType.equals(DataType.TIME)){
+      return(LocalTime.parse(value));
+    }
+    else if(convertedType.equals(DataType.DATETIME)){
+      return(LocalDateTime.parse(value));
+    }
+    else if(convertedType.equals(DataType.DATE)){
+      return(LocalDate.parse(value));
+    }
+    else if(convertedType.equals(DataType.TEXT)){
+      return(value);
+    }
+    else{
+      throw new CompileException("Not a valid DavisBase data type.");
+    }
   }
 
   /**
@@ -363,16 +366,7 @@ public class Compiler {
     throw new CompileException("Values you are trying to insert does not match the table schema");
   }
 
-  public List<Byte> getColumIndexes(List<Column> columns)throws CompileException{
-    List<Byte> colIndexes = new ArrayList<>();
-    for(Column col: columns){
-      try{
-        colIndexes.add(validateIsDavisBaseColumnWithinTable(col.getTable().getName(), col.getColumnName()));
-      }
-      catch(CompileException e){
-        new CompileException(e.getCause());
-      }
-    }
-    return colIndexes;
+  public Byte getColumnIndexes(Column col)throws CompileException{
+    return (validateIsDavisBaseColumnWithinTable(col.getTable().getName(), col.getColumnName()));
   }
 }
