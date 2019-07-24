@@ -2,6 +2,8 @@ package edu.utdallas.davisbase.compiler;
 
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.catalog.CatalogTable;
+import edu.utdallas.davisbase.catalog.CatalogTableColumn;
 import edu.utdallas.davisbase.command.*;
 import edu.utdallas.davisbase.representation.*;
 import net.sf.jsqlparser.expression.*;
@@ -39,10 +41,10 @@ public class Compiler {
       for(ColumnDefinition colDef: createTable.getDefinitions()){
         CreateTableCommandColumn col = new CreateTableCommandColumn(
           colDef.getColumnName(),
-          getDavisBaseType(colDef.getColDataType()), //TODO: Find a way to implement should this be implemented in Parser?
+          getDavisBaseType(colDef.getColDataType()),
           checkIsNotNull(colDef.getColumnSpecStrings()));
+        columnSchemas.add(col);
       }
-      //TODO implement columnSchemas logic
       return new CreateTableCommand(createTable.getTable(),columnSchemas);
     }
     else if (command instanceof DeleteCommandRepresentation){
@@ -96,22 +98,44 @@ public class Compiler {
     return new ExitCommand(); //TODO: Remove later
   }
 
-  public DataType getDavisBaseType(ColDataType dataType){
-    //TODO: Implement getDavisBaseType
-    dataType.getDataType();
-//    TINYINT  (Byte.class),
-//      SMALLINT (Short.class),
-//      INT      (Integer.class),
-//      BIGINT   (Long.class),
-//      FLOAT    (Float.class),
-//      DOUBLE   (Double.class),
-//      YEAR     (Year.class),
-//      TIME     (LocalTime.class),
-//      DATETIME (LocalDateTime.class),
-//      DATE     (LocalDate.class),
-//      TEXT     (String.class);
-//  }
-    return DataType.TEXT;
+  public DataType getDavisBaseType(ColDataType dataType)throws CompileException {
+    String type = dataType.getDataType();
+    if(type.equalsIgnoreCase(DataType.TINYINT.name())){
+      return DataType.TINYINT;
+    }
+    else if(type.equalsIgnoreCase(DataType.SMALLINT.name())){
+      return DataType.SMALLINT;
+    }
+    else if(type.equalsIgnoreCase(DataType.INT.name())){
+      return DataType.INT;
+    }
+    else if(type.equalsIgnoreCase(DataType.BIGINT.name())){
+      return DataType.BIGINT;
+    }
+    else if(type.equalsIgnoreCase(DataType.FLOAT.name())){
+      return DataType.FLOAT;
+    }
+    else if(type.equalsIgnoreCase(DataType.DOUBLE.name())){
+      return DataType.DOUBLE;
+    }
+    else if(type.equalsIgnoreCase(DataType.YEAR.name())){
+      return DataType.YEAR;
+    }
+    else if(type.equalsIgnoreCase(DataType.TIME.name())){
+      return DataType.TIME;
+    }
+    else if(type.equalsIgnoreCase(DataType.DATETIME.name())){
+      return DataType.DATETIME;
+    }
+    else if(type.equalsIgnoreCase(DataType.DATE.name())){
+      return DataType.DATE;
+    }
+    else if(type.equalsIgnoreCase(DataType.TEXT.name())){
+      return DataType.TEXT;
+    }
+    else{
+      throw new CompileException("Not a valid DavisBase data type.");
+    }
   }
 
   public List<DataType> convertToDavisType(List<Expression> types)throws CompileException{
@@ -139,15 +163,25 @@ public class Compiler {
     return davisTypes;
   }
 
-
   public boolean checkIsNotNull(List<String> columnSpecs){
-    for(int lcv = 0; lcv< columnSpecs.size()-2; lcv++){
-      if (columnSpecs.get(lcv).equalsIgnoreCase("NOT") &&
-      columnSpecs.get(lcv+1).equalsIgnoreCase("NULL")){
-        return true;
+    if(null!= columnSpecs){
+      for(int lcv = 0; lcv< columnSpecs.size()-2; lcv++){
+        if (columnSpecs.get(lcv).equalsIgnoreCase("NOT") &&
+        columnSpecs.get(lcv+1).equalsIgnoreCase("NULL")){
+          return true;
+        }
       }
     }
     return false;
+  }
+
+  public void validateIsDavisBaseColumn(CatalogTable catalogTable, String columnName)throws CompileException{
+    for(CatalogTableColumn catalogTableColumn :catalogTable.getColumns()){
+      if(catalogTableColumn.getName().equalsIgnoreCase(columnName)){
+        break;
+      }
+    }
+    throw new CompileException("Column does not exist within tabble");
   }
 
 }
