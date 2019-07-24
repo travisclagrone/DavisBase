@@ -4,7 +4,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
-import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -22,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * A row of primitive DavisBase values for a {@link SelectResultData} instance.
  */
-public class SelectResultDataRow implements Serializable {
+public class SelectResultDataRow implements Serializable, Iterable<@Nullable Object> {
 
   private static final long serialVersionUID = -4160693623154109607L;
 
