@@ -2,6 +2,8 @@ package edu.utdallas.davisbase.host;
 
 import static java.lang.String.format;
 
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.repeat;
 
@@ -49,7 +51,7 @@ public class Host {
 
   // TODO Handle case when multiple statements in one input sequence.
   public String readStatement() throws IOException {
-    StringBuilder userInput;
+    StringBuilder userInput = new StringBuilder();  // NOTE Initializing here to placate the nullness and initialization checkers, since they can't figure out the loop logic below for some reason...
     while (true) {
       userInput = new StringBuilder();
 
@@ -194,7 +196,7 @@ public class Host {
 
     for (SelectResultDataRow row : result.getData()) {
       for (@Nullable Object value : row) {
-        printer.print(formatCellValue(10, Objects.toString(value)) + "|");
+        printer.print(formatCellValue(10, Objects.toString(castNonNull(value))) + "|");  // NOTE `value` actually can be null, and `Objects#toString(Object)` can actually accept a null argument, but the annotated JDK is over-strict here.
       }
       printer.println();
     }
