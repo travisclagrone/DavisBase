@@ -24,7 +24,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -52,10 +53,11 @@ public class Compiler {
     if(command instanceof CreateIndexCommandRepresentation){
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
       throw new NotImplementedException();
-      //TODO: Implement for part 2
+      // COMBAK Implement compile(CreateIndexCommandRepresentation)
     }
     else if (command instanceof CreateTableCommandRepresentation){
       CreateTableCommandRepresentation createTable = (CreateTableCommandRepresentation)command;
+      // TODO Validate that the table does not already exist.
       List<CreateTableCommandColumn> columnSchemas = new ArrayList<>();
       for(ColumnDefinition colDef: createTable.getDefinitions()){
         CreateTableCommandColumn col = new CreateTableCommandColumn(
@@ -69,12 +71,12 @@ public class Compiler {
     else if (command instanceof DeleteCommandRepresentation){
       DeleteCommandRepresentation delete= (DeleteCommandRepresentation)command;
       throw new NotImplementedException();
-      //TODO: Implement for part 2
+      // COMBAK Implement compile(DeleteCommandRepresentation)
     }
     else if (command instanceof DropTableCommandRepresentation){
       DropTableCommandRepresentation dropTable = (DropTableCommandRepresentation)command;
       throw new NotImplementedException();
-      //TODO: Implement for part 2
+      // COMBAK Implement compile(DropTableCommandRepresentation)
     }
     else if (command instanceof ExitCommandRepresentation){
       return new ExitCommand();
@@ -82,10 +84,11 @@ public class Compiler {
     else if (command instanceof InsertCommandRepresentation){
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
       List<InsertObject> insertObjects = new ArrayList<>();
+      // FIXME Since we're already using `<` (vs. `<=`), it should be `size()` instead of `size()-1`, right?
       for(int lcv = 0; lcv<insert.getColumns().size()-1; lcv++){
-        Byte index = getColumnIndexes(insert.getColumns().get(lcv)); //get Column index
-        Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv));
-        insertObjects.add(new InsertObject(index.intValue(), obj));
+        byte index = getColumnIndex(insert.getColumns().get(lcv)); //get Column index
+        @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv));
+        insertObjects.add(new InsertObject(index, obj));
       }
       Collections.sort(insertObjects);
       return new InsertCommand(
@@ -100,7 +103,7 @@ public class Compiler {
       for(SelectItem item: select.getColumns()){
         SelectCommandColumn col = new SelectCommandColumn(
           validateIsDavisBaseColumnWithinTable(select.getTable(), item.toString()),
-          item.toString(),
+          item.toString(),  // QUESTION If the SelectItem is a plain column reference, does this return _exactly_ the colum name? Or do we need to switch on concrete type, cast, and then invoke a method to get the name?
           getColumnType(select.getTable(), item.toString())
         );
         selectColumns.add(col);
@@ -116,7 +119,7 @@ public class Compiler {
     else if (command instanceof UpdateCommandRepresentation){
       UpdateCommandRepresentation update = (UpdateCommandRepresentation)command;
       throw new NotImplementedException();
-      //TODO: Implement for part 2
+      // COMBAK Implement compile(UpdateCommandRepresentation)
     }
     else{
       throw new CompileException("Unrecognized command. Unable to compile. ");
@@ -174,25 +177,24 @@ public class Compiler {
    * @throws CompileException
    */
   public DataType convertToDavisType(Expression type)throws CompileException{
-      if (type instanceof DoubleValue) {
-        return DataType.DOUBLE;
-      } else if (type instanceof LongValue) {
-        return DataType.FLOAT;
-      } else if (type instanceof DateValue) {
-        return DataType.DATE;
-      } else if (type instanceof TimestampValue) {
-        return DataType.DATETIME;
-      } else if (type instanceof TimeValue) {
-        return DataType.TIME;
-      } else if (type instanceof StringValue) {
-        return DataType.TEXT;
-      }
-//      else if (type instanceof NullValue) {
-        //TODO: WHAT DO I RETURN IF NULL
-//      }
-      else {
-        throw new CompileException("Invalid datatype");
-      }
+    checkArgument(!(type instanceof NullValue));
+
+    if (type instanceof DoubleValue) {
+      return DataType.DOUBLE;
+    } else if (type instanceof LongValue) {
+      return DataType.BIGINT;
+    } else if (type instanceof DateValue) {
+      return DataType.DATE;
+    } else if (type instanceof TimestampValue) {
+      return DataType.DATETIME;
+    } else if (type instanceof TimeValue) {
+      return DataType.TIME;
+    } else if (type instanceof StringValue) {
+      return DataType.TEXT;
+    }
+    else {
+      throw new CompileException("Invalid datatype");
+    }
   }
 
   /**
@@ -201,15 +203,19 @@ public class Compiler {
    * @return valid Object to Insert
    * @throws CompileException
    */
-  public Object validateTypeMatchesSchema(String tableName, Expression exp)throws CompileException{
-    DataType convertedType;
+  public @Nullable Object validateTypeMatchesSchema(String tableName, Expression exp)throws CompileException{
     String value = exp.toString();
-    DataType schemaDefinedColumnType= getColumnType(tableName, value);
-    convertedType = convertToDavisType(exp);
+    // TODO Before checking schema-defined column type, first check schema-defined nullability. If nullable, then check if is `NullValue` and return Java `null` if so. If not nullable, then validate that is not `NullValue` and throw an exception otherwise.
+
+    DataType schemaDefinedColumnType= getColumnType(tableName, value);  // FIXME Replace `value` with `columnName` here. Have to add a parameter to `validateTypeMatchesSchema(*)` in order to do so.
+    DataType convertedType = convertToDavisType(exp);
     if(!schemaDefinedColumnType.equals(convertedType)){
-      convertedType = checkLongValues(schemaDefinedColumnType,convertedType, value);
+      convertedType = checkLongValues(schemaDefinedColumnType, value);
+      // TODO Handle case where schema-defined type is FLOAT and converted type is DOUBLE.
+      // TODO Handle case where schema-defined type is DATETIME and converted type is DATE.
     }
-    //TODO: ADD NULL?
+
+    // FIXME All of these cases should be getting the value (using the #getValue() method) and then casting as necessary, rather than parsing the string. (JSqlParser already did that)
     if(convertedType.equals(DataType.TINYINT)){
       return (Byte.parseByte(value));
     }
@@ -254,6 +260,7 @@ public class Compiler {
    */
   public boolean checkIsNotNull(List<String> columnSpecs){
     if(null!= columnSpecs){
+      // FIXME Since we're already using `<` (vs. `<=`), it should be `size()-1` instead of `size()-2`, right?
       for(int lcv = 0; lcv< columnSpecs.size()-2; lcv++){
         if (columnSpecs.get(lcv).equalsIgnoreCase("NOT") &&
         columnSpecs.get(lcv+1).equalsIgnoreCase("NULL")){
@@ -271,12 +278,11 @@ public class Compiler {
    * @throws CompileException
    */
   public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException{
-    try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
+    try (TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName())) {
       while(table.goToNextRow()){
         if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
         && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
-          return DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition();
+          return table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition());
         }
       }
       throw new CompileException("Column does not exist within this table");
@@ -318,7 +324,7 @@ public class Compiler {
       while(table.goToNextRow()){
         if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
           && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
-          return DavisBaseColumnsTableColumn.DATA_TYPE.getDataType();
+          return DataType.valueOf(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition()));
         }
       }
       throw new CompileException("Column does not exist within this table");
@@ -336,26 +342,26 @@ public class Compiler {
    * @return
    * @throws CompileException
    */
-  public DataType checkLongValues(DataType schemaDefinedColumnType, DataType convertedType, String value)throws CompileException{
+  public DataType checkLongValues(DataType schemaDefinedColumnType, String value)throws CompileException{
     long parsedVal = Long.parseLong(value);
-    if(schemaDefinedColumnType.equals(DataType.TINYINT) && convertedType.equals(DataType.FLOAT)){
+    if(schemaDefinedColumnType.equals(DataType.TINYINT)){
       if(parsedVal >= Byte.MIN_VALUE && parsedVal <= Byte.MAX_VALUE){
         return DataType.TINYINT;
       }
     }
-    else if(schemaDefinedColumnType.equals(DataType.SMALLINT) && convertedType.equals(DataType.FLOAT)){
+    else if(schemaDefinedColumnType.equals(DataType.SMALLINT)){
       if (parsedVal >= Short.MIN_VALUE && parsedVal <= Short.MAX_VALUE) {
         return DataType.SMALLINT;
       }
     }
-    else if(schemaDefinedColumnType.equals(DataType.INT) && convertedType.equals(DataType.FLOAT)){
+    else if(schemaDefinedColumnType.equals(DataType.INT)){
       if (parsedVal >= Integer.MIN_VALUE && parsedVal <= Integer.MAX_VALUE) {
-        return  DataType.SMALLINT;
+        return  DataType.INT;
       }
     }
-    else if(schemaDefinedColumnType.equals(DataType.BIGINT) && convertedType.equals(DataType.FLOAT)) {
+    else if(schemaDefinedColumnType.equals(DataType.BIGINT)) {
       if (parsedVal >= Long.MIN_VALUE && parsedVal <= Long.MAX_VALUE) {
-        return DataType.SMALLINT;
+        return DataType.BIGINT;
       }
     }
     else{
@@ -364,7 +370,7 @@ public class Compiler {
     throw new CompileException("Values you are trying to insert does not match the table schema");
   }
 
-  public Byte getColumnIndexes(Column col)throws CompileException{
+  public byte getColumnIndex(Column col)throws CompileException{
     return (validateIsDavisBaseColumnWithinTable(col.getTable().getName(), col.getColumnName()));
   }
 }
