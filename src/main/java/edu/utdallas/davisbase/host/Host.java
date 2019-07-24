@@ -1,7 +1,7 @@
 package edu.utdallas.davisbase.host;
 
 import static java.lang.String.format;
-
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.repeat;
 
@@ -73,6 +73,7 @@ public class Host {
     printer.println(configuration.getWelcome());
   }
 
+  // TODO Refactor help message content to configuration, or at least a local constant.
   public void displayHelp() {
     final String altHorizontalLine = repeat("*", 80);
 
@@ -232,52 +233,56 @@ public class Host {
     checkNotNull(exception);
 
     if (exception instanceof HostException) {
-      write((HostException) exception);
-    } else if (exception instanceof ParseException) {
-      write((ParseException) exception);
-    } else if (exception instanceof CompileException) {
-      write((CompileException) exception);
-    } else if (exception instanceof ExecuteException) {
-      write((ExecuteException) exception);
-    } else if (exception instanceof StorageException) {
-      write((StorageException) exception);
-    } else {
+      writeHostException((HostException) exception);
+    }
+    else if (exception instanceof ParseException) {
+      writeParseException((ParseException) exception);
+    }
+    else if (exception instanceof CompileException) {
+      writeCompileException((CompileException) exception);
+    }
+    else if (exception instanceof ExecuteException) {
+      writeExecuteException((ExecuteException) exception);
+    }
+    else if (exception instanceof StorageException) {
+      writeStorageException((StorageException) exception);
+    }
+    else {
       throw newWriteNotImplementedException(exception.getClass());
     }
   }
 
-  public void write(HostException exception) throws IOException {
-
-    printer.println("There is an exception in Host with the following message : " + exception.getMessage());
+  protected void writeHostException(HostException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Host component with the following message : " + exception.getMessage());
   }
 
-  public void write(ParseException exception) throws IOException {
-
-    printer.println("There is an exception in Parser with the following message : " + exception.getMessage());
+  protected void writeParseException(ParseException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Parser component with the following message : " + exception.getMessage());
   }
 
-  public void write(CompileException exception) throws IOException {
-
-    printer.println("There is an exception in Compiler with the following message : " + exception.getMessage());
+  protected void writeCompileException(CompileException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Compiler component with the following message : " + exception.getMessage());
   }
 
-  public void write(ExecuteException exception) throws IOException {
-
-    printer.println("There is an exception in Executer with the following message : " + exception.getMessage());
+  protected void writeExecuteException(ExecuteException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Executor component with the following message : " + exception.getMessage());
   }
 
-  public void write(StorageException exception) throws IOException {
-
-    printer.println("There is an exception in Storage with the following message : " + exception.getMessage());
+  protected void writeStorageException(StorageException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Storage component with the following message : " + exception.getMessage());
   }
 
   // endregion
 
   public void write(IOException exception) throws IOException {
+    checkNotNull(exception, "exception");
+
     printer.println("An IOException occurred with the following message : " + exception.getMessage());
   }
 
   public void write(RuntimeException exception) throws IOException {
+    checkNotNull(exception, "exception");
+
     printer.println("A RuntimeException occurred with the following message : " + exception.getMessage());
   }
 
