@@ -31,7 +31,7 @@ import edu.utdallas.davisbase.result.InsertResult;
 public class Host {
 
   protected final HostConfiguration configuration;
-  protected final BufferedReader reader;
+  protected final Scanner reader;
   protected final PrintWriter writer;
 
   public Host(HostConfiguration configuration, BufferedReader reader, PrintWriter writer) {
@@ -40,11 +40,9 @@ public class Host {
     checkNotNull(writer);
 
     this.configuration = configuration;
-    this.reader = reader;
+    this.reader = new Scanner(reader);
     this.writer = writer;
   }
-
-  Scanner scanner = new Scanner(System.in).useDelimiter(";");
 
   public String readStatement() throws IOException {
 
@@ -53,7 +51,7 @@ public class Host {
     String userInput = "";
 
     writer.write(configuration.prompt);
-    userInput = scanner.next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+    userInput = reader.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
     return userInput;
   }
 
