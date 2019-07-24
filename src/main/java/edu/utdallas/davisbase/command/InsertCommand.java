@@ -23,7 +23,7 @@ public class InsertCommand implements Command {
    * @param rowId        the row id to assign to the row to be inserted in the table; SHOULD be
    *                     greater than any other row id in the table (not null, not negative, less
    *                     than {@link java.lang.Integer#MAX_VALUE Integer.MAX_VALUE})
-   * @param columnValues the ordered list of (nullable) values to insert, where the index of the
+   * @param values the ordered list of (nullable) values to insert, where the index of the
    *                     value in the list is the index of the column of the row into which it will
    *                     be inserted; SHOULD NOT include the index-zero default {@code rowId} (not
    *                     null, not empty, every value must be either null or an instance of
