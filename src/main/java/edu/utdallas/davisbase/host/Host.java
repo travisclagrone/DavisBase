@@ -1,6 +1,7 @@
 package edu.utdallas.davisbase.host;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.repeat;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -65,14 +66,6 @@ public class Host {
     return userInput.toString().trim();
   }
 
-  public static String line_chars(String s, int num) {
-    String a = "";
-    for (int i = 0; i < num; i++) {
-      a += s;
-    }
-    return a;
-  }
-
   public String display_fix(int len, String s) {
     return String.format("%-" + (len + 3) + "s", s);
   }
@@ -82,7 +75,7 @@ public class Host {
   }
 
   public void displayHelp() {
-    printer.println(line_chars("*", 80));
+    printer.println(repeat("*", 80));
     printer.println("SUPPORTED COMMANDS");
     printer.println("All commands below are case insensitive");
     printer.println();
@@ -104,7 +97,7 @@ public class Host {
     printer.println("\tEXIT;                                                        Exit DavisBase.");
     printer.println();
     printer.println();
-    printer.println(line_chars("*", 80));
+    printer.println(repeat("*", 80));
   }
 
   // region write(Result)
@@ -199,7 +192,7 @@ public class Host {
   public void write(SelectResult result) throws IOException {
 
     try {
-      printer.print(line_chars("-", ((result.getSchema().size()) * 8) + 3));
+      printer.print(repeat("-", ((result.getSchema().size()) * 8) + 3));
       printer.println();
 
       for (int i = 0; i < result.getSchema().size(); i++) {
@@ -209,7 +202,7 @@ public class Host {
       }
       printer.println();
 
-      printer.print(line_chars("-", ((result.getSchema().size()) * 8) + 3));
+      printer.print(repeat("-", ((result.getSchema().size()) * 8) + 3));
       printer.println();
 
       if (result.getData().size() == 0)
@@ -241,12 +234,12 @@ public class Host {
   public void write(ShowTablesResult result) throws IOException {
 
     try {
-      printer.print(line_chars("-", 10));
+      printer.print(repeat("-", 10));
       printer.println();
 
       printer.println("table_name   |");
 
-      printer.print(line_chars("-", 10));
+      printer.print(repeat("-", 10));
       printer.println();
 
       if (result.getTableNames().size() == 0)
