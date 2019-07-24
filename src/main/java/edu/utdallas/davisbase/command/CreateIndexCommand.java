@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.command;
 
+@SuppressWarnings("nullness")  // COMBAK Unsuppress nullness warnings once we implement CreateIndexCommand.
 public class CreateIndexCommand implements Command {
 
   private String tableName;
