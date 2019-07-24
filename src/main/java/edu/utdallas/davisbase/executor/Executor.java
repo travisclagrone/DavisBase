@@ -2,19 +2,23 @@ package edu.utdallas.davisbase.executor;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
+
+import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_TABLES;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
-
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.Command;
 import edu.utdallas.davisbase.command.CreateIndexCommand;
 import edu.utdallas.davisbase.command.CreateTableCommand;
@@ -285,12 +289,25 @@ public class Executor {
     return result;
   }
 
-  protected ShowTablesResult execute(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException {
+  protected ShowTablesResult execute(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // TODO Implement Executor.execute(ShowTablesCommand, Storage)
-    throw new NotImplementedException();
+    final String catalogTablesTableName = DAVISBASE_TABLES.getName();
+    final byte catalogTablesTableTableNameColumnIndex = DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition();
+
+    final List<String> tableNames = new ArrayList<>();
+    try (TableFile tableFile = context.openTableFile(catalogTablesTableName)) {
+      while (tableFile.goToNextRow()) {
+        final @NonNull String tableName = castNonNull(
+            tableFile.readText(catalogTablesTableTableNameColumnIndex)
+        );
+        tableNames.add(tableName);
+      }
+    }
+
+    final ShowTablesResult result = new ShowTablesResult(tableNames);
+    return result;
   }
 
   protected UpdateResult execute(UpdateCommand command, Storage context) throws ExecuteException, StorageException {
