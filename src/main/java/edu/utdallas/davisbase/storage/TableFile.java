@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -52,18 +53,117 @@ public class TableFile implements Closeable {
 		file.close();
 	}
 
-	public List<String> getDataTypes(String tableName) {
-		try {
+	public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
+		int rowId = getnextRowId(file);
+		int noOfColumns = tableRowBuilder.getNoOfValues();
+		int[] columnSizeArray = new int[noOfColumns + 1];
+		int payLoad = 4;// since rowId is not a part of table row builder
+		columnSizeArray[0] = payLoad;
+		Object data;
+		for (int i = 1; i < columnSizeArray.length; i++) {
+			data = tableRowBuilder.getValueAt(i - 1);
+			switch (data.getClass().getSimpleName()) {
+			case "Integer":
+				columnSizeArray[i] = 4;
+				break;
+			case "String": {
+			}
+				columnSizeArray[i] = data.toString().length();
+				break;
+			case "Byte":
+				columnSizeArray[i] = 1;
+				break;
+			case "Short":
+				columnSizeArray[i] = 2;
+				break;
+			case "Long":
+				columnSizeArray[i] = 8;
+				break;
+			case "Float":
+				columnSizeArray[i] = 4;
+				break;
+			case "Double":
+				columnSizeArray[i] = 8;
+			case "Year":
+				columnSizeArray[i] = 1;
+				break;
+			case "LocalTime":
+				columnSizeArray[i] = 4;
+				break;
+			case "LocalDateTime":
+				columnSizeArray[i] = 8;
+				break;
+			case "LocalDate":
+				columnSizeArray[i] = 8;
+				break;
+			case "":
+				columnSizeArray[i] = 0;
+				break;
 
+			default:
+				columnSizeArray[i] = 0;
+				break;
+
+			}
+			payLoad = (short) (payLoad + columnSizeArray[i]);
+		}
+
+		int totalSpaceRequired;
+		int currentPageNo;
+
+		currentPageNo = (int) (this.file.length() / Page.pageSize);
+		long pageOffset = (currentPageNo - 1) * Page.pageSize;
+		file.seek(pageOffset);
+		byte pageType = file.readByte();
+
+		totalSpaceRequired = (1 + columnSizeArray.length + payLoad);
+		boolean overflowFlag = checkPagesize(totalSpaceRequired, currentPageNo);
+		if (overflowFlag) {
+			if (pageType == 0x05) {
+				currentPageNo = Page.splitInteriorPage(file, currentPageNo);
+			} else if (pageType == 0x0D) {
+				currentPageNo = Page.splitLeafPage(file, currentPageNo);
+			}
+
+		}
+
+		pageOffset = (currentPageNo - 1) * Page.pageSize;
+		file.seek(pageOffset);
+		pageType = file.readByte();
+		long seekOffset = pageOffset + 3;
+		file.seek(seekOffset);
+		short cellOffset = file.readShort();
+		if (cellOffset == 0) {
+			cellOffset = (short) (Page.pageSize);
+		}
+
+		long dataEntryPoint = cellOffset - totalSpaceRequired;
+
+		file.seek(dataEntryPoint);
+		file.writeByte(noOfColumns);
+		for (int i = 0; i < columnSizeArray.length; i++) {
+			file.writeByte(columnSizeArray[i]);
+		}
+		file.writeInt(rowId);
+		file.write(tableRowBuilder.toBytes());
+
+	}
+
+	private boolean checkPagesize(int sizeRequired, int currentPageNo) {
+		try {
+			this.file.seek((currentPageNo - 1) * Page.pageSize + 1);
+			short noOfRecords = this.file.readShort();
+
+			this.file.seek((currentPageNo - 1) * Page.pageSize + 3);
+			short startofCellConcent = file.readShort();
+			short arryLastEntry = (short) (16 + (noOfRecords * 2));
+			if ((startofCellConcent - arryLastEntry - 1) > sizeRequired) {
+				return true;
+			}
 		} catch (Exception e) {
 
 		}
-		return null;
-	}
-
-	public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
-		// TODO Implement TableFile.appendRow(TableRowBuilder)
-		throw new NotImplementedException();
+		return false;
 	}
 
 	public boolean goToNextRow() throws IOException {
@@ -141,7 +241,7 @@ public class TableFile implements Closeable {
 		throw new NotImplementedException();
 	}
 
-	public void writeTinyIny(int columnIndex, byte value) throws IOException {
+	public void writeTinyInt(int columnIndex, byte value) throws IOException {
 		// TODO Implement TableFile.writeTinyInt(int, byte)
 		throw new NotImplementedException();
 	}
@@ -206,15 +306,16 @@ public class TableFile implements Closeable {
 		throw new NotImplementedException();
 	}
 
-	public int getnextRowId(RandomAccessFile file, int pageNo) throws IOException {
-		checkNotNull(pageNo);
+	public int getnextRowId(RandomAccessFile file) throws IOException {
+//		checkNotNull(pageNo);
 		try {
-			throw new NotImplementedException();
-		} catch (Exception e) {
+			file.seek(0x01);
+			return file.readInt() + 1;
 
+		} catch (Exception e) {
 		}
 		// TODO Implement TableFile.writeText(int, String)
-		return 0;
+		return -1;
 	}
 
 }
