@@ -74,7 +74,9 @@ public class Host {
   }
 
   public void displayHelp() {
-    printer.println(repeat("*", 80));
+    final String altHorizontalLine = repeat("*", 80);
+
+    printer.println(altHorizontalLine);
     printer.println("SUPPORTED COMMANDS");
     printer.println("All commands below are case insensitive");
     printer.println();
@@ -96,7 +98,7 @@ public class Host {
     printer.println("\tEXIT;                                                        Exit DavisBase.");
     printer.println();
     printer.println();
-    printer.println(repeat("*", 80));
+    printer.println(altHorizontalLine);
   }
 
   // region write(Result)
@@ -273,13 +275,11 @@ public class Host {
   // endregion
 
   public void write(IOException exception) throws IOException {
-
-    printer.println("There is an IOexception with the following message : " + exception.getMessage());
+    printer.println("An IOException occurred with the following message : " + exception.getMessage());
   }
 
   public void write(RuntimeException exception) throws IOException {
-
-    printer.println("There is an Runtime exception with the following message : " + exception.getMessage());
+    printer.println("A RuntimeException occurred with the following message : " + exception.getMessage());
   }
 
   protected static NotImplementedException newWriteNotImplementedException(Class<?> argumentClass) {
