@@ -1,10 +1,19 @@
 package edu.utdallas.davisbase.host;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 
-import java.io.BufferedReader;
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.repeat;
+
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
+import java.util.Scanner;
+import java.util.regex.Pattern;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import edu.utdallas.davisbase.DavisBaseException;
 import edu.utdallas.davisbase.NotImplementedException;
@@ -13,6 +22,7 @@ import edu.utdallas.davisbase.executor.ExecuteException;
 import edu.utdallas.davisbase.parser.ParseException;
 import edu.utdallas.davisbase.result.Result;
 import edu.utdallas.davisbase.result.SelectResult;
+import edu.utdallas.davisbase.result.SelectResultDataRow;
 import edu.utdallas.davisbase.result.ShowTablesResult;
 import edu.utdallas.davisbase.result.UpdateResult;
 import edu.utdallas.davisbase.storage.StorageException;
@@ -26,174 +36,270 @@ import edu.utdallas.davisbase.result.InsertResult;
 public class Host {
 
   protected final HostConfiguration configuration;
-  protected final BufferedReader reader;
-  protected final PrintWriter writer;
+  protected final Scanner scanner;
+  protected final PrintWriter printer;
 
-  public Host(HostConfiguration configuration, BufferedReader reader, PrintWriter writer) {
-    checkNotNull(configuration);
-    checkNotNull(reader);
-    checkNotNull(writer);
+  public Host(HostConfiguration configuration, Scanner scanner, PrintWriter printer) {
+    checkNotNull(configuration, "configuration");
+    checkNotNull(scanner, "scanner");
+    checkNotNull(printer, "printer");
 
     this.configuration = configuration;
-    this.reader = reader;
-    this.writer = writer;
+    this.scanner = scanner;
+    this.printer = printer;
   }
 
+  // TODO Handle case when multiple statements in one input sequence.
   public String readStatement() throws IOException {
-    // TODO Implement Host.readStatement()
-    throw new NotImplementedException();
+    StringBuilder userInput = new StringBuilder();  // NOTE Initializing here to placate the nullness and initialization checkers, since they can't figure out the loop logic below for some reason...
+    while (true) {
+      userInput = new StringBuilder();
+
+      printer.println(configuration.getPrompt());
+      while (!Pattern.matches("^([^']|('(\\\\\\\\|\\\\'|[^'])*'))*;\\s*$", userInput)) {
+        userInput.append(scanner.nextLine());
+        userInput.append(configuration.getLineSeparator());
+      }
+
+      if (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
+        displayHelp();
+        continue;
+      }
+
+      break;
+    }
+    return userInput.toString().trim();
   }
 
-  //region write(Result)
+  public void displayWelcome() {
+    printer.println(configuration.getWelcome());
+  }
+
+  // TODO Refactor help message content to configuration, or at least a local constant.
+  public void displayHelp() {
+    final String altHorizontalLine = repeat("*", 80);
+
+    printer.println(altHorizontalLine);
+    printer.println("SUPPORTED COMMANDS");
+    printer.println("All commands below are case insensitive");
+    printer.println();
+    printer.println("\tSHOW TABLES;                                                 Display all the tables in the database.");
+    printer.println("\tCREATE TABLE table_name (<column_name datatype>);            Create a new table in the database.");
+    printer.println("\tINSERT INTO table_name VALUES (value1,value2,..);            Insert a new record into the table.");
+    // writer.println("\tDELETE FROM TABLE table_name WHERE row_id = key_value;
+    // Delete a record from the table whose rowid is <key_value>.");
+    // writer.println("\tUPDATE table_name SET column_name = value WHERE row_id =
+    // ..; Modifies the records in the table.");
+    // writer.println("\tCREATE INDEX ON table_name (column_name); Create index for
+    // the specified column in the table");
+    printer.println("\tSELECT * FROM table_name;                                    Display all records in the table.");
+    // writer.println("\tSELECT * FROM table_name WHERE column_name operator value;
+    // Display records in the table where the given condition is satisfied.");
+    // writer.println("\tDROP TABLE table_name; Remove table data and its schema.");
+    printer.println("\tHELP;                                                        Show this help information.");
+    printer.println("\tEXIT;                                                        Exit DavisBase.");
+    printer.println();
+    printer.println();
+    printer.println(altHorizontalLine);
+  }
+
+  // region write(Result)
 
   public void write(Result result) throws IOException {
     checkNotNull(result);
 
     if (result instanceof CreateIndexResult) {
-      write((CreateIndexResult) result);
+      writeCreateIndexResult((CreateIndexResult) result);
     }
     else if (result instanceof CreateTableResult) {
-      write((CreateTableResult) result);
+      writeCreateTableResult((CreateTableResult) result);
     }
     else if (result instanceof DeleteResult) {
-      write((DeleteResult) result);
+      writeDeleteResult((DeleteResult) result);
     }
     else if (result instanceof DropTableResult) {
-      write((DropTableResult) result);
+      writeDropTableResult((DropTableResult) result);
     }
     else if (result instanceof ExitResult) {
-      write((ExitResult) result);
+      writeExitResult((ExitResult) result);
     }
     else if (result instanceof InsertResult) {
-      write((InsertResult) result);
+      writeInsertResult((InsertResult) result);
     }
     else if (result instanceof SelectResult) {
-      write((SelectResult) result);
+      writeSelectResult((SelectResult) result);
     }
     else if (result instanceof ShowTablesResult) {
-      write((ShowTablesResult) result);
+      writeShowTablesResult((ShowTablesResult) result);
     }
     else if (result instanceof UpdateResult) {
-      write((UpdateResult) result);
+      writeUpdateResult((UpdateResult) result);
     }
     else {
       throw newWriteNotImplementedException(result.getClass());
     }
   }
 
-  public void write(CreateIndexResult result) throws IOException {
-    // TODO Implement Host.write(CreateIndexResult)
-    throw new NotImplementedException();
+  protected void writeCreateIndexResult(CreateIndexResult result) throws IOException {
+    printer.println(
+        format("Index was successfully created on column '%s' in table '%s'.",
+            result.getColumnName(),
+            result.getTableName()));
   }
 
-  public void write(CreateTableResult result) throws IOException {
-    // TODO Implement Host.write(CreateTableResult)
-    throw new NotImplementedException();
+  protected void writeCreateTableResult(CreateTableResult result) throws IOException {
+    printer.println(
+        format("'%s' table was successfully created.",
+            result.getTableName()));
   }
 
-  public void write(DeleteResult result) throws IOException {
-    // TODO Implement Host.write(DeleteResult)
-    throw new NotImplementedException();
+  protected void writeDeleteResult(DeleteResult result) throws IOException {
+    printer.println(
+        format("%d rows were deleted in the table '%s'.",
+            result.getRowsDeleted(),
+            result.getTableName()));
   }
 
-  public void write(DropTableResult result) throws IOException {
-    // TODO Implement Host.write(DropTableResult)
-    throw new NotImplementedException();
+  protected void writeDropTableResult(DropTableResult result) throws IOException {
+    printer.println(
+        format("'%s' table is deleted from database.",
+            result.getTableName()));
   }
 
-  public void write(ExitResult result) throws IOException {
-    // TODO Implement Host.write(ExitResult)
-    throw new NotImplementedException();
+  protected void writeExitResult(ExitResult result) throws IOException {
+    printer.println("Exiting database...");
   }
 
-  public void write(InsertResult result) throws IOException {
-    // TODO Implement Host.write(InsertResult)
-    throw new NotImplementedException();
+  protected void writeInsertResult(InsertResult result) throws IOException {
+    printer.println(
+        format("%d rows were inserted in the table '%s'.",
+            result.getRowsInserted(),
+            result.getTableName()));
   }
 
-  public void write(SelectResult result) throws IOException {
-    // TODO Implement Host.write(SelectResult)
-    throw new NotImplementedException();
+  protected void writeSelectResult(SelectResult result) throws IOException {
+    printer.println(repeat("-", ((result.getSchema().size()) * 8) + 3));
+    for (int i = 0; i < result.getSchema().size(); i++) {
+      printer.print(
+          formatCellValue(
+              result.getSchema().getColumnName(i).length(),
+              result.getSchema().getColumnName(i))
+          + "|");
+    }
+    printer.println();
+    printer.println(repeat("-", ((result.getSchema().size()) * 8) + 3));
+
+    if (result.getData().size() <= 0) {
+      printer.println("Empty result set.");
+      return;
+    }
+
+    for (SelectResultDataRow row : result.getData()) {
+      for (@Nullable Object value : row) {
+        printer.print(formatCellValue(10, Objects.toString(castNonNull(value))) + "|");  // NOTE `value` actually can be null, and `Objects#toString(Object)` can actually accept a null argument, but the annotated JDK is over-strict here.
+      }
+      printer.println();
+    }
   }
 
-  public void write(ShowTablesResult result) throws IOException {
-    // TODO Implement Host.write(ShowTablesResult)
-    throw new NotImplementedException();
+  protected void writeShowTablesResult(ShowTablesResult result) throws IOException {
+    final String smallHorizontalLine = repeat("-", 10);
+    final String columnName = "table_name";
+
+    printer.println(smallHorizontalLine);
+    printer.println(formatCellValue(columnName.length(), columnName) + "|");
+    printer.println(smallHorizontalLine);
+
+    if (result.getTableNames().size() <= 0) {
+      printer.println("Empty result set.");
+      return;
+    }
+
+    for (String tableName : result.getTableNames()) {
+      printer.println(formatCellValue(columnName.length(), tableName) + "|");
+    }
   }
 
-  public void write(UpdateResult result) throws IOException {
-    // TODO Implement Host.write(UpdateResult)
-    throw new NotImplementedException();
+  protected void writeUpdateResult(UpdateResult result) throws IOException {
+    printer.println(
+        format("%d rows were updated in the table '%s'.",
+            result.getRowsUpdated(),
+            result.getTableName()));
   }
 
-  //endregion
+  // endregion
 
-  //region write(DavisBaseException)
+  // region write(DavisBaseException)
 
   public void write(DavisBaseException exception) throws IOException {
     checkNotNull(exception);
 
     if (exception instanceof HostException) {
-      write((HostException) exception);
+      writeHostException((HostException) exception);
     }
     else if (exception instanceof ParseException) {
-      write((ParseException) exception);
+      writeParseException((ParseException) exception);
     }
     else if (exception instanceof CompileException) {
-      write((CompileException) exception);
+      writeCompileException((CompileException) exception);
     }
     else if (exception instanceof ExecuteException) {
-      write((ExecuteException) exception);
+      writeExecuteException((ExecuteException) exception);
     }
     else if (exception instanceof StorageException) {
-      write((StorageException) exception);
+      writeStorageException((StorageException) exception);
     }
     else {
       throw newWriteNotImplementedException(exception.getClass());
     }
   }
 
-  public void write(HostException exception) throws IOException {
-    // TODO Implement Host.write(HostException)
-    throw new NotImplementedException();
+  protected void writeHostException(HostException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Host component with the following message : " + exception.getMessage());
   }
 
-  public void write(ParseException exception) throws IOException {
-    // TODO Implement Host.write(ParseException)
-    throw new NotImplementedException();
+  protected void writeParseException(ParseException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Parser component with the following message : " + exception.getMessage());
   }
 
-  public void write(CompileException exception) throws IOException {
-    // TODO Implement Host.write(CompileException)
-    throw new NotImplementedException();
+  protected void writeCompileException(CompileException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Compiler component with the following message : " + exception.getMessage());
   }
 
-  public void write(ExecuteException exception) throws IOException {
-    // TODO Implement Host.write(ExecuteException)
-    throw new NotImplementedException();
+  protected void writeExecuteException(ExecuteException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Executor component with the following message : " + exception.getMessage());
   }
 
-  public void write(StorageException exception) throws IOException {
-    // TODO Implement Host.write(StorageException)
-    throw new NotImplementedException();
+  protected void writeStorageException(StorageException exception) throws IOException {
+    printer.println("A DavisBaseException occurred in the Storage component with the following message : " + exception.getMessage());
   }
 
-  //endregion
+  // endregion
 
   public void write(IOException exception) throws IOException {
-    // TODO Implement Host.write(IOException)
-    throw new NotImplementedException();
+    checkNotNull(exception, "exception");
+
+    printer.println("An IOException occurred with the following message : " + exception.getMessage());
   }
 
   public void write(RuntimeException exception) throws IOException {
-    // TODO Implement Host.write(RuntimeException)
-    throw new NotImplementedException();
+    checkNotNull(exception, "exception");
+
+    printer.println("A RuntimeException occurred with the following message : " + exception.getMessage());
   }
 
-  protected static NotImplementedException newWriteNotImplementedException(Class argumentClass) {
-    checkNotNull(argumentClass);
-    String message = String.format("%s.write(%s)", Host.class.getName(), argumentClass.getName());
+  protected static NotImplementedException newWriteNotImplementedException(Class<?> argumentClass) {
+    assert argumentClass != null : "argumentClass should not be null";
+
+    final String message = String.format("%s.write(%s)", Host.class.getName(), argumentClass.getName());
     return new NotImplementedException(message);
+  }
+
+  protected static String formatCellValue(int len, String str) {
+    assert 0 <= len && (len + 3) <= Integer.MAX_VALUE : format("len = %d", len);
+    assert str != null : "str should not be null";
+
+    return String.format("%-" + (len + 3) + "s", str);
   }
 
 }
