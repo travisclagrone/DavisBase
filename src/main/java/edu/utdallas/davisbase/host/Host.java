@@ -66,10 +66,6 @@ public class Host {
     return userInput.toString().trim();
   }
 
-  public String display_fix(int len, String s) {
-    return String.format("%-" + (len + 3) + "s", s);
-  }
-
   public void displayWelcome() {
     printer.println(configuration.getWelcome());
   }
@@ -198,7 +194,7 @@ public class Host {
       for (int i = 0; i < result.getSchema().size(); i++) {
 
         printer
-            .print(display_fix(result.getSchema().getColumnName(i).length(), result.getSchema().getColumnName(i)) + "|");
+            .print(formatCellValue(result.getSchema().getColumnName(i).length(), result.getSchema().getColumnName(i)) + "|");
       }
       printer.println();
 
@@ -213,7 +209,7 @@ public class Host {
         for (SelectResultDataRow row : result.getData()) {
 
           for (@Nullable Object value : row) {
-            printer.print(display_fix(10, value.toString()) + "|");
+            printer.print(formatCellValue(10, value.toString()) + "|");
           }
 
         /*  Iterator<Object> iterator = row.iterator();
@@ -247,7 +243,7 @@ public class Host {
 
       else {
         for (String tableName : result.getTableNames())
-          printer.println(display_fix(10, tableName) + "|");
+          printer.println(formatCellValue(10, tableName) + "|");
       }
     } catch (Exception e) {
         printer.println("A write exception occurred while writing ShowTablesResult."+
@@ -328,6 +324,10 @@ public class Host {
     checkNotNull(argumentClass);
     String message = String.format("%s.write(%s)", Host.class.getName(), argumentClass.getName());
     return new NotImplementedException(message);
+  }
+
+  protected static String formatCellValue(int len, String str) {
+    return String.format("%-" + (len + 3) + "s", str);
   }
 
 }
