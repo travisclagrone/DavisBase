@@ -325,4 +325,4 @@ src/main/java/test/
 test/
 data/
 data*/
-src/main/java/edu/utdallas/davisbase/common
+src/main/java/edu/utdallas/davisbase/common/DavisBaseCatalog.java
