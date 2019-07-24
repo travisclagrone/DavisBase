@@ -3,19 +3,13 @@ package edu.utdallas.davisbase.executor;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import static edu.utdallas.davisbase.DataType.BIGINT;
-import static edu.utdallas.davisbase.DataType.DATE;
-import static edu.utdallas.davisbase.DataType.DATETIME;
-import static edu.utdallas.davisbase.DataType.DOUBLE;
-import static edu.utdallas.davisbase.DataType.FLOAT;
 import static edu.utdallas.davisbase.DataType.INT;
-import static edu.utdallas.davisbase.DataType.SMALLINT;
 import static edu.utdallas.davisbase.DataType.TEXT;
-import static edu.utdallas.davisbase.DataType.TIME;
 import static edu.utdallas.davisbase.DataType.TINYINT;
-import static edu.utdallas.davisbase.DataType.YEAR;
 import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_COLUMNS;
 import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_TABLES;
 
@@ -29,6 +23,7 @@ import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
 import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
