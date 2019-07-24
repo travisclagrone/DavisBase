@@ -17,7 +17,6 @@ public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
 
   private DavisBaseTablesTableColumn(DataType dataType, boolean isNullable) {
     assert dataType != null : "dataType should not be null";
-    assert ordinal() < Byte.MAX_VALUE : format("ordinal() should be less than %d", Byte.MAX_VALUE);
 
     this.dataType = dataType;
     this.isNullable = isNullable;
@@ -35,6 +34,8 @@ public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
 
   @Override
   public byte getOrdinalPosition() {
+    assert ordinal() < Byte.MAX_VALUE : format("ordinal() should be less than %d", Byte.MAX_VALUE);
+
     return (byte) ordinal();
   }
 
