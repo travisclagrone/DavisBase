@@ -129,7 +129,8 @@ public class Host {
       writer.println("Index was successfully created on column '" + result.getColumnName() + "' in table '"
           + result.getTableName() + "'.");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing CreateIndexResult."+
+      "The exception message : "+e.getMessage());
     }
   }
 
@@ -138,7 +139,8 @@ public class Host {
     try {
       writer.println("'" + result.getTableName() + "' table was successfully created.");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing CreateTableResult."+
+      "The exception message : "+e.getMessage());
     }
   }
 
@@ -147,7 +149,8 @@ public class Host {
     try {
       writer.println(result.getRowsDeleted() + " rows were deleted in the table '" + result.getTableName() + "'.");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing DeleteResult."+
+      "The exception message : "+e.getMessage());
     }
   }
 
@@ -156,7 +159,8 @@ public class Host {
     try {
       writer.println("'" + result.getTableName() + "' table is deleted from database.");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing DropTableResult."+
+      "The exception message : "+e.getMessage());
     }
   }
 
@@ -165,7 +169,8 @@ public class Host {
     try {
       writer.println("Exiting database....");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing ExitResult."+
+      "The exception message : "+e.getMessage());
     }
   }
 
@@ -174,63 +179,74 @@ public class Host {
     try {
       writer.println(result.getRowsInserted() + " rows were inserted in the table '" + result.getTableName() + "'.");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing InsertResult."+
+      "The exception message : "+e.getMessage());
     }
   }
 
   public void write(SelectResult result) throws IOException {
 
-    writer.print(line_chars("-", ((result.getSchema().size()) * 8) + 3));
-    writer.println();
+    try {
+      writer.print(line_chars("-", ((result.getSchema().size()) * 8) + 3));
+      writer.println();
 
-    for (int i = 0; i < result.getSchema().size(); i++) {
+      for (int i = 0; i < result.getSchema().size(); i++) {
 
-      writer
-          .print(display_fix(result.getSchema().getColumnName(i).length(), result.getSchema().getColumnName(i)) + "|");
-    }
-    writer.println();
-
-    writer.print(line_chars("-", ((result.getSchema().size()) * 8) + 3));
-    writer.println();
-
-    if (result.getData().size() == 0)
-      writer.println("Empty result set.");
-
-    else {
-
-      for (SelectResultDataRow row : result.getData()) {
-
-        for (@Nullable Object value : row) {
-          writer.print(display_fix(10, value.toString()) + "|");
-        }
-
-       /*  Iterator<Object> iterator = row.iterator();
-        while (iterator.hasNext()) {
-
-          writer.print(display_fix(10, iterator.next().toString()) + "|");
-        } */
-        writer.println();
+        writer
+            .print(display_fix(result.getSchema().getColumnName(i).length(), result.getSchema().getColumnName(i)) + "|");
       }
+      writer.println();
+
+      writer.print(line_chars("-", ((result.getSchema().size()) * 8) + 3));
+      writer.println();
+
+      if (result.getData().size() == 0)
+        writer.println("Empty result set.");
+
+      else {
+
+        for (SelectResultDataRow row : result.getData()) {
+
+          for (@Nullable Object value : row) {
+            writer.print(display_fix(10, value.toString()) + "|");
+          }
+
+        /*  Iterator<Object> iterator = row.iterator();
+          while (iterator.hasNext()) {
+
+            writer.print(display_fix(10, iterator.next().toString()) + "|");
+          } */
+          writer.println();
+        }
+      }
+    } catch (Exception e) {
+        writer.println("A write exception occurred while writing SelectResult."+
+        "The exception message : "+e.getMessage());
     }
 
   }
 
   public void write(ShowTablesResult result) throws IOException {
 
-    writer.print(line_chars("-", 10));
-    writer.println();
+    try {
+      writer.print(line_chars("-", 10));
+      writer.println();
 
-    writer.println("table_name   |");
+      writer.println("table_name   |");
 
-    writer.print(line_chars("-", 10));
-    writer.println();
+      writer.print(line_chars("-", 10));
+      writer.println();
 
-    if (result.getTableNames().size() == 0)
-      writer.println("Empty result set.");
+      if (result.getTableNames().size() == 0)
+        writer.println("Empty result set.");
 
-    else {
-      for (String tableName : result.getTableNames())
-        writer.println(display_fix(10, tableName) + "|");
+      else {
+        for (String tableName : result.getTableNames())
+          writer.println(display_fix(10, tableName) + "|");
+      }
+    } catch (Exception e) {
+        writer.println("A write exception occurred while writing ShowTablesResult."+
+          "The exception message : "+e.getMessage());
     }
   }
 
@@ -239,7 +255,8 @@ public class Host {
     try {
       writer.println(result.getRowsUpdated() + " rows were updated in the table '" + result.getTableName() + "'.");
     } catch (Exception e) {
-      writer.println(e.getMessage());
+      writer.println("A write exception occurred while writing UpdateResult."+
+        "The exception message : "+e.getMessage());
     }
   }
 
