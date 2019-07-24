@@ -8,7 +8,7 @@ import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.Scanner;
 
-//import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import edu.utdallas.davisbase.DavisBaseException;
 import edu.utdallas.davisbase.NotImplementedException;
@@ -201,11 +201,15 @@ public class Host {
 
       for (SelectResultDataRow row : result.getData()) {
 
-        Iterator<Object> iterator = row.iterator();
+        for (@Nullable Object value : row) {
+          writer.print(display_fix(10, value.toString()) + "|");
+        }
+
+       /*  Iterator<Object> iterator = row.iterator();
         while (iterator.hasNext()) {
 
           writer.print(display_fix(10, iterator.next().toString()) + "|");
-        }
+        } */
         writer.println();
       }
     }
