@@ -93,7 +93,6 @@ public class Host {
     // writer.println("\tSELECT * FROM table_name WHERE column_name operator value;
     // Display records in the table where the given condition is satisfied.");
     // writer.println("\tDROP TABLE table_name; Remove table data and its schema.");
-    printer.println("\tVERSION;                                                     Show the program version.");
     printer.println("\tHELP;                                                        Show this help information.");
     printer.println("\tEXIT;                                                        Exit DavisBase.");
     printer.println();
