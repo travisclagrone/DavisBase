@@ -23,6 +23,7 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -87,13 +88,10 @@ public class Compiler {
         insertObjects.add(new InsertObject(index.intValue(), obj));
       }
       Collections.sort(insertObjects);
-      List<Object> objects = new ArrayList<>();
-      for(InsertObject obj: insertObjects){
-        objects.add(obj.getObject());
-      }
       return new InsertCommand(
         validateIsDavisBaseTable(insert.getTable()),
-        objects
+        insertObjects.stream()
+          .map(InsertObject::getObject).collect(Collectors.toList())
       );
     }
     else if (command instanceof SelectCommandRepresentation){
