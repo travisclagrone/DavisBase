@@ -1,15 +1,10 @@
 package edu.utdallas.davisbase.command;
 
-import edu.utdallas.davisbase.NotImplementedException;
-import edu.utdallas.davisbase.result.DropTableResult;
-import edu.utdallas.davisbase.storage.Storage;
-
+@SuppressWarnings("nullness")  // COMBAK Unsuppress nullness warnings once we implement DropTableCommand.
 public class DropTableCommand implements Command {
 
-  @Override
-  public DropTableResult execute(Storage storage) throws ExecuteException {
-    // TODO Implement DropTableCommand.execute(Storage)
-    throw new NotImplementedException();
-  }
+  private String tableName;
+
+  // COMBAK Implement DropTableCommand
 
 }
