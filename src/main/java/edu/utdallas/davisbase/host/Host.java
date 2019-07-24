@@ -51,6 +51,14 @@ public class Host {
 
     writer.write(configuration.prompt);
     userInput = reader.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+
+    while(userInput == "help;"){
+      help();
+      configuration.PromptScreen();
+      writer.write(configuration.prompt);
+      userInput = reader.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+    }
+
     return userInput;
   }
 
@@ -71,12 +79,9 @@ public class Host {
     writer.println("SUPPORTED COMMANDS");
     writer.println("All commands below are case insensitive");
     writer.println();
-    writer.println(
-        "\tSHOW TABLES;                                                 Display all the tables in the database.");
-    writer
-        .println("\tCREATE TABLE table_name (<column_name datatype>);            Create a new table in the database.");
-    writer
-        .println("\tINSERT INTO table_name VALUES (value1,value2,..);            Insert a new record into the table.");
+    writer.println("\tSHOW TABLES;                                                 Display all the tables in the database.");
+    writer.println("\tCREATE TABLE table_name (<column_name datatype>);            Create a new table in the database.");
+    writer.println("\tINSERT INTO table_name VALUES (value1,value2,..);            Insert a new record into the table.");
     // writer.println("\tDELETE FROM TABLE table_name WHERE row_id = key_value;
     // Delete a record from the table whose rowid is <key_value>.");
     // writer.println("\tUPDATE table_name SET column_name = value WHERE row_id =
