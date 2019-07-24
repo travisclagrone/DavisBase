@@ -29,6 +29,7 @@ public class InsertCommand implements Command {
    *                     null, not empty, every value must be either null or an instance of
    *                     {@link DataType#getJavaClass()} for one of the {@link DataType}s)
    */
+  @SuppressWarnings("nullness")  // Necessary because the ArrayList constructor is incorrectly annotated as requiring an argument of a @NonNull generic type, even though it can actually accept a collection argument with null elements.
   public InsertCommand(String tableName, int rowId, List<@Nullable Object> values) {
     checkNotNull(tableName, "tableName");
     checkElementIndex(rowId, Integer.MAX_VALUE, format("rowId %d is not in the range [0, %d)", rowId, Integer.MAX_VALUE));
@@ -74,7 +75,7 @@ public class InsertCommand implements Command {
    *         empty, every value is either null or an instance of {@link DataType#getJavaClass()} for
    *         one of the {@link DataType}s)
    */
-  public List<Object> getValues() {
+  public List<@Nullable Object> getValues() {
     return values;
   }
 
