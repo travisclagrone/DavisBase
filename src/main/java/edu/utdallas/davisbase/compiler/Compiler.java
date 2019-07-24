@@ -104,7 +104,7 @@ public class Compiler {
     else{
       throw new CompileException("Unrecognized command. Unable to compile. ");
     }
-    return new ExitCommand(); //TODO: Remove later
+    throw new CompileException("Unable to compile command"); //Remove once all commands are implemented
   }
 
   public DataType getDavisBaseType(ColDataType dataType)throws CompileException {
