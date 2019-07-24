@@ -47,7 +47,7 @@ public class Host {
     printer.println(configuration.getPrompt());
     String userInput = scanner.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
 
-    while (Pattern.matches("(?i)\\s*EXIT\\*;\\s*", userInput)) {
+    while (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
       displayHelp();
 
       printer.println(configuration.getPrompt());
