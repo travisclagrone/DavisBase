@@ -3,14 +3,18 @@ package edu.utdallas.davisbase.compiler;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
-import edu.utdallas.davisbase.catalog.CatalogTableColumn;
+import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
+import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.*;
 import edu.utdallas.davisbase.representation.*;
+import edu.utdallas.davisbase.storage.Storage;
+import edu.utdallas.davisbase.storage.TableFile;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,10 +27,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class Compiler {
 
   protected final CompilerConfiguration configuration;
+  protected final Storage context;
 
-  public Compiler(CompilerConfiguration configuration) {
+  public Compiler(CompilerConfiguration configuration, Storage context) {
     checkNotNull(configuration);
     this.configuration = configuration;
+    this.context = context;
   }
 
   public Command compile(CommandRepresentation command) throws CompileException {
@@ -61,28 +67,31 @@ public class Compiler {
       return new ExitCommand();
     }
     else if (command instanceof InsertCommandRepresentation){
-      InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
+//      InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
+//      validateIsDavisBaseTable(insert.getTable());
 //      return new InsertCommand(
 //        insert.getTable(),
-//        0,//TODO: implement method to do mapping to get rowid
-//        convertToDavisType(insert.getValues())
+//        insert.getValues()
+//        //convertToDavisType(((SelectExpressionItem)item).getExpression())
+//        //implement validateTypeMatchesSchema
 //      );
     }
     else if (command instanceof SelectCommandRepresentation){
       SelectCommandRepresentation select = (SelectCommandRepresentation)command;
+      validateIsDavisBaseTable(select.getTable());
       List<SelectCommandColumn> selectColumns = new ArrayList<>();
       for(SelectItem item: select.getColumns()){
-//        SelectCommandColumn col = new SelectCommandColumn(
-//          ,//TODO: Implement method to getIndex
-//          ((SelectExpressionItem)item).getExpression().toString(),//name
-//          //TODO: Implement method to get Datatype
-//        );
-//        selectColumns.add(col);
+        SelectCommandColumn col = new SelectCommandColumn(
+          validateIsDavisBaseColumnWithinTable(select.getTable(), item.toString()),
+          item.toString(),
+          getColumnType(item.toString())
+        );
+        selectColumns.add(col);
       }
       return new SelectCommand(
         select.getTable(),
         selectColumns
-      ); //TODO
+      );
     }
     else if (command instanceof ShowTablesCommandRepresentation){
       return new ShowTablesCommand();
@@ -138,29 +147,25 @@ public class Compiler {
     }
   }
 
-  public List<DataType> convertToDavisType(List<Expression> types)throws CompileException{
-    List<DataType> davisTypes = new ArrayList<>();
-    for(Expression value: types){
-      if (value instanceof DoubleValue) {
-        davisTypes.add(DataType.DOUBLE);
-      } else if (value instanceof LongValue) {
-        davisTypes.add(DataType.FLOAT);
-      } else if (value instanceof DateValue) {
-        davisTypes.add(DataType.DATE);
-      } else if (value instanceof TimestampValue) {
-        davisTypes.add(DataType.DATETIME);
-      } else if (value instanceof TimeValue) {
-        davisTypes.add(DataType.TIME);
-      } else if (value instanceof StringValue) {
-        davisTypes.add(DataType.TEXT);
-      }else if (value instanceof NullValue) {
-        davisTypes.add(DataType.TEXT); //TODO: Fix
-        //QUESTION we don't have a null type?
+  public DataType convertToDavisType(Expression type)throws CompileException{
+      if (type instanceof DoubleValue) {
+        return DataType.DOUBLE;
+      } else if (type instanceof LongValue) {
+        return DataType.FLOAT;
+      } else if (type instanceof DateValue) {
+        return DataType.DATE;
+      } else if (type instanceof TimestampValue) {
+        return DataType.DATETIME;
+      } else if (type instanceof TimeValue) {
+        return DataType.TIME;
+      } else if (type instanceof StringValue) {
+        return DataType.TEXT;
       }else {
         throw new CompileException("Invalid datatype");
       }
-    }
-    return davisTypes;
+  }
+
+  public void validateTypeMatchesSchema(DataType type)throws CompileException{
   }
 
   public boolean checkIsNotNull(List<String> columnSpecs){
@@ -175,13 +180,63 @@ public class Compiler {
     return false;
   }
 
-  public void validateIsDavisBaseColumn(CatalogTable catalogTable, String columnName)throws CompileException{
-    for(CatalogTableColumn catalogTableColumn :catalogTable.getColumns()){
-      if(catalogTableColumn.getName().equalsIgnoreCase(columnName)){
-        break;
+  /**
+   * Return column index if valid column within table
+   * @param tableName
+   * @param columnName
+   * @return
+   * @throws CompileException
+   */
+  public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException{
+    try{
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
+      while(table.goToNextRow()){
+        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
+        && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
+          return DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition();
+        }
       }
+      throw new CompileException("Column does not exist within this table");
     }
-    throw new CompileException("Column does not exist within tabble");
+    catch(IOException e){
+      throw new CompileException("Unable to read table file");
+    }
+  }
+
+  /**
+   * Return table ordinal position if valid table
+   * @param tableName
+   * @return
+   * @throws CompileException
+   */
+  public byte validateIsDavisBaseTable(String tableName)throws CompileException{
+    try{
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
+      while(table.goToNextRow()){
+        if(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
+          return DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition();
+        }
+      }
+      throw new CompileException("Table does not exist within DavisBase");
+    }
+    catch(IOException e){
+      throw new CompileException("Unable to read table file");
+    }
+  }
+
+  public DataType getColumnType(String columnName)throws CompileException{
+    try{
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
+      while(table.goToNextRow()){
+        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)){
+          return DavisBaseColumnsTableColumn.DATA_TYPE.getDataType();
+        }
+      }
+      throw new CompileException("Column does not exist within this table");
+    }
+    catch(IOException e){
+      throw new CompileException("Unable to read table file");
+    }
   }
 
 }
