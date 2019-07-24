@@ -44,8 +44,14 @@ public class TableFile implements Closeable {
 	public TableFile(RandomAccessFile file) {
 		checkNotNull(file);
 		checkArgument(file.getChannel().isOpen());
-
 		this.file = file;
+		try {
+			Page.addTableMetaDataPage(file);
+		} catch (Exception e) {
+
+		}
+		// for testing
+
 	}
 
 	@Override
@@ -124,7 +130,6 @@ public class TableFile implements Closeable {
 			} else if (pageType == 0x0D) {
 				currentPageNo = Page.splitLeafPage(file, currentPageNo);
 			}
-
 		}
 
 		pageOffset = (currentPageNo - 1) * Page.pageSize;
@@ -137,15 +142,30 @@ public class TableFile implements Closeable {
 			cellOffset = (short) (Page.pageSize);
 		}
 
-		long dataEntryPoint = cellOffset - totalSpaceRequired;
+		short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
 
-		file.seek(dataEntryPoint);
+		file.seek(pageOffset + dataEntryPoint);
 		file.writeByte(noOfColumns);
 		for (int i = 0; i < columnSizeArray.length; i++) {
 			file.writeByte(columnSizeArray[i]);
 		}
 		file.writeInt(rowId);
 		file.write(tableRowBuilder.toBytes());
+
+		file.seek(0x01);
+		file.writeInt(rowId);
+
+		file.seek(pageOffset + 1);
+		int noOfCellsInPage = file.readShort();
+
+		file.seek(pageOffset + 1);
+		file.writeShort(noOfCellsInPage + 1);
+
+		file.seek(pageOffset + 3);
+		file.writeShort(dataEntryPoint);
+
+		file.seek(pageOffset + 16 + 2 * (noOfCellsInPage - 1));
+		file.writeShort(dataEntryPoint);
 
 	}
 
@@ -156,8 +176,11 @@ public class TableFile implements Closeable {
 
 			this.file.seek((currentPageNo - 1) * Page.pageSize + 3);
 			short startofCellConcent = file.readShort();
+			if (startofCellConcent == 0) {
+				startofCellConcent = (short) (Page.pageSize);
+			}
 			short arryLastEntry = (short) (16 + (noOfRecords * 2));
-			if ((startofCellConcent - arryLastEntry - 1) > sizeRequired) {
+			if ((startofCellConcent - arryLastEntry - 1) < sizeRequired) {
 				return true;
 			}
 		} catch (Exception e) {
