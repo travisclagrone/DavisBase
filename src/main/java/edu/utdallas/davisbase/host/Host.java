@@ -1,10 +1,13 @@
 package edu.utdallas.davisbase.host;
 
+import static java.lang.String.format;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.repeat;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -102,163 +105,122 @@ public class Host {
     checkNotNull(result);
 
     if (result instanceof CreateIndexResult) {
-      write((CreateIndexResult) result);
-    } else if (result instanceof CreateTableResult) {
-      write((CreateTableResult) result);
-    } else if (result instanceof DeleteResult) {
-      write((DeleteResult) result);
-    } else if (result instanceof DropTableResult) {
-      write((DropTableResult) result);
-    } else if (result instanceof ExitResult) {
-      write((ExitResult) result);
-    } else if (result instanceof InsertResult) {
-      write((InsertResult) result);
-    } else if (result instanceof SelectResult) {
-      write((SelectResult) result);
-    } else if (result instanceof ShowTablesResult) {
-      write((ShowTablesResult) result);
-    } else if (result instanceof UpdateResult) {
-      write((UpdateResult) result);
-    } else {
+      writeCreateIndexResult((CreateIndexResult) result);
+    }
+    else if (result instanceof CreateTableResult) {
+      writeCreateTableResult((CreateTableResult) result);
+    }
+    else if (result instanceof DeleteResult) {
+      writeDeleteResult((DeleteResult) result);
+    }
+    else if (result instanceof DropTableResult) {
+      writeDropTableResult((DropTableResult) result);
+    }
+    else if (result instanceof ExitResult) {
+      writeExitResult((ExitResult) result);
+    }
+    else if (result instanceof InsertResult) {
+      writeInsertResult((InsertResult) result);
+    }
+    else if (result instanceof SelectResult) {
+      writeSelectResult((SelectResult) result);
+    }
+    else if (result instanceof ShowTablesResult) {
+      writeShowTablesResult((ShowTablesResult) result);
+    }
+    else if (result instanceof UpdateResult) {
+      writeUpdateResult((UpdateResult) result);
+    }
+    else {
       throw newWriteNotImplementedException(result.getClass());
     }
   }
 
-  public void write(CreateIndexResult result) throws IOException {
-
-    try {
-      printer.println("Index was successfully created on column '" + result.getColumnName() + "' in table '"
-          + result.getTableName() + "'.");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing CreateIndexResult."+
-      "The exception message : "+e.getMessage());
-    }
+  protected void writeCreateIndexResult(CreateIndexResult result) throws IOException {
+    printer.println(
+        format("Index was successfully created on column '%s' in table '%s'.",
+            result.getColumnName(),
+            result.getTableName()));
   }
 
-  public void write(CreateTableResult result) throws IOException {
-
-    try {
-      printer.println("'" + result.getTableName() + "' table was successfully created.");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing CreateTableResult."+
-      "The exception message : "+e.getMessage());
-    }
+  protected void writeCreateTableResult(CreateTableResult result) throws IOException {
+    printer.println(
+        format("'%s' table was successfully created.",
+            result.getTableName()));
   }
 
-  public void write(DeleteResult result) throws IOException {
-
-    try {
-      printer.println(result.getRowsDeleted() + " rows were deleted in the table '" + result.getTableName() + "'.");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing DeleteResult."+
-      "The exception message : "+e.getMessage());
-    }
+  protected void writeDeleteResult(DeleteResult result) throws IOException {
+    printer.println(
+        format("%d rows were deleted in the table '%s'.",
+            result.getRowsDeleted(),
+            result.getTableName()));
   }
 
-  public void write(DropTableResult result) throws IOException {
-
-    try {
-      printer.println("'" + result.getTableName() + "' table is deleted from database.");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing DropTableResult."+
-      "The exception message : "+e.getMessage());
-    }
+  protected void writeDropTableResult(DropTableResult result) throws IOException {
+    printer.println(
+        format("'%s' table is deleted from database.",
+            result.getTableName()));
   }
 
-  public void write(ExitResult result) throws IOException {
-
-    try {
-      printer.println("Exiting database....");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing ExitResult."+
-      "The exception message : "+e.getMessage());
-    }
+  protected void writeExitResult(ExitResult result) throws IOException {
+    printer.println("Exiting database...");
   }
 
-  public void write(InsertResult result) throws IOException {
-
-    try {
-      printer.println(result.getRowsInserted() + " rows were inserted in the table '" + result.getTableName() + "'.");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing InsertResult."+
-      "The exception message : "+e.getMessage());
-    }
+  protected void writeInsertResult(InsertResult result) throws IOException {
+    printer.println(
+        format("%d rows were inserted in the table '%s'.",
+            result.getRowsInserted(),
+            result.getTableName()));
   }
 
-  public void write(SelectResult result) throws IOException {
+  protected void writeSelectResult(SelectResult result) throws IOException {
+    printer.println(repeat("-", ((result.getSchema().size()) * 8) + 3));
+    for (int i = 0; i < result.getSchema().size(); i++) {
+      printer.print(
+          formatCellValue(
+              result.getSchema().getColumnName(i).length(),
+              result.getSchema().getColumnName(i))
+          + "|");
+    }
+    printer.println();
+    printer.println(repeat("-", ((result.getSchema().size()) * 8) + 3));
 
-    try {
-      printer.print(repeat("-", ((result.getSchema().size()) * 8) + 3));
-      printer.println();
+    if (result.getData().size() <= 0) {
+      printer.println("Empty result set.");
+      return;
+    }
 
-      for (int i = 0; i < result.getSchema().size(); i++) {
-
-        printer
-            .print(formatCellValue(result.getSchema().getColumnName(i).length(), result.getSchema().getColumnName(i)) + "|");
+    for (SelectResultDataRow row : result.getData()) {
+      for (@Nullable Object value : row) {
+        printer.print(formatCellValue(10, Objects.toString(value)) + "|");
       }
       printer.println();
-
-      printer.print(repeat("-", ((result.getSchema().size()) * 8) + 3));
-      printer.println();
-
-      if (result.getData().size() == 0)
-        printer.println("Empty result set.");
-
-      else {
-
-        for (SelectResultDataRow row : result.getData()) {
-
-          for (@Nullable Object value : row) {
-            printer.print(formatCellValue(10, value.toString()) + "|");
-          }
-
-        /*  Iterator<Object> iterator = row.iterator();
-          while (iterator.hasNext()) {
-
-            writer.print(display_fix(10, iterator.next().toString()) + "|");
-          } */
-          printer.println();
-        }
-      }
-    } catch (Exception e) {
-        printer.println("A write exception occurred while writing SelectResult."+
-        "The exception message : "+e.getMessage());
-    }
-
-  }
-
-  public void write(ShowTablesResult result) throws IOException {
-
-    try {
-      printer.print(repeat("-", 10));
-      printer.println();
-
-      printer.println("table_name   |");
-
-      printer.print(repeat("-", 10));
-      printer.println();
-
-      if (result.getTableNames().size() == 0)
-        printer.println("Empty result set.");
-
-      else {
-        for (String tableName : result.getTableNames())
-          printer.println(formatCellValue(10, tableName) + "|");
-      }
-    } catch (Exception e) {
-        printer.println("A write exception occurred while writing ShowTablesResult."+
-          "The exception message : "+e.getMessage());
     }
   }
 
-  public void write(UpdateResult result) throws IOException {
+  protected void writeShowTablesResult(ShowTablesResult result) throws IOException {
+    final String smallHorizontalLine = repeat("-", 10);
+    final String columnName = "table_name";
 
-    try {
-      printer.println(result.getRowsUpdated() + " rows were updated in the table '" + result.getTableName() + "'.");
-    } catch (Exception e) {
-      printer.println("A write exception occurred while writing UpdateResult."+
-        "The exception message : "+e.getMessage());
+    printer.println(smallHorizontalLine);
+    printer.println(formatCellValue(columnName.length(), columnName) + "|");
+    printer.println(smallHorizontalLine);
+
+    if (result.getTableNames().size() <= 0) {
+      printer.println("Empty result set.");
+      return;
     }
+
+    for (String tableName : result.getTableNames()) {
+      printer.println(formatCellValue(columnName.length(), tableName) + "|");
+    }
+  }
+
+  protected void writeUpdateResult(UpdateResult result) throws IOException {
+    printer.println(
+        format("%d rows were updated in the table '%s'.",
+            result.getRowsUpdated(),
+            result.getTableName()));
   }
 
   // endregion
@@ -320,13 +282,17 @@ public class Host {
     printer.println("There is an Runtime exception with the following message : " + exception.getMessage());
   }
 
-  protected static NotImplementedException newWriteNotImplementedException(Class argumentClass) {
-    checkNotNull(argumentClass);
-    String message = String.format("%s.write(%s)", Host.class.getName(), argumentClass.getName());
+  protected static NotImplementedException newWriteNotImplementedException(Class<?> argumentClass) {
+    assert argumentClass != null : "argumentClass should not be null";
+
+    final String message = String.format("%s.write(%s)", Host.class.getName(), argumentClass.getName());
     return new NotImplementedException(message);
   }
 
   protected static String formatCellValue(int len, String str) {
+    assert 0 <= len && (len + 3) <= Integer.MAX_VALUE : format("len = %d", len);
+    assert str != null : "str should not be null";
+
     return String.format("%-" + (len + 3) + "s", str);
   }
 
