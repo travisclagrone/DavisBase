@@ -2,9 +2,21 @@ package edu.utdallas.davisbase.executor;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import static edu.utdallas.davisbase.DataType.BIGINT;
+import static edu.utdallas.davisbase.DataType.DATE;
+import static edu.utdallas.davisbase.DataType.DATETIME;
+import static edu.utdallas.davisbase.DataType.DOUBLE;
+import static edu.utdallas.davisbase.DataType.FLOAT;
+import static edu.utdallas.davisbase.DataType.INT;
+import static edu.utdallas.davisbase.DataType.SMALLINT;
+import static edu.utdallas.davisbase.DataType.TEXT;
+import static edu.utdallas.davisbase.DataType.TIME;
+import static edu.utdallas.davisbase.DataType.TINYINT;
+import static edu.utdallas.davisbase.DataType.YEAR;
+import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_COLUMNS;
 import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_TABLES;
 
 import java.io.IOException;
@@ -14,14 +26,18 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.Command;
 import edu.utdallas.davisbase.command.CreateIndexCommand;
 import edu.utdallas.davisbase.command.CreateTableCommand;
+import edu.utdallas.davisbase.command.CreateTableCommandColumn;
 import edu.utdallas.davisbase.command.DeleteCommand;
 import edu.utdallas.davisbase.command.DropTableCommand;
 import edu.utdallas.davisbase.command.ExitCommand;
@@ -109,12 +125,65 @@ public class Executor {
     throw new NotImplementedException();
   }
 
-  protected CreateTableResult executeCreateTable(CreateTableCommand command, Storage context) throws ExecuteException, StorageException {
+  protected CreateTableResult executeCreateTable(CreateTableCommand command, Storage context) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // TODO Implement Executor.execute(CreateTableCommand, Storage)
-    throw new NotImplementedException();
+    assert DavisBaseTablesTableColumn.ROWID.getOrdinalPosition() == 0;
+    assert DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition() == 1;
+    assert DavisBaseTablesTableColumn.TABLE_NAME.getDataType() == TEXT;
+    assert DavisBaseTablesTableColumn.values().length == 2;
+
+    assert DavisBaseColumnsTableColumn.ROWID.getOrdinalPosition() == 0;
+    assert DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition() == 1;
+    assert DavisBaseColumnsTableColumn.TABLE_NAME.getDataType() == TEXT;
+    assert DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition() == 2;
+    assert DavisBaseColumnsTableColumn.COLUMN_NAME.getDataType() == TEXT;
+    assert DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition() == 3;
+    assert DavisBaseColumnsTableColumn.DATA_TYPE.getDataType() == TEXT;
+    assert DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition() == 4;
+    assert DavisBaseColumnsTableColumn.ORDINAL_POSITION.getDataType() == TINYINT;
+    assert DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition() == 5;
+    assert DavisBaseColumnsTableColumn.IS_NULLABLE.getDataType() == TEXT;
+    assert DavisBaseColumnsTableColumn.values().length == 6;
+
+    final String tableName = command.getTableName();
+    context.createTableFile(tableName);
+
+    try (final TableFile davisbaseTables = context.openTableFile(DAVISBASE_TABLES.getName())) {
+      final TableRowBuilder rowBuilder = new TableRowBuilder();
+      rowBuilder.appendText(tableName);
+      davisbaseTables.appendRow(rowBuilder);
+    }
+
+    try (final TableFile davisbaseColumns = context.openTableFile(DAVISBASE_COLUMNS.getName())) {
+      byte ordinalPosition = 0;
+
+      // COMBAK Make a static constant class to modularly structure the special "rowid" column that all tables have, then refactor these magic literals to constant references.
+      final TableRowBuilder rowidRowBuilder = new TableRowBuilder();
+      rowidRowBuilder.appendText(tableName);
+      rowidRowBuilder.appendText("rowid");
+      rowidRowBuilder.appendText(INT.name());
+      rowidRowBuilder.appendTinyInt(ordinalPosition);
+      rowidRowBuilder.appendText(BooleanUtils.toText(false));
+      davisbaseColumns.appendRow(rowidRowBuilder);
+
+      for (final CreateTableCommandColumn column : command.getColumnSchemas()) {
+        ordinalPosition += 1;
+        assert 1 <= ordinalPosition && ordinalPosition < Byte.MAX_VALUE;
+
+        final TableRowBuilder rowBuilder = new TableRowBuilder();
+        rowBuilder.appendText(tableName);
+        rowBuilder.appendText(column.getName());
+        rowBuilder.appendText(column.getDataType().name());
+        rowBuilder.appendTinyInt(ordinalPosition);
+        rowBuilder.appendText(BooleanUtils.toText(!column.isNotNull()));  // COMBAK Refactor (name + logic) CreateTableCommandColumn#isNotNull() to #isNullable().
+        davisbaseColumns.appendRow(rowBuilder);
+      }
+    }
+
+    final CreateTableResult result = new CreateTableResult(tableName);
+    return result;
   }
 
   protected DeleteResult executeDelete(DeleteCommand command, Storage context) throws ExecuteException, StorageException {
