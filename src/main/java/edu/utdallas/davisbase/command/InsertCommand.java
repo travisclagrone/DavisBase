@@ -1,16 +1,16 @@
 package edu.utdallas.davisbase.command;
 
+import edu.utdallas.davisbase.DataType;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.*;
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.hash;
-import java.util.ArrayList;
-import java.util.List;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import edu.utdallas.davisbase.DataType;
 
 public class InsertCommand implements Command {
 
@@ -23,12 +23,13 @@ public class InsertCommand implements Command {
    * @param rowId        the row id to assign to the row to be inserted in the table; SHOULD be
    *                     greater than any other row id in the table (not null, not negative, less
    *                     than {@link java.lang.Integer#MAX_VALUE Integer.MAX_VALUE})
-   * @param columnValues the ordered list of (nullable) values to insert, where the index of the
+   * @param values the ordered list of (nullable) values to insert, where the index of the
    *                     value in the list is the index of the column of the row into which it will
    *                     be inserted; SHOULD NOT include the index-zero default {@code rowId} (not
    *                     null, not empty, every value must be either null or an instance of
    *                     {@link DataType#getJavaClass()} for one of the {@link DataType}s)
    */
+  @SuppressWarnings("nullness")
   public InsertCommand(String tableName, int rowId, List<@Nullable Object> values) {
     checkNotNull(tableName, "tableName");
     checkElementIndex(rowId, Integer.MAX_VALUE, format("rowId %d is not in the range [0, %d)", rowId, Integer.MAX_VALUE));
@@ -43,11 +44,11 @@ public class InsertCommand implements Command {
         }
         checkArgument(isAcceptedDataType, "values.get(%d) is neither null nor an accepted type: %s", i, value.getClass().getName());
       }
-    }
+  }
 
     this.tableName = tableName;
     this.rowId = rowId;
-    // Copy to a new list for encapsulation, and wrap in an unmodifiable view for immutability.
+  // Copy to a new list for encapsulation, and wrap in an unmodifiable view for immutability.
     this.values = unmodifiableList(new ArrayList<>(values));
   }
 
@@ -74,7 +75,7 @@ public class InsertCommand implements Command {
    *         empty, every value is either null or an instance of {@link DataType#getJavaClass()} for
    *         one of the {@link DataType}s)
    */
-  public List<Object> getValues() {
+  public List<@Nullable Object> getValues() {
     return values;
   }
 
