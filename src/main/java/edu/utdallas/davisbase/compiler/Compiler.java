@@ -35,6 +35,12 @@ public class Compiler {
     this.context = context;
   }
 
+  /**
+   *
+   * @param command CommandRepresentation to compile into Command
+   * @return Command from given CommandRepresentation
+   * @throws CompileException
+   */
   public Command compile(CommandRepresentation command) throws CompileException {
     if(command instanceof CreateIndexCommandRepresentation){
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
@@ -67,29 +73,25 @@ public class Compiler {
       return new ExitCommand();
     }
     else if (command instanceof InsertCommandRepresentation){
-//      InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
-//      validateIsDavisBaseTable(insert.getTable());
+      InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
 //      return new InsertCommand(
-//        insert.getTable(),
-//        insert.getValues()
-//        //convertToDavisType(((SelectExpressionItem)item).getExpression())
-//        //implement validateTypeMatchesSchema
+//        validateIsDavisBaseTable(insert.getTable()),
+//        validateTypeMatchesSchema(insert.getTable(), insert.getValues())
 //      );
     }
     else if (command instanceof SelectCommandRepresentation){
       SelectCommandRepresentation select = (SelectCommandRepresentation)command;
-      validateIsDavisBaseTable(select.getTable());
       List<SelectCommandColumn> selectColumns = new ArrayList<>();
       for(SelectItem item: select.getColumns()){
         SelectCommandColumn col = new SelectCommandColumn(
           validateIsDavisBaseColumnWithinTable(select.getTable(), item.toString()),
           item.toString(),
-          getColumnType(item.toString())
+          getColumnType(select.getTable(), item.toString())
         );
         selectColumns.add(col);
       }
       return new SelectCommand(
-        select.getTable(),
+        validateIsDavisBaseTable(select.getTable()),
         selectColumns
       );
     }
@@ -107,6 +109,11 @@ public class Compiler {
     throw new CompileException("Unable to compile command"); //Remove once all commands are implemented
   }
 
+  /**
+   * @param dataType
+   * @return DataType from given ColDataType
+   * @throws CompileException
+   */
   public DataType getDavisBaseType(ColDataType dataType)throws CompileException {
     String type = dataType.getDataType();
     if(type.equalsIgnoreCase(DataType.TINYINT.name())){
@@ -147,6 +154,11 @@ public class Compiler {
     }
   }
 
+  /**
+   * @param type
+   * @return DataType corresponding with Expression
+   * @throws CompileException
+   */
   public DataType convertToDavisType(Expression type)throws CompileException{
       if (type instanceof DoubleValue) {
         return DataType.DOUBLE;
@@ -165,9 +177,26 @@ public class Compiler {
       }
   }
 
-  public void validateTypeMatchesSchema(DataType type)throws CompileException{
+  /**
+   * @param tableName
+   * @param expressions
+   * @return valid list of expressions to Insert
+   * @throws CompileException
+   */
+  public List<Expression> validateTypeMatchesSchema(String tableName, List<Expression> expressions)throws CompileException{
+    for(Expression exp: expressions){
+      if(!getColumnType(tableName, exp.toString()).equals(convertToDavisType(exp))){
+        //TODO: Need to do separate check for anything smaller than long
+        throw new CompileException("Values you are trying to insert does not match the table schema");
+      }
+    }
+    return expressions;
   }
 
+  /**
+   * @param columnSpecs
+   * @return whether columnSpecs is NOT NULL
+   */
   public boolean checkIsNotNull(List<String> columnSpecs){
     if(null!= columnSpecs){
       for(int lcv = 0; lcv< columnSpecs.size()-2; lcv++){
@@ -181,10 +210,9 @@ public class Compiler {
   }
 
   /**
-   * Return column index if valid column within table
    * @param tableName
    * @param columnName
-   * @return
+   * @return column index if valid column within table
    * @throws CompileException
    */
   public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException{
@@ -204,17 +232,16 @@ public class Compiler {
   }
 
   /**
-   * Return table ordinal position if valid table
    * @param tableName
-   * @return
+   * @return table name if valid table name
    * @throws CompileException
    */
-  public byte validateIsDavisBaseTable(String tableName)throws CompileException{
+  public String validateIsDavisBaseTable(String tableName)throws CompileException{
     try{
       TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
       while(table.goToNextRow()){
         if(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
-          return DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition();
+          return tableName;
         }
       }
       throw new CompileException("Table does not exist within DavisBase");
@@ -224,11 +251,18 @@ public class Compiler {
     }
   }
 
-  public DataType getColumnType(String columnName)throws CompileException{
+  /**
+   * @param tableName
+   * @param columnName
+   * @return DataType associated with the column for given table
+   * @throws CompileException
+   */
+  public DataType getColumnType(String tableName, String columnName)throws CompileException{
     try{
       TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
       while(table.goToNextRow()){
-        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)){
+        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
+          && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
           return DavisBaseColumnsTableColumn.DATA_TYPE.getDataType();
         }
       }
