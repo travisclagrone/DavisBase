@@ -43,18 +43,26 @@ public class Host {
     this.printer = printer;
   }
 
+  // TODO Handle case when multiple statements in one input sequence.
   public String readStatement() throws IOException {
-    printer.println(configuration.getPrompt());
-    String userInput = scanner.useDelimiter(";").next().trim();
-
-    while (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
-      displayHelp();
+    StringBuilder userInput;
+    while (true) {
+      userInput = new StringBuilder();
 
       printer.println(configuration.getPrompt());
-      userInput = scanner.useDelimiter(";").next().trim();
-    }
+      while (!Pattern.matches("^([^']|('(\\\\\\\\|\\\\'|[^'])*'))*;\\s*$", userInput)) {
+        userInput.append(scanner.nextLine());
+        userInput.append(configuration.getLineSeparator());
+      }
 
-    return userInput;
+      if (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
+        displayHelp();
+        continue;
+      }
+
+      break;
+    }
+    return userInput.toString().trim();
   }
 
   public static String line_chars(String s, int num) {
