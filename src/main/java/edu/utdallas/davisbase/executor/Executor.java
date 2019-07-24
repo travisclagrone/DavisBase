@@ -13,7 +13,7 @@ import java.time.Year;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
+import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.command.Command;
 import edu.utdallas.davisbase.command.CreateIndexCommand;
@@ -43,6 +43,7 @@ import edu.utdallas.davisbase.result.UpdateResult;
 import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageException;
 import edu.utdallas.davisbase.storage.TableFile;
+import edu.utdallas.davisbase.storage.TableRowBuilder;
 
 /**
  * An executor of {@link Command}s against a {@link Storage} context, and thereby a producer of
@@ -135,12 +136,60 @@ public class Executor {
     return new ExitResult();
   }
 
-  protected InsertResult execute(InsertCommand command, Storage context) throws ExecuteException, StorageException {
+  protected InsertResult execute(InsertCommand command, Storage context) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // TODO Implement Executor.execute(InsertCommand, Storage)
-    throw new NotImplementedException();
+    final TableRowBuilder rowBuilder = new TableRowBuilder();
+    for (final @Nullable Object value : command.getValues()) {
+      if (value == null) {
+        rowBuilder.appendNull();
+      }
+      else if (DataType.TINYINT.getJavaClass().isInstance(value)) {
+        rowBuilder.appendTinyInt((byte) value);
+      }
+      else if (DataType.SMALLINT.getJavaClass().isInstance(value)) {
+        rowBuilder.appendSmallInt((short) value);
+      }
+      else if (DataType.INT.getJavaClass().isInstance(value)) {
+        rowBuilder.appendInt((int) value);
+      }
+      else if (DataType.BIGINT.getJavaClass().isInstance(value)) {
+        rowBuilder.appendBigInt((long) value);
+      }
+      else if (DataType.FLOAT.getJavaClass().isInstance(value)) {
+        rowBuilder.appendFloat((float) value);
+      }
+      else if (DataType.DOUBLE.getJavaClass().isInstance(value)) {
+        rowBuilder.appendDouble((double) value);
+      }
+      else if (DataType.YEAR.getJavaClass().isInstance(value)) {
+        rowBuilder.appendYear((Year) value);
+      }
+      else if (DataType.TIME.getJavaClass().isInstance(value)) {
+        rowBuilder.appendTime((LocalTime) value);
+      }
+      else if (DataType.DATETIME.getJavaClass().isInstance(value)) {
+        rowBuilder.appendDateTime((LocalDateTime) value);
+      }
+      else if (DataType.DATE.getJavaClass().isInstance(value)) {
+        rowBuilder.appendDate((LocalDate) value);
+      }
+      else if (DataType.TEXT.getJavaClass().isInstance(value)) {
+        rowBuilder.appendText((String) value);
+      }
+      else {
+        throw new NotImplementedException(format("Insert value of Java class %s", value.getClass().getName()));
+      }
+    }
+
+    final String tableName = command.getTableName();
+    try (TableFile tableFile = context.openTableFile(tableName)) {
+      tableFile.appendRow(rowBuilder);
+    }
+
+    final InsertResult result = new InsertResult(tableName, 1);
+    return result;
   }
 
   protected SelectResult executeSelectCommand(SelectCommand command, Storage context) throws ExecuteException, StorageException, IOException {
