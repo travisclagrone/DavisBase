@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.command;
 
+@SuppressWarnings("nullness")  // COMBAK Unsuppress nullness warnings once we implement DeleteCommand.
 public class DeleteCommand implements Command {
 
   private String tableName;
