@@ -12,8 +12,8 @@ import java.util.Scanner;
 
 import edu.utdallas.davisbase.DavisBaseException;
 import edu.utdallas.davisbase.NotImplementedException;
-import edu.utdallas.davisbase.command.ExecuteException;
 import edu.utdallas.davisbase.compiler.CompileException;
+import edu.utdallas.davisbase.executor.ExecuteException;
 import edu.utdallas.davisbase.parser.ParseException;
 import edu.utdallas.davisbase.result.Result;
 import edu.utdallas.davisbase.result.SelectResult;
