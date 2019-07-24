@@ -20,7 +20,7 @@ public class InsertCommand implements Command {
   /**
    * @param tableName    the name of the table into which to insert data (not null)
    * @param values the ordered list of (nullable) values to insert, where the index of the
-   *                     value in the list is the index of the column of the row into which it will
+   *                     value in the list + 1 is the index of the column of the row into which it will
    *                     be inserted; SHOULD NOT include the index-zero default {@code rowId} (not
    *                     null, not empty, every value must be either null or an instance of
    *                     {@link DataType#getJavaClass()} for one of the {@link DataType}s)
@@ -52,6 +52,8 @@ public class InsertCommand implements Command {
   public String getTableName() {
     return tableName;
   }
+
+
 
   /**
    * @return an unmodifiable view of the ordered list of (nullable) values to insert, where the

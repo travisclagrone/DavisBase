@@ -10,11 +10,16 @@ import edu.utdallas.davisbase.representation.*;
 import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.TableFile;
 import net.sf.jsqlparser.expression.*;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,10 +79,15 @@ public class Compiler {
     }
     else if (command instanceof InsertCommandRepresentation){
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
-//      return new InsertCommand(
-//        validateIsDavisBaseTable(insert.getTable()),
-//        validateTypeMatchesSchema(insert.getTable(), insert.getValues())
-//      );
+      //this is translating
+      List<Byte> colIndexes = getColumIndexes(insert.getColumns()); //COLUMN INDEXES
+      List<Object> values = validateTypeMatchesSchema(insert.getTable(), insert.getValues()); //VALUES ALREADY IN OBJECTS
+      //TODO: ORDER THESE
+
+      return new InsertCommand(
+        validateIsDavisBaseTable(insert.getTable()),
+        validateTypeMatchesSchema(insert.getTable(), insert.getValues())
+      );
     }
     else if (command instanceof SelectCommandRepresentation){
       SelectCommandRepresentation select = (SelectCommandRepresentation)command;
@@ -106,7 +116,6 @@ public class Compiler {
     else{
       throw new CompileException("Unrecognized command. Unable to compile. ");
     }
-    throw new CompileException("Unable to compile command"); //Remove once all commands are implemented
   }
 
   /**
@@ -172,7 +181,11 @@ public class Compiler {
         return DataType.TIME;
       } else if (type instanceof StringValue) {
         return DataType.TEXT;
-      }else {
+      }
+//      else if (type instanceof NullValue) {
+        //TODO: WHAT DO I RETURN IF NULL
+//      }
+      else {
         throw new CompileException("Invalid datatype");
       }
   }
@@ -183,14 +196,55 @@ public class Compiler {
    * @return valid list of expressions to Insert
    * @throws CompileException
    */
-  public List<Expression> validateTypeMatchesSchema(String tableName, List<Expression> expressions)throws CompileException{
+  public List<Object> validateTypeMatchesSchema(String tableName, List<Expression> expressions)throws CompileException{
+    List<Object> objectValues = new ArrayList<>();
+    DataType convertedType;
     for(Expression exp: expressions){
-      if(!getColumnType(tableName, exp.toString()).equals(convertToDavisType(exp))){
-        //TODO: Need to do separate check for anything smaller than long
-        throw new CompileException("Values you are trying to insert does not match the table schema");
+      String value = exp.toString();
+      DataType schemaDefinedColumnType= getColumnType(tableName, value);
+      convertedType = convertToDavisType(exp);
+      if(!schemaDefinedColumnType.equals(convertedType)){
+        convertedType = checkLongValues(schemaDefinedColumnType,convertedType, value);
+      }
+      //TODO: ADD NULL?
+      if(convertedType.equals(DataType.TINYINT)){
+        objectValues.add(Byte.parseByte(value));
+      }
+      else if(convertedType.equals(DataType.SMALLINT)){
+        objectValues.add(Short.parseShort(value));
+      }
+      else if(convertedType.equals(DataType.INT)){
+        objectValues.add(Integer.parseInt(value));
+      }
+      else if(convertedType.equals(DataType.BIGINT)){
+        objectValues.add(Long.parseLong(value));
+      }
+      else if(convertedType.equals(DataType.FLOAT)){
+        objectValues.add(Float.parseFloat(value));
+      }
+      else if(convertedType.equals(DataType.DOUBLE)){
+        objectValues.add(Double.parseDouble(value));
+      }
+      else if(convertedType.equals(DataType.YEAR)){
+        objectValues.add(Year.parse(value));
+      }
+      else if(convertedType.equals(DataType.TIME)){
+        objectValues.add(LocalTime.parse(value));
+      }
+      else if(convertedType.equals(DataType.DATETIME)){
+        objectValues.add(LocalDateTime.parse(value));
+      }
+      else if(convertedType.equals(DataType.DATE)){
+        objectValues.add(LocalDate.parse(value));
+      }
+      else if(convertedType.equals(DataType.TEXT)){
+        objectValues.add(value);
+      }
+      else{
+        throw new CompileException("Not a valid DavisBase data type.");
       }
     }
-    return expressions;
+    return objectValues;
   }
 
   /**
@@ -273,4 +327,52 @@ public class Compiler {
     }
   }
 
+  /**
+   * Expression has less DataTypeValues defined than Davisbase. Perform checks to group into DavisBase DataType
+   * @param schemaDefinedColumnType
+   * @param convertedType
+   * @param value
+   * @return
+   * @throws CompileException
+   */
+  public DataType checkLongValues(DataType schemaDefinedColumnType, DataType convertedType, String value)throws CompileException{
+    long parsedVal = Long.parseLong(value);
+    if(schemaDefinedColumnType.equals(DataType.TINYINT) && convertedType.equals(DataType.FLOAT)){
+      if(parsedVal >= Byte.MIN_VALUE && parsedVal <= Byte.MAX_VALUE){
+        return DataType.TINYINT;
+      }
+    }
+    else if(schemaDefinedColumnType.equals(DataType.SMALLINT) && convertedType.equals(DataType.FLOAT)){
+      if (parsedVal >= Short.MIN_VALUE && parsedVal <= Short.MAX_VALUE) {
+        return DataType.SMALLINT;
+      }
+    }
+    else if(schemaDefinedColumnType.equals(DataType.INT) && convertedType.equals(DataType.FLOAT)){
+      if (parsedVal >= Integer.MIN_VALUE && parsedVal <= Integer.MAX_VALUE) {
+        return  DataType.SMALLINT;
+      }
+    }
+    else if(schemaDefinedColumnType.equals(DataType.BIGINT) && convertedType.equals(DataType.FLOAT)) {
+      if (parsedVal >= Long.MIN_VALUE && parsedVal <= Long.MAX_VALUE) {
+        return DataType.SMALLINT;
+      }
+    }
+    else{
+      throw new CompileException("Values you are trying to insert does not match the table schema");
+    }
+    throw new CompileException("Values you are trying to insert does not match the table schema");
+  }
+
+  public List<Byte> getColumIndexes(List<Column> columns)throws CompileException{
+    List<Byte> colIndexes = new ArrayList<>();
+    for(Column col: columns){
+      try{
+        colIndexes.add(validateIsDavisBaseColumnWithinTable(col.getTable().getName(), col.getColumnName()));
+      }
+      catch(CompileException e){
+        new CompileException(e.getCause());
+      }
+    }
+    return colIndexes;
+  }
 }
