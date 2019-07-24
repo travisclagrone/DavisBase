@@ -45,13 +45,13 @@ public class Host {
 
   public String readStatement() throws IOException {
     printer.println(configuration.getPrompt());
-    String userInput = scanner.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+    String userInput = scanner.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim();
 
     while (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
       displayHelp();
 
       printer.println(configuration.getPrompt());
-      userInput = scanner.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim().toLowerCase();
+      userInput = scanner.useDelimiter(";").next().replace("\n", " ").replace("\r", "").trim();
     }
 
     return userInput;
