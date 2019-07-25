@@ -23,13 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Parser {
 
-  protected final ParserConfiguration configuration;
-
-  public Parser(ParserConfiguration configuration) {
-    checkNotNull(configuration);
-    this.configuration = configuration;
-  }
-
   /**
    * @param statement a single complete statement to parse
    * @return the {@link CommandRepresentation} representation of <code>statement</code>
