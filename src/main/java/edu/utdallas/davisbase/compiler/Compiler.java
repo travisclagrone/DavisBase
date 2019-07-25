@@ -83,13 +83,21 @@ public class Compiler {
     else if (command instanceof InsertCommandRepresentation){
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
       List<InsertObject> insertObjects = new ArrayList<>();
-      for(int lcv = 0; lcv<insert.getColumns().size(); lcv++){
-        byte index = getColumnIndex(insert.getColumns().get(lcv), insert.getTable());
-        @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv), insert.getColumns().get(lcv).toString());
-        insertObjects.add(new InsertObject(index, obj));
+      if(insert.getColumns().isEmpty()){
+        for(int lcv = 0; lcv< insert.getValues().size(); lcv++){
+          String columnName = getColumnName(insert.getTable(),lcv);
+          @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(),insert.getValues().get(lcv), columnName);
+          insertObjects.add(new InsertObject(lcv, obj));
+        }
       }
-      Collections.sort(insertObjects);
-      //TODO: ADD IN CASE WHEN COLUMNS ARE EMPTY
+      else {
+        for (int lcv = 0; lcv < insert.getColumns().size(); lcv++) {
+          byte index = getColumnIndex(insert.getColumns().get(lcv), insert.getTable());
+          @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv), insert.getColumns().get(lcv).toString());
+          insertObjects.add(new InsertObject(index, obj));
+        }
+        Collections.sort(insertObjects);
+      }
       return new InsertCommand(
         validateIsDavisBaseTable(insert.getTable()),
         insertObjects.stream()
@@ -309,6 +317,17 @@ public class Compiler {
     throw new CompileException("Column does not exist within this table");
   }
 
+  public String getColumnName(String tableName, int columnIndex)throws CompileException, StorageException, IOException{
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition()))==columnIndex
+        && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+        return (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())));
+      }
+    }
+    throw new CompileException("Column does not exist within this table");
+  }
+
   /**
    * Expression has less DataTypeValues defined than Davisbase. Perform checks to group into DavisBase DataType
    * @param schemaDefinedColumnType
@@ -377,4 +396,5 @@ public class Compiler {
     }
     throw new CompileException("Column does not exist within this table");
   }
+
 }

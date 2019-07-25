@@ -40,7 +40,7 @@ public class Storage {
 	public TableFile openTableFile(String tableName) throws IOException {
 		checkNotNull(tableName);
 
-		final String tableFileName = tableName + configuration.getTableFileExtension();
+		final String tableFileName = tableName + "." + configuration.getTableFileExtension();
 		final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
 
 		checkArgument(tableFileHandle.exists(),
