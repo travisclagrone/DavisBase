@@ -1,14 +1,20 @@
 package edu.utdallas.davisbase;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.Scanner;
+
+import edu.utdallas.davisbase.command.Command;
 import edu.utdallas.davisbase.executor.Executor;
 import edu.utdallas.davisbase.executor.ExecutorConfiguration;
 import edu.utdallas.davisbase.host.Host;
 import edu.utdallas.davisbase.host.HostConfiguration;
 import edu.utdallas.davisbase.parser.Parser;
+import edu.utdallas.davisbase.representation.CommandRepresentation;
+import edu.utdallas.davisbase.result.ExitResult;
+import edu.utdallas.davisbase.result.Result;
 import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageConfiguration;
 import edu.utdallas.davisbase.storage.StorageState;
@@ -50,7 +56,44 @@ public class DavisBase {
    * @return exit code
    */
   public int run() {
-    // TODO Implement DavisBase.run()
-    throw new NotImplementedException();
+    try {
+      host.displayWelcome();
+      host.displayHelp();
+
+      while (true) {
+        try {
+          String statement = host.readStatement();
+          CommandRepresentation representation = parser.parse(statement);
+          Command command = compiler.compile(representation);
+          Result result = executor.execute(command, this.storage);
+          host.write(result);
+
+          if (result instanceof ExitResult) {
+            break;
+          }
+        }
+        catch (DavisBaseException e) {
+          host.write(e);
+        }
+      }
+    }
+    catch (Throwable e) {
+      try {
+        if (e instanceof IOException) {
+          host.write((IOException) e);
+        }
+        else if (e instanceof RuntimeException) {
+          host.write((RuntimeException) e);
+        }
+        else {
+          System.err.println(e);
+        }
+      }
+      catch (Throwable e2) {
+        System.err.println(e);
+      }
+      return 1;
+    }
+    return 0;
   }
 }
