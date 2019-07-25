@@ -325,4 +325,13 @@ public class Page {
     return fileOffset;
   }
 
+  public static TablePageType getTablePageType(RandomAccessFile file, int pageNo) throws IOException {
+    final long fileOffset = convertPageNoToFileOffset(pageNo);
+    file.seek(fileOffset);
+
+    final byte code = file.readByte();
+    final TablePageType type = TablePageType.fromCode(code);
+    return type;
+  }
+
 }
