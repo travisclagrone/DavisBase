@@ -289,17 +289,17 @@ public class Page {
 
 	}
 
-	
+
 	public static void updateInteriorRowID(RandomAccessFile file, int rowId) {
 		try {
 			file.seek(0x09);
 			file.writeInt(rowId);
 		}catch(Exception e) {
-			
+
 		}
 		return;
 	}
-	
+
 	public static int getnextRowIdInterior(RandomAccessFile file) {
 		try {
 			file.seek(0x09);
@@ -417,6 +417,16 @@ public class Page {
 
     final int leftChildPageNo = file.readInt();
     return leftChildPageNo;
+  }
+
+  public static int getLeftmostChildPageNoOfInteriorPage(RandomAccessFile file, int pageNo) throws IOException {
+    assert getTablePageType(file, pageNo) == INTERIOR;
+
+    final short cellCount = getNumberOfCells(file, pageNo);
+    final int leftmostChildPageNo = (cellCount <= 0)
+                                    ? getRightMostChildPageNo(file, pageNo)
+                                    : getTableInteriorCellLeftChildPageNo(file, pageNo, (short) 0);
+    return leftmostChildPageNo;
   }
 
 }
