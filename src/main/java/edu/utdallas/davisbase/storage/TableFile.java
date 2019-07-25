@@ -384,6 +384,10 @@ public class TableFile implements Closeable {
 		return -1;
 	}
 
+  private boolean hasCurrentLeafPageNo() {
+    return currentLeafPageNo != NULL_LEAF_PAGE_NO;
+  }
+
   private int getLeftmostLeafPageNo() throws IOException {
     int pageNo = Page.getMetaDataRootPageNo(file);
     while (Page.getTablePageType(file, pageNo) == INTERIOR) {
