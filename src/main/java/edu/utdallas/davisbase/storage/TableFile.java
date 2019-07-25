@@ -9,9 +9,6 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import edu.utdallas.davisbase.NotImplementedException;
@@ -19,6 +16,9 @@ import edu.utdallas.davisbase.common.DavisBaseConstant;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+
+import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
+import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 
 /**
  * A DavisBase "Table" file.
@@ -42,7 +42,12 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class TableFile implements Closeable {
 
-	protected final RandomAccessFile file;
+  private static int NULL_LEAF_PAGE_NO = -1;
+  private static short NULL_LEAF_CELL_INDEX = -1;
+
+  protected final RandomAccessFile file;
+  private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
+  private int currentLeafCellIndex = NULL_LEAF_CELL_INDEX ;
 
 	public TableFile(RandomAccessFile file) {
 		checkNotNull(file);
@@ -52,7 +57,7 @@ public class TableFile implements Closeable {
 			Page.addTableMetaDataPage(file);
 
 			if(file.length()<512) {
-				Page.addTableMetaDataPage(file);	
+				Page.addTableMetaDataPage(file);
 			}
 		} catch (Exception e) {
 
@@ -152,11 +157,11 @@ public class TableFile implements Closeable {
 
 		short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
 
-		
+
 		for (int i = 0; i < columnSizeArray.length; i++) {
 			file.writeByte(columnSizeArray[i]);
 		}
-		
+
 		int rowId=0;
 		if (pageType == 0x05) {
 			rowId = getnextRowIdInterior(file);
@@ -167,14 +172,14 @@ public class TableFile implements Closeable {
 			file.seek(0x01);
 			file.writeInt(rowId);
 		}
-		
+
 		file.seek(pageOffset + dataEntryPoint);
 		file.writeByte(noOfColumns);
-		
+
 		file.writeInt(rowId);
 		file.write(tableRowBuilder.toBytes());
 
-		
+
 
 		file.seek(pageOffset + 1);
 		int noOfCellsInPage = file.readShort();
@@ -193,8 +198,7 @@ public class TableFile implements Closeable {
 //		file.writeInt(rowId);
 
 	}
-	
-	
+
 	public static int getnextRowIdInterior(RandomAccessFile file) {
 		try {
 			file.seek(0x09);
@@ -228,12 +232,38 @@ public class TableFile implements Closeable {
 	}
 
 	public boolean goToNextRow() throws IOException {
-		// TODO Implement TableFile.goToNextRow()
-		throw new NotImplementedException();
+    assert this.hasCurrentLeafPageNo() == this.hasCurrentLeafCellIndex();
+
+    if (this.hasCurrentLeafPageNo()) {
+      this.currentLeafCellIndex += 1;
+    }
+    else {  // Very first time goToNextRow() has been called for this TableFile instance.
+      this.currentLeafPageNo = getLeftmostLeafPageNo();
+      this.currentLeafCellIndex = 0;
+    }
+
+    short countCells = Page.getNumberOfCells(file, this.currentLeafPageNo);
+    if (!(this.currentLeafCellIndex < countCells)) {
+
+      final int rightSiblingPageNo = Page.getRightSiblingOfLeafPage(file, this.currentLeafPageNo);
+      if (!Page.exists(file, rightSiblingPageNo)) {
+        return false;
+      }
+
+      this.currentLeafPageNo = rightSiblingPageNo;
+      this.currentLeafCellIndex = 0;
+
+      countCells = Page.getNumberOfCells(file, this.currentLeafPageNo);
+      if (!(this.currentLeafCellIndex < countCells)) {
+        return false;
+      }
+    }
+
+    return true;
 	}
 
 	public boolean goToRow(int rowId) throws IOException {
-		// TODO Implement TableFile.goToRow(int)
+		// COMBAK Implement TableFile.goToRow(int)
 		throw new NotImplementedException();
 	}
 
@@ -381,5 +411,22 @@ public class TableFile implements Closeable {
 		}
 		return -1;
 	}
+
+  private boolean hasCurrentLeafPageNo() {
+    return currentLeafPageNo != NULL_LEAF_PAGE_NO;
+  }
+
+  private boolean hasCurrentLeafCellIndex() {
+    return currentLeafCellIndex != NULL_LEAF_CELL_INDEX;
+  }
+
+  private int getLeftmostLeafPageNo() throws IOException {
+    int pageNo = Page.getMetaDataRootPageNo(file);
+    while (Page.getTablePageType(file, pageNo) == INTERIOR) {
+      pageNo = Page.getLeftmostChildPageNoOfInteriorPage(file, pageNo);
+    }
+    assert Page.getTablePageType(file, pageNo) == LEAF;
+    return pageNo;
+  }
 
 }
