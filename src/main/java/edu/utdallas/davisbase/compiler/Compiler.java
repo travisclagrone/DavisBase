@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -48,6 +48,7 @@ public class Compiler {
    * @return Command from given CommandRepresentation
    * @throws CompileException
    */
+  @SuppressWarnings("nullness")  // WARNING Make sure the project builds _without_ this line before pushing!
   public Command compile(CommandRepresentation command) throws CompileException {
     if(command instanceof CreateIndexCommandRepresentation){
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
@@ -92,7 +93,8 @@ public class Compiler {
       return new InsertCommand(
         validateIsDavisBaseTable(insert.getTable()),
         insertObjects.stream()
-          .map(InsertObject::getObject).collect(Collectors.toList())
+                     .map(InsertObject::getObject)
+                     .collect(Collectors.toList())
       );
     }
     else if (command instanceof SelectCommandRepresentation){
@@ -267,9 +269,9 @@ public class Compiler {
   public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException{
     try (TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName())) {
       while(table.goToNextRow()){
-        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
-        && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
-          return table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition());
+        if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
+        && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+          return castNonNull(table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition()));
         }
       }
       throw new CompileException("Column does not exist within this table");
@@ -288,7 +290,7 @@ public class Compiler {
     try{
       TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
       while(table.goToNextRow()){
-        if(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
+        if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
           return tableName;
         }
       }
@@ -309,9 +311,9 @@ public class Compiler {
     try{
       TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
       while(table.goToNextRow()){
-        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
-          && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
-          return DataType.valueOf(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition()));
+        if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
+          && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+          return DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())));
         }
       }
       throw new CompileException("Column does not exist within this table");
@@ -364,7 +366,7 @@ public class Compiler {
     try{
       TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
       while(table.goToNextRow()){
-        if(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
+        if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)) {
           throw new CompileException("Table already exists.");
         }
       }
@@ -388,9 +390,9 @@ public class Compiler {
     try{
       TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
       while(table.goToNextRow()){
-        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
-          && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
-          return BooleanUtils.fromText(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition()));
+        if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
+          && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+          return BooleanUtils.fromText(castNonNull(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition())));
         }
       }
       throw new CompileException("Column does not exist within this table");
