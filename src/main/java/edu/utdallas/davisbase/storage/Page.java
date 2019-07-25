@@ -7,7 +7,10 @@ import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 
 public class Page {
 
+  static final int BYTES_OF_PAGE_OFFSET = Short.BYTES;
+
   static final int PAGE_OFFSET_OF_CELL_COUNT = 0x02;
+  static final int PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY = 0x10;
 
 	static final int pageSize = StorageConfiguration.Builder.getDefaultPageSize();
   static final int maximumnoOFChildren = 2;
@@ -345,6 +348,23 @@ public class Page {
 
     final short cellCount = file.readShort();
     return cellCount;
+  }
+
+  /**
+   * @param file the file from which to get the page offset of the cell
+   * @param pageNo the one-based number of the page in the file
+   * @param cellIndex the zero-based index of the cell in the page
+   * @return zero-based offset of the start of the cell relative to the beginning of the page
+   * @throws IOException
+   */
+  public static short getPageOffsetOfCell(RandomAccessFile file, int pageNo, short cellIndex) throws IOException {
+    final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
+    final long fileOffsetOfCellPageOffsetArray = fileOffsetOfPage + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY;
+    final long fileOffsetOfEntryInCellPageOffsetArray = fileOffsetOfCellPageOffsetArray + (cellIndex * BYTES_OF_PAGE_OFFSET);
+    file.seek(fileOffsetOfEntryInCellPageOffsetArray);
+
+    final short pageOffsetOfCell = file.readShort();
+    return pageOffsetOfCell;
   }
 
 }
