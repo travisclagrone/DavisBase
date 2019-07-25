@@ -1,5 +1,6 @@
 package edu.utdallas.davisbase.compiler;
 
+import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
@@ -14,17 +15,15 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.checkerframework.checker.nullness.qual.Nullable;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -57,7 +56,7 @@ public class Compiler {
     }
     else if (command instanceof CreateTableCommandRepresentation){
       CreateTableCommandRepresentation createTable = (CreateTableCommandRepresentation)command;
-      // TODO Validate that the table does not already exist.
+      validateTableDoesNotExist(createTable.getTable());
       List<CreateTableCommandColumn> columnSchemas = new ArrayList<>();
       for(ColumnDefinition colDef: createTable.getDefinitions()){
         CreateTableCommandColumn col = new CreateTableCommandColumn(
@@ -84,10 +83,9 @@ public class Compiler {
     else if (command instanceof InsertCommandRepresentation){
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
       List<InsertObject> insertObjects = new ArrayList<>();
-      // FIXME Since we're already using `<` (vs. `<=`), it should be `size()` instead of `size()-1`, right?
-      for(int lcv = 0; lcv<insert.getColumns().size()-1; lcv++){
+      for(int lcv = 0; lcv<insert.getColumns().size(); lcv++){
         byte index = getColumnIndex(insert.getColumns().get(lcv)); //get Column index
-        @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv));
+        @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv), insert.getColumns().get(lcv).toString());
         insertObjects.add(new InsertObject(index, obj));
       }
       Collections.sort(insertObjects);
@@ -199,58 +197,48 @@ public class Compiler {
 
   /**
    * @param tableName
-   * @param exp
+   * @param value
    * @return valid Object to Insert
    * @throws CompileException
    */
-  public @Nullable Object validateTypeMatchesSchema(String tableName, Expression exp)throws CompileException{
-    String value = exp.toString();
-    // TODO Before checking schema-defined column type, first check schema-defined nullability. If nullable, then check if is `NullValue` and return Java `null` if so. If not nullable, then validate that is not `NullValue` and throw an exception otherwise.
-
-    DataType schemaDefinedColumnType= getColumnType(tableName, value);  // FIXME Replace `value` with `columnName` here. Have to add a parameter to `validateTypeMatchesSchema(*)` in order to do so.
-    DataType convertedType = convertToDavisType(exp);
+  public @Nullable Object validateTypeMatchesSchema(String tableName, Expression value, String columnName)throws CompileException{
+    String val = value.toString();
+    if(validateNullability(tableName, columnName, value)){
+      return null;
+    }
+    DataType schemaDefinedColumnType= getColumnType(tableName, columnName);
+    DataType convertedType = convertToDavisType(value);
     if(!schemaDefinedColumnType.equals(convertedType)){
-      convertedType = checkLongValues(schemaDefinedColumnType, value);
-      // TODO Handle case where schema-defined type is FLOAT and converted type is DOUBLE.
-      // TODO Handle case where schema-defined type is DATETIME and converted type is DATE.
+      convertedType = checkLongValues(schemaDefinedColumnType, val);
+      if(schemaDefinedColumnType.equals(DataType.FLOAT) && convertedType.equals(DataType.DOUBLE)) {
+        return Float.parseFloat(val);
+      }
+      if(schemaDefinedColumnType.equals(DataType.DATETIME) && convertedType.equals(DataType.DATE)){
+        return LocalDateTime.parse(val);
+      }
     }
-
-    // FIXME All of these cases should be getting the value (using the #getValue() method) and then casting as necessary, rather than parsing the string. (JSqlParser already did that)
-    if(convertedType.equals(DataType.TINYINT)){
-      return (Byte.parseByte(value));
-    }
-    else if(convertedType.equals(DataType.SMALLINT)){
-      return(Short.parseShort(value));
-    }
-    else if(convertedType.equals(DataType.INT)){
-      return(Integer.parseInt(value));
-    }
-    else if(convertedType.equals(DataType.BIGINT)){
-      return(Long.parseLong(value));
-    }
-    else if(convertedType.equals(DataType.FLOAT)){
-      return(Float.parseFloat(value));
-    }
-    else if(convertedType.equals(DataType.DOUBLE)){
-      return(Double.parseDouble(value));
-    }
-    else if(convertedType.equals(DataType.YEAR)){
-      return(Year.parse(value));
-    }
-    else if(convertedType.equals(DataType.TIME)){
-      return(LocalTime.parse(value));
-    }
-    else if(convertedType.equals(DataType.DATETIME)){
-      return(LocalDateTime.parse(value));
-    }
-    else if(convertedType.equals(DataType.DATE)){
-      return(LocalDate.parse(value));
-    }
-    else if(convertedType.equals(DataType.TEXT)){
-      return(value);
-    }
-    else{
-      throw new CompileException("Not a valid DavisBase data type.");
+    if (value instanceof DoubleValue) {
+      DoubleValue doubleValue = (DoubleValue) value;
+      return doubleValue;
+    } else if (value instanceof LongValue) {
+      LongValue longValue = (LongValue) value;
+      return longValue.getValue();
+    } else if (value instanceof DateValue) {
+      DateValue dateValue = (DateValue) value;
+      return dateValue.getValue();
+    } else if (value instanceof TimestampValue) {
+      TimestampValue timestampValue = (TimestampValue) value;
+      return timestampValue.getValue();
+    } else if (value instanceof TimeValue) {
+      TimeValue timeValue = (TimeValue) value;
+      return timeValue.getValue();
+    } else if (value instanceof StringValue) {
+      StringValue stringValue = (StringValue) value;
+      return stringValue.getValue();
+    }else if (value instanceof NullValue) {
+      return null;
+    }else {
+      throw new CompileException("Invalid value in expression");
     }
   }
 
@@ -260,8 +248,7 @@ public class Compiler {
    */
   public boolean checkIsNotNull(List<String> columnSpecs){
     if(null!= columnSpecs){
-      // FIXME Since we're already using `<` (vs. `<=`), it should be `size()-1` instead of `size()-2`, right?
-      for(int lcv = 0; lcv< columnSpecs.size()-2; lcv++){
+      for(int lcv = 0; lcv< columnSpecs.size()-1; lcv++){
         if (columnSpecs.get(lcv).equalsIgnoreCase("NOT") &&
         columnSpecs.get(lcv+1).equalsIgnoreCase("NULL")){
           return true;
@@ -337,7 +324,6 @@ public class Compiler {
   /**
    * Expression has less DataTypeValues defined than Davisbase. Perform checks to group into DavisBase DataType
    * @param schemaDefinedColumnType
-   * @param convertedType
    * @param value
    * @return
    * @throws CompileException
@@ -372,5 +358,45 @@ public class Compiler {
 
   public byte getColumnIndex(Column col)throws CompileException{
     return (validateIsDavisBaseColumnWithinTable(col.getTable().getName(), col.getColumnName()));
+  }
+
+  public void validateTableDoesNotExist(String tableName)throws CompileException{
+    try{
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
+      while(table.goToNextRow()){
+        if(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
+          throw new CompileException("Table already exists.");
+        }
+      }
+    }
+    catch(IOException e){
+      throw new CompileException("Unable to read table file");
+    }
+  }
+
+  public boolean validateNullability(String tableName, String columnName, Expression value)throws CompileException{
+    if(getIsNullable(tableName, columnName) && value instanceof NullValue){
+      return true;
+    }
+    if(!getIsNullable(tableName,columnName) && value instanceof NullValue){
+      throw new CompileException("Column " + columnName + "is not nullable");
+    }
+    return false;
+  }
+
+  public boolean getIsNullable(String tableName, String columnName)throws CompileException{
+    try{
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
+      while(table.goToNextRow()){
+        if(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()).equalsIgnoreCase(columnName)
+          && table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()).equalsIgnoreCase(tableName)){
+          return BooleanUtils.fromText(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition()));
+        }
+      }
+      throw new CompileException("Column does not exist within this table");
+    }
+    catch(IOException e){
+      throw new CompileException("Unable to read table file");
+    }
   }
 }
