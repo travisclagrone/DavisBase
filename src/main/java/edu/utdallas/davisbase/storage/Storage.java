@@ -48,7 +48,7 @@ public class Storage {
 
 		checkArgument(tableFileHandle.exists(),
 				String.format("File \"%s\" for table \"%s\" does not exist.", tableFileHandle.toString(), tableName));
-		checkArgument(tableFileHandle.isDirectory(), String.format(
+		checkArgument(!tableFileHandle.isDirectory(), String.format(
 				"File \"%s\" for table \"%s\" is actually a directory.", tableFileHandle.toString(), tableName));
 
 		final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
