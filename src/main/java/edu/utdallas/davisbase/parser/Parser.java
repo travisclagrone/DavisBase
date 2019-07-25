@@ -17,9 +17,8 @@ import net.sf.jsqlparser.statement.select.*;
 import net.sf.jsqlparser.statement.update.Update;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Parser {
 
@@ -79,7 +78,7 @@ public class Parser {
         InsertCommandRepresentation insert = new InsertCommandRepresentation(
           insertStatement.toString(),
           insertStatement.getTable().getName(),
-          insertStatement.getColumns(),
+          null == insertStatement.getColumns()? new ArrayList<>(): insertStatement.getColumns(),
           ((ExpressionList) insertStatement.getItemsList()).getExpressions()
         );
         return insert;

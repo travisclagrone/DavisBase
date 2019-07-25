@@ -83,11 +83,12 @@ public class Compiler {
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
       List<InsertObject> insertObjects = new ArrayList<>();
       for(int lcv = 0; lcv<insert.getColumns().size(); lcv++){
-        byte index = getColumnIndex(insert.getColumns().get(lcv)); //get Column index
+        byte index = getColumnIndex(insert.getColumns().get(lcv), insert.getTable());
         @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv), insert.getColumns().get(lcv).toString());
         insertObjects.add(new InsertObject(index, obj));
       }
       Collections.sort(insertObjects);
+      //TODO: ADD IN CASE WHEN COLUMNS ARE EMPTY
       return new InsertCommand(
         validateIsDavisBaseTable(insert.getTable()),
         insertObjects.stream()
@@ -265,7 +266,7 @@ public class Compiler {
    * @throws CompileException
    */
   public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException{
-    try (TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName())) {
+    try (TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name())) {
       while(table.goToNextRow()){
         if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
         && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
@@ -286,7 +287,7 @@ public class Compiler {
    */
   public String validateIsDavisBaseTable(String tableName)throws CompileException{
     try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
       while(table.goToNextRow()){
         if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
           return tableName;
@@ -307,7 +308,7 @@ public class Compiler {
    */
   public DataType getColumnType(String tableName, String columnName)throws CompileException{
     try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
       while(table.goToNextRow()){
         if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
           && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
@@ -356,13 +357,13 @@ public class Compiler {
     throw new CompileException("Values you are trying to insert does not match the table schema");
   }
 
-  public byte getColumnIndex(Column col)throws CompileException{
-    return (validateIsDavisBaseColumnWithinTable(col.getTable().getName(), col.getColumnName()));
+  public byte getColumnIndex(Column col, String table)throws CompileException{
+    return (validateIsDavisBaseColumnWithinTable(table, col.getColumnName()));
   }
 
   public void validateTableDoesNotExist(String tableName)throws CompileException{
     try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.name());
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
       while(table.goToNextRow()){
         if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)) {
           throw new CompileException("Table already exists.");
@@ -386,7 +387,7 @@ public class Compiler {
 
   public boolean getIsNullable(String tableName, String columnName)throws CompileException{
     try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
+      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
       while(table.goToNextRow()){
         if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
           && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
