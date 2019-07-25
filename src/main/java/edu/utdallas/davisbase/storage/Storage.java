@@ -16,7 +16,9 @@ public class Storage {
 	private final StorageConfiguration configuration;
 	private final StorageState state;
 
-	@SuppressWarnings("initialization")
+
+  @SuppressWarnings("initialization")
+
 	public Storage(StorageConfiguration configuration, StorageState state) {
 		this.configuration = configuration;
 		this.state = state;
@@ -33,6 +35,7 @@ public class Storage {
 		if (!file.exists()) {
 			RandomAccessFile table = new RandomAccessFile(state.getDataDirectory().getPath() + "/" + tableName + "."
 					+ this.configuration.getTableFileExtension(), "rw");
+			Page.addTableMetaDataPage(table);
 			table.close();
 		}
 	}

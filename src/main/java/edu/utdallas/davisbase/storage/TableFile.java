@@ -65,9 +65,6 @@ public class TableFile implements Closeable {
 		} catch (Exception e) {
 
 		}
-
-		// for testing
-
 	}
 
 	@Override
