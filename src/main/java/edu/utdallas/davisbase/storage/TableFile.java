@@ -42,7 +42,10 @@ import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
  */
 public class TableFile implements Closeable {
 
+  private static int NULL_LEAF_PAGE_NO = -1;
+
   protected final RandomAccessFile file;
+  private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
 
 	public TableFile(RandomAccessFile file) {
 		checkNotNull(file);
@@ -193,7 +196,6 @@ public class TableFile implements Closeable {
 //		file.writeInt(rowId);
 
 	}
-
 
 	public static int getnextRowIdInterior(RandomAccessFile file) {
 		try {
