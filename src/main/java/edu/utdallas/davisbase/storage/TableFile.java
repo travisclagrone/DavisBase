@@ -9,9 +9,6 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import edu.utdallas.davisbase.NotImplementedException;
@@ -19,6 +16,9 @@ import edu.utdallas.davisbase.common.DavisBaseConstant;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+
+import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
+import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 
 /**
  * A DavisBase "Table" file.
@@ -42,7 +42,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class TableFile implements Closeable {
 
-	protected final RandomAccessFile file;
+  protected final RandomAccessFile file;
 
 	public TableFile(RandomAccessFile file) {
 		checkNotNull(file);
@@ -52,7 +52,7 @@ public class TableFile implements Closeable {
 			Page.addTableMetaDataPage(file);
 
 			if(file.length()<512) {
-				Page.addTableMetaDataPage(file);	
+				Page.addTableMetaDataPage(file);
 			}
 		} catch (Exception e) {
 
@@ -152,11 +152,11 @@ public class TableFile implements Closeable {
 
 		short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
 
-		
+
 		for (int i = 0; i < columnSizeArray.length; i++) {
 			file.writeByte(columnSizeArray[i]);
 		}
-		
+
 		int rowId=0;
 		if (pageType == 0x05) {
 			rowId = getnextRowIdInterior(file);
@@ -167,14 +167,14 @@ public class TableFile implements Closeable {
 			file.seek(0x01);
 			file.writeInt(rowId);
 		}
-		
+
 		file.seek(pageOffset + dataEntryPoint);
 		file.writeByte(noOfColumns);
-		
+
 		file.writeInt(rowId);
 		file.write(tableRowBuilder.toBytes());
 
-		
+
 
 		file.seek(pageOffset + 1);
 		int noOfCellsInPage = file.readShort();
@@ -193,8 +193,8 @@ public class TableFile implements Closeable {
 //		file.writeInt(rowId);
 
 	}
-	
-	
+
+
 	public static int getnextRowIdInterior(RandomAccessFile file) {
 		try {
 			file.seek(0x09);
@@ -381,5 +381,14 @@ public class TableFile implements Closeable {
 		}
 		return -1;
 	}
+
+  private int getLeftmostLeafPageNo() throws IOException {
+    int pageNo = Page.getMetaDataRootPageNo(file);
+    while (Page.getTablePageType(file, pageNo) == INTERIOR) {
+      pageNo = Page.getLeftmostChildPageNoOfInteriorPage(file, pageNo);
+    }
+    assert Page.getTablePageType(file, pageNo) == LEAF;
+    return pageNo;
+  }
 
 }
