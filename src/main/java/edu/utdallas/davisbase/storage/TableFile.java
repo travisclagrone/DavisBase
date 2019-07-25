@@ -232,8 +232,34 @@ public class TableFile implements Closeable {
 	}
 
 	public boolean goToNextRow() throws IOException {
-		// TODO Implement TableFile.goToNextRow()
-		throw new NotImplementedException();
+    assert this.hasCurrentLeafPageNo() == this.hasCurrentLeafCellIndex();
+
+    if (this.hasCurrentLeafPageNo()) {
+      this.currentLeafCellIndex += 1;
+    }
+    else {  // Very first time goToNextRow() has been called for this TableFile instance.
+      this.currentLeafPageNo = getLeftmostLeafPageNo();
+      this.currentLeafCellIndex = 0;
+    }
+
+    short countCells = Page.getNumberOfCells(file, this.currentLeafPageNo);
+    if (!(this.currentLeafCellIndex < countCells)) {
+
+      final int rightSiblingPageNo = Page.getRightSiblingOfLeafPage(file, this.currentLeafPageNo);
+      if (!Page.exists(file, rightSiblingPageNo)) {
+        return false;
+      }
+
+      this.currentLeafPageNo = rightSiblingPageNo;
+      this.currentLeafCellIndex = 0;
+
+      countCells = Page.getNumberOfCells(file, this.currentLeafPageNo);
+      if (!(this.currentLeafCellIndex < countCells)) {
+        return false;
+      }
+    }
+
+    return true;
 	}
 
 	public boolean goToRow(int rowId) throws IOException {
