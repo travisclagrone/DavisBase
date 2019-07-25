@@ -8,4 +8,7 @@ public class DeleteCommand implements Command {
 
   // COMBAK Implement DeleteCommand
 
+  public DeleteCommand(String tableName) {
+    this.tableName = tableName;
+  }
 }
