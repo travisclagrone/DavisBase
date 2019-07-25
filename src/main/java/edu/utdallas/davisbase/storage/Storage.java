@@ -16,6 +16,7 @@ public class Storage {
 	private final StorageConfiguration configuration;
 	private final StorageState state;
 
+	@SuppressWarnings("initialization")
 	public Storage(StorageConfiguration configuration, StorageState state) {
 		this.configuration = configuration;
 		this.state = state;

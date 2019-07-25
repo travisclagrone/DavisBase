@@ -9,6 +9,7 @@ import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.*;
 import edu.utdallas.davisbase.representation.*;
 import edu.utdallas.davisbase.storage.Storage;
+import edu.utdallas.davisbase.storage.StorageException;
 import edu.utdallas.davisbase.storage.TableFile;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.schema.Column;
@@ -47,7 +48,7 @@ public class Compiler {
    * @throws CompileException
    */
   @SuppressWarnings("nullness")  // WARNING Make sure the project builds _without_ this line before pushing!
-  public Command compile(CommandRepresentation command) throws CompileException {
+  public Command compile(CommandRepresentation command) throws CompileException, StorageException,IOException {
     if(command instanceof CreateIndexCommandRepresentation){
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
       throw new NotImplementedException();
@@ -202,7 +203,7 @@ public class Compiler {
    * @return valid Object to Insert
    * @throws CompileException
    */
-  public @Nullable Object validateTypeMatchesSchema(String tableName, Expression value, String columnName)throws CompileException{
+  public @Nullable Object validateTypeMatchesSchema(String tableName, Expression value, String columnName)throws CompileException, StorageException, IOException{
     String val = value.toString();
     if(validateNullability(tableName, columnName, value)){
       return null;
@@ -265,8 +266,8 @@ public class Compiler {
    * @return column index if valid column within table
    * @throws CompileException
    */
-  public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException{
-    try (TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name())) {
+  public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName)throws CompileException, StorageException, IOException{
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
       while(table.goToNextRow()){
         if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
         && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
@@ -274,10 +275,6 @@ public class Compiler {
         }
       }
       throw new CompileException("Column does not exist within this table");
-    }
-    catch(IOException e){
-      throw new CompileException("Unable to read table file");
-    }
   }
 
   /**
@@ -285,19 +282,14 @@ public class Compiler {
    * @return table name if valid table name
    * @throws CompileException
    */
-  public String validateIsDavisBaseTable(String tableName)throws CompileException{
-    try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
-      while(table.goToNextRow()){
-        if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
-          return tableName;
-        }
+  public String validateIsDavisBaseTable(String tableName)throws CompileException, StorageException, IOException{
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+        return tableName;
       }
-      throw new CompileException("Table does not exist within DavisBase");
     }
-    catch(IOException e){
-      throw new CompileException("Unable to read table file");
-    }
+    throw new CompileException("Table does not exist within DavisBase");
   }
 
   /**
@@ -306,20 +298,15 @@ public class Compiler {
    * @return DataType associated with the column for given table
    * @throws CompileException
    */
-  public DataType getColumnType(String tableName, String columnName)throws CompileException{
-    try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
-      while(table.goToNextRow()){
-        if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
-          && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
-          return DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())));
-        }
+  public DataType getColumnType(String tableName, String columnName)throws CompileException, StorageException, IOException{
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
+        && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+        return DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())));
       }
-      throw new CompileException("Column does not exist within this table");
     }
-    catch(IOException e){
-      throw new CompileException("Unable to read table file");
-    }
+    throw new CompileException("Column does not exist within this table");
   }
 
   /**
@@ -357,25 +344,20 @@ public class Compiler {
     throw new CompileException("Values you are trying to insert does not match the table schema");
   }
 
-  public byte getColumnIndex(Column col, String table)throws CompileException{
+  public byte getColumnIndex(Column col, String table)throws CompileException,StorageException, IOException{
     return (validateIsDavisBaseColumnWithinTable(table, col.getColumnName()));
   }
 
-  public void validateTableDoesNotExist(String tableName)throws CompileException{
-    try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
-      while(table.goToNextRow()){
-        if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)) {
-          throw new CompileException("Table already exists.");
-        }
+  public void validateTableDoesNotExist(String tableName)throws CompileException, StorageException, IOException{
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)) {
+        throw new CompileException("Table already exists.");
       }
-    }
-    catch(IOException e){
-      throw new CompileException("Unable to read table file");
     }
   }
 
-  public boolean validateNullability(String tableName, String columnName, Expression value)throws CompileException{
+  public boolean validateNullability(String tableName, String columnName, Expression value)throws CompileException, StorageException, IOException{
     if(getIsNullable(tableName, columnName) && value instanceof NullValue){
       return true;
     }
@@ -385,19 +367,14 @@ public class Compiler {
     return false;
   }
 
-  public boolean getIsNullable(String tableName, String columnName)throws CompileException{
-    try{
-      TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
-      while(table.goToNextRow()){
-        if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
-          && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
-          return BooleanUtils.fromText(castNonNull(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition())));
-        }
+  public boolean getIsNullable(String tableName, String columnName)throws CompileException, StorageException, IOException {
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())).equalsIgnoreCase(columnName)
+        && castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+        return BooleanUtils.fromText(castNonNull(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition())));
       }
-      throw new CompileException("Column does not exist within this table");
     }
-    catch(IOException e){
-      throw new CompileException("Unable to read table file");
-    }
+    throw new CompileException("Column does not exist within this table");
   }
 }
