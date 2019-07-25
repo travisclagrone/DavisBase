@@ -113,7 +113,7 @@ public class Page {
 			int leftChildPageNo = file.readShort();
 			return leftChildPageNo;
 		}catch(Exception e) {
-			
+
 		}
 		return -1;
 
@@ -515,6 +515,16 @@ public class Page {
    */
   public static boolean exists(RandomAccessFile file, int pageNo) throws IOException {
     return pageNo > 0 && convertPageNoToFileOffset(pageNo) < file.length();
+  }
+
+  public static byte getNumberOfColumnsOfTableLeafCell(RandomAccessFile file, long fileOffsetOfTableLeafCell) throws IOException {
+    file.seek(fileOffsetOfTableLeafCell);
+    return file.readByte();
+  }
+
+  public static int getSizeOfTableLeafCellColumn(RandomAccessFile file, long fileOffsetOfTableLeafCell, int columnIndex) throws IOException {
+    file.seek(fileOffsetOfTableLeafCell + 1 + columnIndex);  // COMBAK Clean this up.
+    return file.readByte();
   }
 
 }
