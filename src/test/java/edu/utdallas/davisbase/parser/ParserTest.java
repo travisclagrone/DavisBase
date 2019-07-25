@@ -1,8 +1,6 @@
-package edu.davisbase.parser;
+package edu.utdallas.davisbase.parser;
 
 import edu.utdallas.davisbase.DataType;
-import edu.utdallas.davisbase.parser.ParseException;
-import edu.utdallas.davisbase.parser.Parser;
 import edu.utdallas.davisbase.representation.*;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import org.junit.jupiter.api.Test;
@@ -17,6 +15,7 @@ public class ParserTest {
   private final String selectAllCols= "SELECT * FROM Customers;";
   private final String selectCols= "SELECT CustomerName, ContactName FROM Customers;";
   private final String showTable= "SHOW TABLES;";
+  private final String exit="EXIT;";
   private final Parser parser = new Parser();
 
 
@@ -39,6 +38,7 @@ public class ParserTest {
     CommandRepresentation command = parser.parse(insertRecord);
     assertTrue(command instanceof InsertCommandRepresentation);
     InsertCommandRepresentation insertRecord = (InsertCommandRepresentation) command;
+    System.out.println(insertRecord);
     assertEquals(insertRecord.getTable(),"Customers");
     assertEquals(insertRecord.getColumns().size(), 3);
     assertEquals(insertRecord.getColumns().get(0).toString(),"CustomerName");
@@ -74,4 +74,11 @@ public class ParserTest {
     CommandRepresentation command = parser.parse(showTable);
     assertTrue(command instanceof ShowTablesCommandRepresentation);
   }
+
+  @Test
+  public void testParseExitStatement() throws ParseException {
+    CommandRepresentation command = parser.parse(exit);
+    assertTrue(command instanceof ExitCommandRepresentation);
+  }
+
 }
