@@ -44,12 +44,16 @@ public class Page {
 			file.setLength(pageSize);
 			file.seek(0x00);
 			file.writeByte(-1);
-			int firstPageNo = AddInteriorPage(file);
+
+			int firstPageNo = AddLeafPage(file);
+
 			int rowId = 0;
 			file.seek(0x01);
 			file.writeInt(rowId);
 			file.seek(0x05);
 			file.writeInt(firstPageNo);
+
+			setPageasRoot(file, firstPageNo);
 		} catch (Exception e) {
 
 		}
@@ -257,11 +261,17 @@ public class Page {
 	public static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
 		try {
 			TableFile tableFile = new TableFile(file);
-			int rowId = tableFile.getnextRowId(file);
+
+//			int rowId = tableFile.getnextRowId(file);
+			int rowId = getnextRowIdInterior(file);
+
 			TableRowBuilder tableRowBuilder = new TableRowBuilder();
 			tableRowBuilder.appendInt(rowId);
 			tableRowBuilder.appendInt(childpageNo);
 			tableFile.appendRow(tableRowBuilder);
+
+			updateInteriorRowID(file,rowId);
+
 			SortRowIds(file, currentPageNo);
 			setRightMostChild(file, currentPageNo);
 		} catch (Exception e) {
@@ -269,6 +279,29 @@ public class Page {
 		}
 
 	}
+
+	
+	public static void updateInteriorRowID(RandomAccessFile file, int rowId) {
+		try {
+			file.seek(0x09);
+			file.writeInt(rowId);
+		}catch(Exception e) {
+			
+		}
+		return;
+	}
+	
+	public static int getnextRowIdInterior(RandomAccessFile file) {
+		try {
+			file.seek(0x09);
+			int rowId=file.readInt();
+			return (rowId + 1);
+
+		} catch (Exception e) {
+		}
+		return -1;
+	}
+
 
 	public static void SortRowIds(RandomAccessFile file, int currentPageNo) {
 
@@ -285,10 +318,11 @@ public class Page {
 	}
 
 	public static void setPageasRoot(RandomAccessFile file, int pageNo) {
-		int seekParentByte = pageNo * pageSize + 6;
+
+		int seekParentByte = (pageNo-1) * pageSize + 10;
 		try {
 			file.seek(seekParentByte);
-			file.writeByte(-1);// making root
+			file.writeInt(-1);// making root
 			updateMetaDataRoot(file, pageNo);
 		} catch (Exception e) {
 		}
@@ -303,7 +337,8 @@ public class Page {
 	}
 
 	public static boolean CheckifRootNode(RandomAccessFile file, int pageNo) {
-		int seekParentByte = (pageNo - 1) * pageSize + 6;
+
+		int seekParentByte = (pageNo - 1) * pageSize + 10;
 		try {
 			file.seek(seekParentByte);
 			if (file.readInt() == -1) {

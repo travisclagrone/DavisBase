@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +50,10 @@ public class TableFile implements Closeable {
 		this.file = file;
 		try {
 			Page.addTableMetaDataPage(file);
+
+			if(file.length()<512) {
+				Page.addTableMetaDataPage(file);	
+			}
 		} catch (Exception e) {
 
 		}
@@ -62,7 +67,7 @@ public class TableFile implements Closeable {
 	}
 
 	public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
-		int rowId = getnextRowId(file);
+
 		int noOfColumns = tableRowBuilder.getNoOfValues();
 		int[] columnSizeArray = new int[noOfColumns + 1];
 		int payLoad = 4;// since rowId is not a part of table row builder
@@ -74,8 +79,9 @@ public class TableFile implements Closeable {
 			case "Integer":
 				columnSizeArray[i] = 4;
 				break;
-			case "String": {
-			}
+
+			case "String":
+
 				columnSizeArray[i] = data.toString().length();
 				break;
 			case "Byte":
@@ -146,28 +152,58 @@ public class TableFile implements Closeable {
 
 		short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
 
-		file.seek(pageOffset + dataEntryPoint);
-		file.writeByte(noOfColumns);
+		
 		for (int i = 0; i < columnSizeArray.length; i++) {
 			file.writeByte(columnSizeArray[i]);
 		}
+		
+		int rowId=0;
+		if (pageType == 0x05) {
+			rowId = getnextRowIdInterior(file);
+			file.seek(0x09);
+			file.writeInt(rowId);
+		} else if (pageType == 0x0D) {
+			rowId = getnextRowId(file);
+			file.seek(0x01);
+			file.writeInt(rowId);
+		}
+		
+		file.seek(pageOffset + dataEntryPoint);
+		file.writeByte(noOfColumns);
+		
 		file.writeInt(rowId);
 		file.write(tableRowBuilder.toBytes());
 
-		file.seek(0x01);
-		file.writeInt(rowId);
+		
 
 		file.seek(pageOffset + 1);
 		int noOfCellsInPage = file.readShort();
-
+		noOfCellsInPage = noOfCellsInPage + 1;
 		file.seek(pageOffset + 1);
-		file.writeShort(noOfCellsInPage + 1);
+		file.writeShort(noOfCellsInPage);
 
 		file.seek(pageOffset + 3);
-		file.writeShort(dataEntryPoint);
+		file.writeShort(dataEntryPoint);// writing Offset
 
 		file.seek(pageOffset + 16 + 2 * (noOfCellsInPage - 1));
 		file.writeShort(dataEntryPoint);
+
+		// Update table meta data with rowId
+//		file.seek(0x01);
+//		file.writeInt(rowId);
+
+	}
+	
+	
+	public static int getnextRowIdInterior(RandomAccessFile file) {
+		try {
+			file.seek(0x09);
+			int rowId=file.readInt();
+			return (rowId + 1);
+
+		} catch (Exception e) {
+		}
+		return -1;
 
 	}
 
@@ -238,7 +274,9 @@ public class TableFile implements Closeable {
 
 	public @Nullable LocalTime readTime(int columnIndex) throws IOException {
 		file.seek(DavisBaseConstant.TIME_SIZE * columnIndex);
-		return LocalTime.ofSecondOfDay(file.readInt()/1000);
+
+		return LocalTime.ofSecondOfDay(file.readInt() / 1000);
+
 	}
 
 	public @Nullable LocalDateTime readDateTime(int columnIndex) throws IOException {
@@ -335,11 +373,12 @@ public class TableFile implements Closeable {
 //		checkNotNull(pageNo);
 		try {
 			file.seek(0x01);
-			return file.readInt() + 1;
+
+			int rowId=file.readInt();
+			return (rowId + 1);
 
 		} catch (Exception e) {
 		}
-		// TODO Implement TableFile.writeText(int, String)
 		return -1;
 	}
 
