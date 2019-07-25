@@ -420,6 +420,14 @@ public class TableFile implements Closeable {
     return currentLeafCellIndex != NULL_LEAF_CELL_INDEX;
   }
 
+  private boolean hasCurrentRow() throws IOException {
+    assert this.hasCurrentLeafPageNo() == this.hasCurrentLeafCellIndex();
+
+    return this.hasCurrentLeafPageNo() &&
+           Page.exists(file, this.currentLeafPageNo) &&
+           this.currentLeafCellIndex < Page.getNumberOfCells(file, currentLeafPageNo);
+  }
+
   private int getLeftmostLeafPageNo() throws IOException {
     int pageNo = Page.getMetaDataRootPageNo(file);
     while (Page.getTablePageType(file, pageNo) == INTERIOR) {
