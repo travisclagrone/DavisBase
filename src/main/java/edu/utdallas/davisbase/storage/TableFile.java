@@ -43,9 +43,11 @@ import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 public class TableFile implements Closeable {
 
   private static int NULL_LEAF_PAGE_NO = -1;
+  private static short NULL_LEAF_CELL_INDEX = -1;
 
   protected final RandomAccessFile file;
   private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
+  private int currentLeafCellIndex = NULL_LEAF_CELL_INDEX ;
 
 	public TableFile(RandomAccessFile file) {
 		checkNotNull(file);
@@ -386,6 +388,10 @@ public class TableFile implements Closeable {
 
   private boolean hasCurrentLeafPageNo() {
     return currentLeafPageNo != NULL_LEAF_PAGE_NO;
+  }
+
+  private boolean hasCurrentLeafCellIndex() {
+    return currentLeafCellIndex != NULL_LEAF_CELL_INDEX;
   }
 
   private int getLeftmostLeafPageNo() throws IOException {
