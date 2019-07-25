@@ -17,7 +17,10 @@ public class Page {
 			numofPages = numofPages + 1;
 			file.setLength(pageSize * numofPages);
 			file.seek((numofPages - 1) * pageSize);
-			file.writeByte(0x05);
+			file.writeByte(0x05);// writing page type
+
+			file.seek(((numofPages - 1) * pageSize) + 6);
+			file.writeInt(-1); // setting right most child to -1
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -32,7 +35,11 @@ public class Page {
 			numofPages = numofPages + 1;
 			file.setLength(pageSize * numofPages);
 			file.seek((numofPages - 1) * pageSize);
-			file.writeByte(0x0D);
+			file.writeByte(0x0D);// writing page type
+
+			file.seek(((numofPages - 1) * pageSize) + 6);
+			file.writeInt(-1);// setting right most child to -1
+
 		} catch (Exception e) {
 			System.out.println(e);
 		}
@@ -44,15 +51,14 @@ public class Page {
 			file.setLength(pageSize);
 			file.seek(0x00);
 			file.writeByte(-1);
-
 			int firstPageNo = AddLeafPage(file);
-
-			int rowId = 0;
+			int rowId = -1;
 			file.seek(0x01);
 			file.writeInt(rowId);
 			file.seek(0x05);
 			file.writeInt(firstPageNo);
-
+			file.seek(0x09);
+			file.writeInt(rowId);
 			setPageasRoot(file, firstPageNo);
 		} catch (Exception e) {
 
@@ -92,6 +98,74 @@ public class Page {
 		return -1;
 	}
 
+	public static int getLeftChild(RandomAccessFile file, int currentPageNo) {
+		try {
+			int currentPageOffset = (currentPageNo-1)*Page.pageSize;
+			file.seek(currentPageOffset+16);
+			int leftChildPageNo = file.readShort();
+			return leftChildPageNo;
+		}catch(Exception e) {
+			
+		}
+		return -1;
+
+	}
+
+	public static void appendChildInINteriorPage(RandomAccessFile file, int childPageNo, int currentPageNo) {
+		try {
+			int leftChildPage = getLeftChild(file, currentPageNo);
+			int rowId = getnextRowIdInterior(file);
+			int currentPageOffset = (currentPageNo - 1) * Page.pageSize;
+			file.seek(currentPageOffset + 3);
+			short currentCellPointer = file.readShort();
+			if (currentCellPointer == 0) {
+				currentCellPointer = (short) Page.pageSize;
+			}
+			int payLoad = 12;
+			int dataEntryPoint = currentCellPointer - payLoad;
+			file.seek(currentPageOffset + dataEntryPoint);
+			file.writeInt(leftChildPage);
+			file.writeInt(rowId);
+			file.writeInt(childPageNo);
+
+			// updating page headers
+			file.seek(currentPageOffset + 1);
+			int noOfRecordsInPage = file.readShort();
+			noOfRecordsInPage = noOfRecordsInPage + 1;
+			file.seek(currentPageOffset + 1);
+			file.writeShort(noOfRecordsInPage);
+
+			file.seek(currentPageOffset + 3);
+			file.writeShort(dataEntryPoint);
+
+			file.seek(currentPageOffset + 16 + 2 * (noOfRecordsInPage - 1));
+			file.writeShort(dataEntryPoint);
+
+//			int rightMostChild = getRightMostChildPageNo(file, currentPageNo);
+//			file.seek(currentPageOffset + 6);
+//			file.writeByte(rightMostChild);
+
+			setRightMostChild(file, currentPageNo);
+
+			file.seek(0x09);
+			file.writeInt(rowId);
+		} catch (Exception e) {
+
+		}
+	}
+
+	public static int getnextRowIdInterior(RandomAccessFile file) {
+		try {
+			file.seek(0x09);
+			int rowId = file.readInt();
+			return (rowId + 1);
+
+		} catch (Exception e) {
+		}
+		return -1;
+
+	}
+
 	public static int splitInteriorPage(RandomAccessFile file, int pageNo) {
 		boolean rootflag = CheckifRootNode(file, pageNo);
 		int siblingInteriorPageNo = AddInteriorPage(file);
@@ -105,7 +179,7 @@ public class Page {
 				setParent(file, pageNo, parentPageNo);
 				setParent(file, pageNo, siblingInteriorPageNo);
 				setRightMostChild(file, parentPageNo);
-				
+
 			} else {
 				int parentPageNo = getParent(file, pageNo);
 				setParent(file, siblingInteriorPageNo, parentPageNo);
@@ -118,7 +192,7 @@ public class Page {
 		} catch (Exception e) {
 		}
 		return siblingInteriorPageNo;
-		
+
 	}
 
 	public static void splitInteriorData(RandomAccessFile file, int currentPageNo, int siblingInteriorPageNo) {
@@ -208,7 +282,7 @@ public class Page {
 
 	public static void setRightMostChild(RandomAccessFile file, int currentPageNo) {
 		int rightMostChildPageNo = getRightMostChildPageNo(file, currentPageNo);
-		long seekRightMostChildByte = currentPageNo * pageSize + 6;
+		long seekRightMostChildByte = (currentPageNo - 1) * pageSize + 6;
 		try {
 			file.seek(seekRightMostChildByte);
 			file.writeInt(rightMostChildPageNo);
@@ -234,9 +308,12 @@ public class Page {
 			file.seek(currentPageCell + 3);
 			short rightChildDataStart = file.readShort();
 
+			if (rightChildDataStart == 0) {
+				return -1;
+			}
 			file.seek(currentPageCell + rightChildDataStart);
 			int noofColumns = file.readByte();
-			file.seek(currentPageCell + rightChildDataStart + 1 + noofColumns + 4);
+			file.seek(currentPageCell + rightChildDataStart + 8);
 
 //			file.seek(currentPageCell + rightChildDataStart + 4);//change this.
 			return file.readInt();
@@ -260,18 +337,8 @@ public class Page {
 
 	public static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
 		try {
-			TableFile tableFile = new TableFile(file);
 
-//			int rowId = tableFile.getnextRowId(file);
-			int rowId = getnextRowIdInterior(file);
-
-			TableRowBuilder tableRowBuilder = new TableRowBuilder();
-			tableRowBuilder.appendInt(rowId);
-			tableRowBuilder.appendInt(childpageNo);
-			tableFile.appendRow(tableRowBuilder);
-
-			updateInteriorRowID(file,rowId);
-
+			appendChildInINteriorPage(file, childpageNo, currentPageNo);
 			SortRowIds(file, currentPageNo);
 			setRightMostChild(file, currentPageNo);
 		} catch (Exception e) {
@@ -280,28 +347,26 @@ public class Page {
 
 	}
 
-	
-	public static void updateInteriorRowID(RandomAccessFile file, int rowId) {
-		try {
-			file.seek(0x09);
-			file.writeInt(rowId);
-		}catch(Exception e) {
-			
-		}
-		return;
-	}
-	
-	public static int getnextRowIdInterior(RandomAccessFile file) {
-		try {
-			file.seek(0x09);
-			int rowId=file.readInt();
-			return (rowId + 1);
-
-		} catch (Exception e) {
-		}
-		return -1;
-	}
-
+//	public static void updateInteriorRowID(RandomAccessFile file, int rowId) {
+//		try {
+//			file.seek(0x09);
+//			file.writeInt(rowId);
+//		}catch(Exception e) {
+//			
+//		}
+//		return;
+//	}
+//	
+//	public static int getnextRowIdInterior(RandomAccessFile file) {
+//		try {
+//			file.seek(0x09);
+//			int rowId=file.readInt();
+//			return (rowId + 1);
+//
+//		} catch (Exception e) {
+//		}
+//		return -1;
+//	}
 
 	public static void SortRowIds(RandomAccessFile file, int currentPageNo) {
 
@@ -319,7 +384,7 @@ public class Page {
 
 	public static void setPageasRoot(RandomAccessFile file, int pageNo) {
 
-		int seekParentByte = (pageNo-1) * pageSize + 10;
+		int seekParentByte = (pageNo - 1) * pageSize + 10;
 		try {
 			file.seek(seekParentByte);
 			file.writeInt(-1);// making root
