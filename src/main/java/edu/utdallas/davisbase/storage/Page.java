@@ -442,4 +442,14 @@ public class Page {
     return leftmostChildPageNo;
   }
 
+  /**
+   * @param file   the file in which to check if the specified page exists
+   * @param pageNo the page no whose existence to check in the given file
+   * @return whether the specified page exists in the given file
+   * @throws IOException
+   */
+  public static boolean exists(RandomAccessFile file, int pageNo) throws IOException {
+    return pageNo > 0 && convertPageNoToFileOffset(pageNo) < file.length();
+  }
+
 }
