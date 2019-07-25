@@ -35,7 +35,7 @@ public class Storage {
 		if (!file.exists()) {
 			RandomAccessFile table = new RandomAccessFile(state.getDataDirectory().getPath() + "/" + tableName + "."
 					+ this.configuration.getTableFileExtension(), "rw");
-			Page.addTableMetaDataPage(table);
+//			Page.addTableMetaDataPage(table);
 			table.close();
 		}
 	}
