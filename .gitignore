@@ -321,4 +321,8 @@ src/main/java/com/*
 
 
 # End of https://www.gitignore.io/api/git,jenv,java,maven,jgiven,code,eclipse,jetbrains,netbeans,jdeveloper,emacs,vim
-/.vscode/
+src/main/java/test/
+test/
+data/
+data*/
+src/main/java/edu/utdallas/davisbase/common/DavisBaseCatalog.java
