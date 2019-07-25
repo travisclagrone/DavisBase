@@ -6,7 +6,9 @@ import java.io.RandomAccessFile;
 public class Page {
 
 	static final int pageSize = StorageConfiguration.Builder.getDefaultPageSize();
-	static final int maximumnoOFChildren = 2;
+  static final int maximumnoOFChildren = 2;
+  static final long metaDataRootPageNoOffsetInFile = 0x05;
+
 	TableRowBuilder tableRowBuilder;
 
 	// called when the interior node is overflowed
@@ -101,7 +103,7 @@ public class Page {
 				setParent(file, pageNo, parentPageNo);
 				setParent(file, pageNo, siblingInteriorPageNo);
 				setRightMostChild(file, parentPageNo);
-				
+
 			} else {
 				int parentPageNo = getParent(file, pageNo);
 				setParent(file, siblingInteriorPageNo, parentPageNo);
@@ -114,7 +116,7 @@ public class Page {
 		} catch (Exception e) {
 		}
 		return siblingInteriorPageNo;
-		
+
 	}
 
 	public static void splitInteriorData(RandomAccessFile file, int currentPageNo, int siblingInteriorPageNo) {
@@ -294,13 +296,15 @@ public class Page {
 		}
 	}
 
-	public static void updateMetaDataRoot(RandomAccessFile file, int newRootPageNo) {
-		try {
-			file.seek(0x05);
-			file.writeInt(newRootPageNo);
-		} catch (Exception e) {
-		}
-	}
+	public static void updateMetaDataRoot(RandomAccessFile file, int newRootPageNo) throws IOException {
+    file.seek(metaDataRootPageNoOffsetInFile);
+    file.writeInt(newRootPageNo);
+  }
+
+  public static int getMetaDataRootPageNo(RandomAccessFile file) throws IOException {
+    file.seek(metaDataRootPageNoOffsetInFile);
+    return file.readInt();
+  }
 
 	public static boolean CheckifRootNode(RandomAccessFile file, int pageNo) {
 		int seekParentByte = (pageNo - 1) * pageSize + 6;
