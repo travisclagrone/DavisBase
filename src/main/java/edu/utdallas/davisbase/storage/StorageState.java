@@ -12,8 +12,7 @@ public class StorageState {
 	public static class Builder {
 
 		public static File getDefaultDataDirectory() {
-			//return new File(System.getenv("user.dir"));
-			return new File("data");
+			return new File(System.getProperty("user.dir"));
 		}
 
 		private @Nullable File dataDirectory = null;
