@@ -316,5 +316,13 @@ public class Page {
 		} catch (Exception e) {
 		}
 		return false;
-	}
+  }
+
+  public static long convertPageNoToFileOffset(int pageNo) {
+    assert 1 <= pageNo && pageNo <= Integer.MAX_VALUE;
+
+    final long fileOffset = (pageNo - 1) * (long) Page.pageSize;
+    return fileOffset;
+  }
+
 }
