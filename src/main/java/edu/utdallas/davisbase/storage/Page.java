@@ -2,8 +2,12 @@ package edu.utdallas.davisbase.storage;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
+import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 
 public class Page {
+
+  static final int PAGE_OFFSET_OF_CELL_COUNT = 0x02;
 
 	static final int pageSize = StorageConfiguration.Builder.getDefaultPageSize();
   static final int maximumnoOFChildren = 2;
@@ -332,6 +336,15 @@ public class Page {
     final byte code = file.readByte();
     final TablePageType type = TablePageType.fromCode(code);
     return type;
+  }
+
+  public static short getNumberOfCells(RandomAccessFile file, int pageNo) throws IOException {
+    final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
+    final long fileOffsetOfPageCellCount = fileOffsetOfPage + PAGE_OFFSET_OF_CELL_COUNT;
+    file.seek(fileOffsetOfPageCellCount);
+
+    final short cellCount = file.readShort();
+    return cellCount;
   }
 
 }
