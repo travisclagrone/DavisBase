@@ -17,8 +17,6 @@ public class Page {
   static final int maximumnoOFChildren = 2;
   static final long metaDataRootPageNoOffsetInFile = 0x05;
 
-	TableRowBuilder tableRowBuilder;
-
 	// called when the interior node is overflowed
 	public static int AddInteriorPage(RandomAccessFile file) {
 		int numofPages = 0;
