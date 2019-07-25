@@ -56,17 +56,17 @@ public class TableFile implements Closeable {
 		checkNotNull(file);
 		checkArgument(file.getChannel().isOpen());
 		this.file = file;
-
-		try {
-
-			if (file.length() < 512) {
-				Page.addTableMetaDataPage(file);
-			}
-		} catch (Exception e) {
-
-		}
-
-		// for testing
+//
+//		try {
+//
+//			if (file.length() < 512) {
+//				Page.addTableMetaDataPage(file);
+//			}
+//		} catch (Exception e) {
+//
+//		}
+//
+//		// for testing
 
 	}
 
