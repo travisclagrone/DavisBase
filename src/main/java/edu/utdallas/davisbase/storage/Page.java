@@ -367,4 +367,21 @@ public class Page {
     return pageOffsetOfCell;
   }
 
+  /**
+   * @param file the file from which to get the table interior cell's left child page no
+   * @param pageNo the one-based number of the page in the file
+   * @param cellIndex the zero-based index of the cell in the page
+   * @return the left child page no of the table interior cell
+   * @throws IOException
+   */
+  public static int getTableInteriorCellLeftChildPageNo(RandomAccessFile file, int pageNo, short cellIndex) throws IOException {
+    final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
+    final short pageOffsetOfCell = getPageOffsetOfCell(file, pageNo, cellIndex);
+    final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
+    file.seek(fileOffsetOfPageCell);
+
+    final int leftChildPageNo = file.readInt();
+    return leftChildPageNo;
+  }
+
 }
