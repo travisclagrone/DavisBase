@@ -237,7 +237,7 @@ public class TableFile implements Closeable {
 	}
 
 	public boolean goToRow(int rowId) throws IOException {
-		// TODO Implement TableFile.goToRow(int)
+		// COMBAK Implement TableFile.goToRow(int)
 		throw new NotImplementedException();
 	}
 
