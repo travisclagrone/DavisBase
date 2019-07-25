@@ -10,6 +10,7 @@ public class Page {
   static final int BYTES_OF_PAGE_OFFSET = Short.BYTES;
 
   static final int PAGE_OFFSET_OF_CELL_COUNT = 0x02;
+  static final int PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO = 0x06;
   static final int PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY = 0x10;
 
 	static final int pageSize = StorageConfiguration.Builder.getDefaultPageSize();
@@ -265,7 +266,21 @@ public class Page {
 		} catch (Exception e) {
 
 		}
-	}
+  }
+
+  /**
+   * @return the page no of the right sibling of the given leaf page; `-1` indicates
+   */
+  public static int getRightSiblingOfLeafPage(RandomAccessFile file, int pageNo) throws IOException {
+    assert Page.getTablePageType(file, pageNo) == LEAF;
+
+    final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
+    final long fileOffsetOfPageRightSiblingPageNo = fileOffsetOfPage + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO;
+    file.seek(fileOffsetOfPageRightSiblingPageNo);
+
+    final int rightSiblingPageNo = file.readInt();
+    return rightSiblingPageNo;
+  }
 
 	public static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
 		try {
@@ -289,7 +304,6 @@ public class Page {
 
 	}
 
-
 	public static void updateInteriorRowID(RandomAccessFile file, int rowId) {
 		try {
 			file.seek(0x09);
@@ -310,7 +324,6 @@ public class Page {
 		}
 		return -1;
 	}
-
 
 	public static void SortRowIds(RandomAccessFile file, int currentPageNo) {
 
