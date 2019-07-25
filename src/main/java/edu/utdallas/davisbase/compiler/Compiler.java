@@ -33,12 +33,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class Compiler {
 
-  protected final CompilerConfiguration configuration;
   protected final Storage context;
 
-  public Compiler(CompilerConfiguration configuration, Storage context) {
-    checkNotNull(configuration);
-    this.configuration = configuration;
+  public Compiler(Storage context) {
+    checkNotNull(context);
     this.context = context;
   }
 
