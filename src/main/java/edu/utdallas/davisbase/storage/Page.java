@@ -9,7 +9,7 @@ public class Page {
 
   static final int BYTES_OF_PAGE_OFFSET = Short.BYTES;
 
-  static final int PAGE_OFFSET_OF_CELL_COUNT = 0x02;
+  static final int PAGE_OFFSET_OF_CELL_COUNT = 0x01;
   static final int PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO = 0x06;
   static final int PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY = 0x10;
 
@@ -378,17 +378,6 @@ public class Page {
 		}
 		return;
 	}
-//
-//	public static int getnextRowIdInterior(RandomAccessFile file) {
-//		try {
-//			file.seek(0x09);
-//			int rowId=file.readInt();
-//			return (rowId + 1);
-//
-//		} catch (Exception e) {
-//		}
-//		return -1;
-//	}
 
 	public static void SortRowIds(RandomAccessFile file, int currentPageNo) {
 
