@@ -87,7 +87,7 @@ public class Compiler {
       List<InsertObject> insertObjects = new ArrayList<>();
       if(insert.getColumns().isEmpty()){
         for(int lcv = 0; lcv< insert.getValues().size(); lcv++){
-          String columnName = getColumnName(insert.getTable(),lcv);
+          String columnName = getColumnName(insert.getTable(),lcv+1); //add one to account for rowId
           @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(),insert.getValues().get(lcv), columnName);
           insertObjects.add(new InsertObject(lcv, obj));
         }
