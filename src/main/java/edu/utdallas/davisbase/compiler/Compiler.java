@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
 /**
@@ -220,42 +221,89 @@ public class Compiler {
    * @throws CompileException
    */
   public @Nullable Object validateTypeMatchesSchema(String tableName, Expression value, String columnName)throws CompileException, StorageException, IOException{
-    String val = value.toString();
-    if(validateNullability(tableName, columnName, value)){
+    if (validateNullability(tableName, columnName, value)) {
       return null;
     }
+
     DataType schemaDefinedColumnType= getColumnType(tableName, columnName);
     DataType convertedType = convertToDavisType(value);
-    if(!schemaDefinedColumnType.equals(convertedType)){
-      convertedType = checkLongValues(schemaDefinedColumnType, val);
-      if(schemaDefinedColumnType.equals(DataType.FLOAT) && convertedType.equals(DataType.DOUBLE)) {
-        return Float.parseFloat(val);
-      }
-      if(schemaDefinedColumnType.equals(DataType.DATETIME) && convertedType.equals(DataType.DATE)){
-        return LocalDateTime.parse(val);
+
+    if (!schemaDefinedColumnType.equals(convertedType)) {  // Supported implicit narrowing conversions from literal values for integral and floating-point types.
+      switch (convertedType) {
+        case BIGINT:
+          final long longValue = ((LongValue) value).getValue();
+
+          switch (schemaDefinedColumnType) {
+            case INT:
+              if (Integer.MIN_VALUE <= longValue && longValue <= Integer.MAX_VALUE) {
+                return (int) longValue;
+              }
+              throw new CompileException("Expected an INT value, but found a BIGINT value.");
+
+            case SMALLINT:
+              if (Short.MIN_VALUE <= longValue && longValue <= Short.MAX_VALUE) {
+                return (short) longValue;
+              }
+              throw new CompileException("Expected an SMALLINT value, but found a BIGINT value.");
+
+            case TINYINT:
+              if (Byte.MIN_VALUE <= longValue && longValue <= Byte.MAX_VALUE) {
+                return (byte) longValue;
+              }
+              throw new CompileException("Expected an TINYINT value, but found a BIGINT value.");
+
+            default:
+              throw new RuntimeException("This should never happen.");
+          }
+
+        case DOUBLE:
+          final double doubleValue = ((DoubleValue) value).getValue();
+
+          if (schemaDefinedColumnType == DataType.FLOAT) {
+            if (Float.MIN_VALUE <= doubleValue && doubleValue <= Float.MAX_VALUE) {
+              return (float) doubleValue;
+            }
+            throw new CompileException("Expected a FLOAT value, but found a DOUBLE value");
+          }
+
+          throw new RuntimeException("This should never happen.");
+
+        default:
+          throw new CompileException(
+              format("DavisBase does not support implicit type coercion from %s to %s",
+                  convertedType.name(),
+                  schemaDefinedColumnType.name()));
       }
     }
+
     if (value instanceof DoubleValue) {
       DoubleValue doubleValue = (DoubleValue) value;
       return doubleValue;
-    } else if (value instanceof LongValue) {
+    }
+    else if (value instanceof LongValue) {
       LongValue longValue = (LongValue) value;
       return longValue.getValue();
-    } else if (value instanceof DateValue) {
+    }
+    else if (value instanceof DateValue) {
       DateValue dateValue = (DateValue) value;
       return dateValue.getValue();
-    } else if (value instanceof TimestampValue) {
+    }
+    else if (value instanceof TimestampValue) {
       TimestampValue timestampValue = (TimestampValue) value;
       return timestampValue.getValue();
-    } else if (value instanceof TimeValue) {
+    }
+    else if (value instanceof TimeValue) {
       TimeValue timeValue = (TimeValue) value;
       return timeValue.getValue();
-    } else if (value instanceof StringValue) {
+    }
+    else if (value instanceof StringValue) {
       StringValue stringValue = (StringValue) value;
       return stringValue.getValue();
-    }else if (value instanceof NullValue) {
+    }
+    else if (value instanceof NullValue) {
       return null;
-    }else {
+    }
+    else {
       throw new CompileException("Invalid value in expression");
     }
   }
