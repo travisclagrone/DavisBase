@@ -181,9 +181,9 @@ public class TableFile implements Closeable {
 		int rowId = 0;
 
 
-		for (int i = 0; i < columnSizeArray.length; i++) {
-			file.writeByte(columnSizeArray[i]);
-		}
+//		for (int i = 0; i < columnSizeArray.length; i++) {
+//			file.writeByte(columnSizeArray[i]);
+//		}
 
 		if (pageType == 0x05) {
 			rowId = getnextRowIdInterior(file);
