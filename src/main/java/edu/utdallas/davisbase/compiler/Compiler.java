@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
 /**
@@ -220,42 +221,58 @@ public class Compiler {
    * @throws CompileException
    */
   public @Nullable Object validateTypeMatchesSchema(String tableName, Expression value, String columnName)throws CompileException, StorageException, IOException{
-    String val = value.toString();
-    if(validateNullability(tableName, columnName, value)){
+    if (validateNullability(tableName, columnName, value)) {
       return null;
     }
 
     DataType schemaDefinedColumnType= getColumnType(tableName, columnName);
     DataType convertedType = convertToDavisType(value);
+
     if (!schemaDefinedColumnType.equals(convertedType)) {  // Supported implicit narrowing conversions from literal values for integral and floating-point types.
       switch (convertedType) {
         case BIGINT:
+          final long longValue = ((LongValue) value).getValue();
+
           switch (schemaDefinedColumnType) {
             case INT:
-              // TODO
-              break;
+              if (Integer.MIN_VALUE <= longValue && longValue <= Integer.MAX_VALUE) {
+                return (int) longValue;
+              }
+              throw new CompileException("Expected an INT value, but found a BIGINT value.");
+
             case SMALLINT:
-              // TODO
-              break;
+              if (Short.MIN_VALUE <= longValue && longValue <= Short.MAX_VALUE) {
+                return (short) longValue;
+              }
+              throw new CompileException("Expected an SMALLINT value, but found a BIGINT value.");
+
             case TINYINT:
-              // TODO
-              break;
+              if (Byte.MIN_VALUE <= longValue && longValue <= Byte.MAX_VALUE) {
+                return (byte) longValue;
+              }
+              throw new CompileException("Expected an TINYINT value, but found a BIGINT value.");
+
             default:
-              // TODO Throw runtime exception. This code location should never be reached.
-              break;
+              throw new RuntimeException("This should never happen.");
           }
-          break;
+
         case DOUBLE:
+          final double doubleValue = ((DoubleValue) value).getValue();
+
           if (schemaDefinedColumnType == DataType.FLOAT) {
-            // TODO
+            if (Float.MIN_VALUE <= doubleValue && doubleValue <= Float.MAX_VALUE) {
+              return (float) doubleValue;
+            }
+            throw new CompileException("Expected a FLOAT value, but found a DOUBLE value");
           }
-          else {
-            // TODO Throw runtime exception. This code location should never be reached.
-          }
-          break;
+
+          throw new RuntimeException("This should never happen.");
+
         default:
-          // TODO Throw exception that DavisBase doesn't support implicit type coercion from convertedType (actual/given) to schemaDefinedColumnType (expected/pre-defined).
-          break;
+          throw new CompileException(
+              format("DavisBase does not support implicit type coercion from %s to %s",
+                  convertedType.name(),
+                  schemaDefinedColumnType.name()));
       }
     }
 
