@@ -224,38 +224,69 @@ public class Compiler {
     if(validateNullability(tableName, columnName, value)){
       return null;
     }
+
     DataType schemaDefinedColumnType= getColumnType(tableName, columnName);
     DataType convertedType = convertToDavisType(value);
-    if(!schemaDefinedColumnType.equals(convertedType)){
-      convertedType = checkLongValues(schemaDefinedColumnType, val);
-      if(schemaDefinedColumnType.equals(DataType.FLOAT) && convertedType.equals(DataType.DOUBLE)) {
-        return Float.parseFloat(val);
-      }
-      if(schemaDefinedColumnType.equals(DataType.DATETIME) && convertedType.equals(DataType.DATE)){
-        return LocalDateTime.parse(val);
+    if (!schemaDefinedColumnType.equals(convertedType)) {  // Supported implicit narrowing conversions from literal values for integral and floating-point types.
+      switch (convertedType) {
+        case BIGINT:
+          switch (schemaDefinedColumnType) {
+            case INT:
+              // TODO
+              break;
+            case SMALLINT:
+              // TODO
+              break;
+            case TINYINT:
+              // TODO
+              break;
+            default:
+              // TODO Throw runtime exception. This code location should never be reached.
+              break;
+          }
+          break;
+        case DOUBLE:
+          if (schemaDefinedColumnType == DataType.FLOAT) {
+            // TODO
+          }
+          else {
+            // TODO Throw runtime exception. This code location should never be reached.
+          }
+          break;
+        default:
+          // TODO Throw exception that DavisBase doesn't support implicit type coercion from convertedType (actual/given) to schemaDefinedColumnType (expected/pre-defined).
+          break;
       }
     }
+
     if (value instanceof DoubleValue) {
       DoubleValue doubleValue = (DoubleValue) value;
       return doubleValue;
-    } else if (value instanceof LongValue) {
+    }
+    else if (value instanceof LongValue) {
       LongValue longValue = (LongValue) value;
       return longValue.getValue();
-    } else if (value instanceof DateValue) {
+    }
+    else if (value instanceof DateValue) {
       DateValue dateValue = (DateValue) value;
       return dateValue.getValue();
-    } else if (value instanceof TimestampValue) {
+    }
+    else if (value instanceof TimestampValue) {
       TimestampValue timestampValue = (TimestampValue) value;
       return timestampValue.getValue();
-    } else if (value instanceof TimeValue) {
+    }
+    else if (value instanceof TimeValue) {
       TimeValue timeValue = (TimeValue) value;
       return timeValue.getValue();
-    } else if (value instanceof StringValue) {
+    }
+    else if (value instanceof StringValue) {
       StringValue stringValue = (StringValue) value;
       return stringValue.getValue();
-    }else if (value instanceof NullValue) {
+    }
+    else if (value instanceof NullValue) {
       return null;
-    }else {
+    }
+    else {
       throw new CompileException("Invalid value in expression");
     }
   }
