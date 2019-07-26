@@ -62,7 +62,9 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
         @Override
         public SelectResultDataRow next() {
           try {
-            return (SelectResultDataRow) input.readObject();
+            SelectResultDataRow row = (SelectResultDataRow) input.readObject();
+            rowIndex += 1;
+            return row;
           }
           catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
