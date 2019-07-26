@@ -90,10 +90,14 @@ public class TableFile implements Closeable {
 			rightPageSeekPoint = ((rightPageNo - 1) * Page.pageSize) + 6;
 			file.seek(rightPageSeekPoint);
 			rightPageNo = file.readInt();
+			file.seek(rightPageSeekPoint);
 		}
 		if (searchFlag) {
-			pageOffset = rightPageSeekPoint - 10;
-		}
+			 
+            pageOffset = rightPageSeekPoint - 6;
+            currentPageNo = (int) ((pageOffset / Page.pageSize) + 1);
+            searchFlag = false;
+        }
 
 		int noOfColumns = tableRowBuilder.getNoOfValues();
 		noOfColumns = noOfColumns + 1;
@@ -154,6 +158,7 @@ public class TableFile implements Closeable {
 
 		file.seek(pageOffset);
 		pageType = file.readByte();
+		Boolean splitFlag = false;
 
 		totalSpaceRequired = (1 + columnSizeArray.length + payLoad);
 		boolean overflowFlag = checkPagesize(totalSpaceRequired, currentPageNo);
@@ -162,11 +167,14 @@ public class TableFile implements Closeable {
 				currentPageNo = Page.splitInteriorPage(file, currentPageNo);
 			} else if (pageType == 0x0D) {
 				currentPageNo = Page.splitLeafPage(file, currentPageNo);
+				splitFlag = true;
 			}
 		}
-
-		pageOffset = (currentPageNo - 1) * Page.pageSize;
-		file.seek(pageOffset);
+		if (splitFlag) {
+			 
+            pageOffset = (currentPageNo - 1) * Page.pageSize;
+            splitFlag = false;
+        }file.seek(pageOffset);
 		pageType = file.readByte();
 		long seekOffset = pageOffset + 3;
 		file.seek(seekOffset);
