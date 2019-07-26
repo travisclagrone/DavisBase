@@ -42,11 +42,13 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
       return new Iterator<SelectResultDataRow>() {
 
         private final ObjectInputStream input = new ObjectInputStream(new BufferedInputStream(newInputStream(path)));
+        private final int rowCount = size;
+        private int rowIndex = 0;
 
         @Override
         public boolean hasNext() {
           try {
-            boolean hasNext = input.available() > 0;
+            boolean hasNext = rowIndex < rowCount;
             if (!hasNext) {
               input.close();
             }
@@ -136,6 +138,7 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
       checkArgument(rowCount < Integer.MAX_VALUE, "Cannot write more than %d rows", Integer.MAX_VALUE);
 
       output.writeObject(row);
+      output.flush();
       rowCount += 1;
     }
 
