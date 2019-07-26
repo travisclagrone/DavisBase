@@ -16,8 +16,7 @@ public class Storage {
 	private final StorageConfiguration configuration;
 	private final StorageState state;
 
-
-  @SuppressWarnings("initialization")
+	@SuppressWarnings("initialization")
 
 	public Storage(StorageConfiguration configuration, StorageState state) {
 		this.configuration = configuration;
@@ -77,10 +76,14 @@ public class Storage {
 			}
 
 			if (!existSysTable) {
+				initRootPage(state.getDataDirectory().getPath() + "/" + this.configuration.getCatalogTablesTableName()
+						+ "." + this.configuration.getTableFileExtension());
 				initSysTable();
 			}
 
 			if (!existSysColumn) {
+				initRootPage(state.getDataDirectory().getPath() + "/" + this.configuration.getCatalogColumnsTableName()
+						+ "." + this.configuration.getTableFileExtension());
 				initSysColumn();
 			}
 
@@ -90,6 +93,23 @@ public class Storage {
 
 	}
 
+	private void initRootPage(String tablePath) {
+
+		try {
+
+			RandomAccessFile sysTable = new RandomAccessFile(tablePath, "rw");
+			sysTable.setLength(this.configuration.getPageSize());
+			sysTable.seek(0);
+			sysTable.writeByte(-1);
+			sysTable.writeInt(1);
+			sysTable.writeInt(2);
+			sysTable.writeInt(-1);
+			sysTable.close();
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+	}
+
 	private void initSysTable() {
 
 		try {
@@ -97,8 +117,9 @@ public class Storage {
 			RandomAccessFile sysTable = new RandomAccessFile(state.getDataDirectory().getPath() + "/"
 					+ this.configuration.getCatalogTablesTableName() + "." + this.configuration.getTableFileExtension(),
 					"rw");
-			sysTable.setLength(this.configuration.getPageSize());
-			sysTable.seek(0);
+			sysTable.setLength(this.configuration.getPageSize() * 2);
+			// sysTable.seek(0);
+			sysTable.seek(512);
 			sysTable.write(0x0D);
 			sysTable.writeByte(0x02);
 
@@ -142,13 +163,14 @@ public class Storage {
 							+ this.configuration.getTableFileExtension(),
 					"rw");
 
-			sysColumn.setLength(this.configuration.getPageSize());
-			sysColumn.seek(0);
+			sysColumn.setLength(this.configuration.getPageSize() * 2);
+			// sysColumn.seek(0);
+			sysColumn.seek(512);
 			sysColumn.writeByte(0x0D);
 			sysColumn.writeByte(0x08);
 
 			int[] offset = new int[10];
-			offset[0] = this.configuration.getPageSize() - 43;
+			offset[0] = this.configuration.getPageSize()*2 - 43;
 			offset[1] = offset[0] - 47;
 			offset[2] = offset[1] - 44;
 			offset[3] = offset[2] - 48;
