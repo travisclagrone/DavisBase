@@ -136,6 +136,7 @@ public class SelectResultData implements Iterable<SelectResultDataRow> {
       checkArgument(rowCount < Integer.MAX_VALUE, "Cannot write more than %d rows", Integer.MAX_VALUE);
 
       output.writeObject(row);
+      output.flush();
       rowCount += 1;
     }
 
