@@ -411,7 +411,7 @@ public class Compiler {
     while(table.goToNextRow()){
       if(castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
          SelectCommandColumn select = new SelectCommandColumn(
-          DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition(),
+          castNonNull(table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition())),
           castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())),
           DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())))
         );
