@@ -282,7 +282,7 @@ public class SelectResultDataRow implements Serializable, Iterable<@Nullable Obj
      *         values in order (not null)
      */
     public SelectResultDataRow build() {
-      checkState(index < values.length,
+      checkState(index <= values.length,
           "Only %d values have been added, but %d columns were specified",
               index, values.length);
 
