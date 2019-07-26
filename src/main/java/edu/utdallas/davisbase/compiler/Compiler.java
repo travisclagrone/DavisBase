@@ -278,7 +278,7 @@ public class Compiler {
 
     if (value instanceof DoubleValue) {
       DoubleValue doubleValue = (DoubleValue) value;
-      return doubleValue;
+      return doubleValue.getValue();
     }
     else if (value instanceof LongValue) {
       LongValue longValue = (LongValue) value;
