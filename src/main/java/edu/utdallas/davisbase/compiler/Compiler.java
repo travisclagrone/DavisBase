@@ -15,6 +15,7 @@ import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
+import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -24,9 +25,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
 /**
  * A compiler of {@link edu.utdallas.davisbase.representation.CommandRepresentation CommandRepresentation} to
@@ -108,13 +110,19 @@ public class Compiler {
     else if (command instanceof SelectCommandRepresentation){
       SelectCommandRepresentation select = (SelectCommandRepresentation)command;
       List<SelectCommandColumn> selectColumns = new ArrayList<>();
+      //check if * then add all columns
       for(SelectItem item: select.getColumns()){
-        SelectCommandColumn col = new SelectCommandColumn(
-          validateIsDavisBaseColumnWithinTable(select.getTable(), item.toString()),
-          item.toString(),  // QUESTION If the SelectItem is a plain column reference, does this return _exactly_ the colum name? Or do we need to switch on concrete type, cast, and then invoke a method to get the name?
-          getColumnType(select.getTable(), item.toString())
-        );
-        selectColumns.add(col);
+        if(item instanceof AllColumns){
+          selectColumns = getAllColumns(select.getTable());
+        }
+        else {
+          SelectCommandColumn col = new SelectCommandColumn(
+            validateIsDavisBaseColumnWithinTable(select.getTable(), item.toString()),
+            item.toString(),  // QUESTION If the SelectItem is a plain column reference, does this return _exactly_ the colum name? Or do we need to switch on concrete type, cast, and then invoke a method to get the name?
+            getColumnType(select.getTable(), item.toString())
+          );
+          selectColumns.add(col);
+        }
       }
       return new SelectCommand(
         validateIsDavisBaseTable(select.getTable()),
@@ -395,6 +403,22 @@ public class Compiler {
       }
     }
     throw new CompileException("Column does not exist within this table");
+  }
+
+  public List<SelectCommandColumn> getAllColumns(String tableName)throws StorageException, IOException{
+    List<SelectCommandColumn> selectColumns = new ArrayList<>();
+    TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+         SelectCommandColumn select = new SelectCommandColumn(
+          DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition(),
+          castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())),
+          DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())))
+        );
+         selectColumns.add(select);
+      }
+    }
+    return selectColumns;
   }
 
 }
