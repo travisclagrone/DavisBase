@@ -12,7 +12,7 @@ public class SelectCommand implements Command {
 
   private final String tableName;
   private final List<SelectCommandColumn> selectClauseColumns;
-  // COMBAK Implement Command.whereExpression fields
+  // TODO Implement SelectCommand.wherePredicate
 
   /**
    * @param tableName           the name of the table being selected FROM (not null)
