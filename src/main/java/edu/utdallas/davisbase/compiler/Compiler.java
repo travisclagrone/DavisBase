@@ -20,7 +20,6 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -87,6 +86,7 @@ public class Compiler {
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
       List<InsertObject> insertObjects = new ArrayList<>();
       if(insert.getColumns().isEmpty()){
+        validateInsertValuesMatchesCountColumns(insert.getTable(),insert.getValues().size());
         for(int lcv = 0; lcv< insert.getValues().size(); lcv++){
           String columnName = getColumnName(insert.getTable(),lcv+1); //add one to account for rowId
           @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(),insert.getValues().get(lcv), columnName);
@@ -467,6 +467,26 @@ public class Compiler {
       }
     }
     return selectColumns;
+  }
+
+  public void validateInsertValuesMatchesCountColumns(String tableName, int size)throws IOException, StorageException, CompileException{
+    int actualColumns = 0;
+    TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
+    while(table.goToNextRow()){
+      if(castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
+        actualColumns++;
+      }
+    }
+    actualColumns-=1; //subtract 1 for rowid
+    if(size < actualColumns){
+      throw new CompileException("Davisbase does not support default column values. Please insert a value for every column");
+    }
+    else if(size >actualColumns){
+      throw new CompileException("The amount of columns you are trying to insert are greater than the columns defined for table: " + tableName);
+    }
+    else{
+      return;
+    }
   }
 
 }
