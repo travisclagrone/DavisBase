@@ -198,11 +198,12 @@ public class Host {
       printer.println("Empty result set.");
       return;
     }    
-    int i = 0;
-    for (SelectResultDataRow row : result.getData()) { i = 0;
+    
+    for (SelectResultDataRow row : result.getData()) {
+      int iColumn = 0;
       for (@Nullable Object value : row) {
-        printer.print(formatCellValue(result.getSchema().getColumnName(i).length(), Objects.toString(castNonNull(value))) + "|");  // NOTE `value` actually can be null, and `Objects#toString(Object)` can actually accept a null argument, but the annotated JDK is over-strict here.
-        i++;
+        printer.print(formatCellValue(result.getSchema().getColumnName(iColumn).length(), Objects.toString(castNonNull(value))) + "|");  // NOTE `value` actually can be null, and `Objects#toString(Object)` can actually accept a null argument, but the annotated JDK is over-strict here.
+        iColumn++;
       }
       printer.println();
     }

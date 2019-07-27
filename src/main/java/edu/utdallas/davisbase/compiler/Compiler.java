@@ -253,11 +253,12 @@ public class Compiler {
               }
               throw new CompileException("Expected an TINYINT value, but found a BIGINT value.");
 
-            case YEAR:
-	          if (Byte.MIN_VALUE <= longValue && longValue <= Byte.MAX_VALUE) {
-	            return (byte) longValue;
+            case YEAR:         
+              long tempLongValue = longValue-2000;
+	          if (Byte.MIN_VALUE <= tempLongValue && tempLongValue <= Byte.MAX_VALUE) {
+	            return (byte) (tempLongValue);
 	          }
-	          throw new CompileException("Expected an YEAR value, but found a BIGINT value.");             
+	          throw new CompileException("Expected an YEAR value between 1873 and 2127, but found value out of range.");             
             
             default:
               throw new RuntimeException("This should never happen.");
@@ -477,9 +478,10 @@ public class Compiler {
   }
 
   public void validateInsertValuesMatchesCountColumns(String tableName, int size)throws IOException, StorageException, CompileException{
-    int actualColumns = 0;
+    int actualColumns = 0;    
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while(table.goToNextRow()){
+      assert DavisBaseColumnsTableColumn.ROWID != null : "The table 'davisbase_columns' should include a listing for the 'rowid' column for each table";
       if(castNonNull(table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)){
         actualColumns++;
       }

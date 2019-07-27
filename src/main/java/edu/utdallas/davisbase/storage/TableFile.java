@@ -432,7 +432,7 @@ public class TableFile implements Closeable {
 		}
 
 		goToCurrentLeafPageCellColumnValue(columnIndex);
-		return Year.of(file.readByte());
+		return Year.of(file.readByte()+2000);
 	}
 
 	public @Nullable LocalTime readTime(int columnIndex) throws IOException, StorageException {

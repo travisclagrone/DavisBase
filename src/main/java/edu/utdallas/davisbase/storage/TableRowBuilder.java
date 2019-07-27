@@ -132,7 +132,7 @@ public class TableRowBuilder {
 				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putDouble((double) data).array();
 				break;
 			case "Year":
-				int yearInt = ((Year) data).getValue();
+				int yearInt = ((Year) data).getValue() - 2000;
 				tempByteArray = new byte[1];
 				tempByteArray = ByteBuffer.allocate(tempByteArray.length).put((byte) yearInt).array();
 				break;
