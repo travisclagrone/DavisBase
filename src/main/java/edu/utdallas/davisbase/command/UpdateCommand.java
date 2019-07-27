@@ -71,7 +71,7 @@ public class UpdateCommand implements Command {
    * @return the simple {@link CommandWhere where} clause expression for this {@code UpdateCommand},
    *         if any (nullable)
    */
-  public CommandWhere getWhere() {
+  public @Nullable CommandWhere getWhere() {
     return where;
   }
 
