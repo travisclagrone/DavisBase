@@ -5,11 +5,9 @@ import static java.util.Arrays.stream;
 import static java.util.Objects.hash;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import edu.utdallas.davisbase.DataType;
 
 public class CommandWhere {
@@ -23,30 +21,39 @@ public class CommandWhere {
     LESS_THAN_OR_EQUAL;
   }
 
-  private final byte leftColumnIndex;
+  private final CommandWhereColumn leftColumnReference;
   private final Operator operator;
-  private final @NonNull Object rightLiteralValue;
+  private final @Nullable Object rightLiteralValue;
 
-  public CommandWhere(byte leftColumnIndex, Operator operator, @NonNull Object rightLiteralValue) {
-    checkElementIndex(leftColumnIndex, Byte.MAX_VALUE,
-        format("leftColumnIndex %d must be in range [0, %d)", leftColumnIndex, Byte.MAX_VALUE));
+  /**
+   * @param leftColumnReference the specification of the column reference on the left side of the
+   *                            simple {@code WHERE} clause expression (not null)
+   * @param operator            the single binary relational operator
+   *                            {@link CommandWhere.Operator Operator} of this compiled
+   *                            {@code WHERE} clause (not null)
+   * @param rightLiteralValue   the literal value on the right side of this simple {@code WHERE}
+   *                            clause expression (either null or an instance of one of the class
+   *                            returned by {@link DataType#getJavaClass() DataType.getJavaClass()})
+   *                            for one of the {@link DataType}s)
+   */
+  public CommandWhere(CommandWhereColumn leftColumnReference, Operator operator, @Nullable Object rightLiteralValue) {
+    checkNotNull(leftColumnReference, "leftColumnReference");
     checkNotNull(operator, "operator");
-    checkNotNull(rightLiteralValue, "rightLiteralValue");
-    checkArgument(stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> rightLiteralValue.getClass().equals(cls)),
-        format("rightLiteralValue is an instance of %s, which is not one of the types defined by edu.utdallas.davisbase.DataType#getJavaClass()", rightLiteralValue.getClass().getName()));
+    checkArgument(rightLiteralValue == null || stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> rightLiteralValue.getClass().equals(cls)),
+        format("rightLiteralValue is an instance of %s, but must be either null or an instance of one of types defined by edu.utdallas.davisbase.DataType#getJavaClass()",
+            rightLiteralValue.getClass().getName()));
 
-    this.leftColumnIndex = leftColumnIndex;
+    this.leftColumnReference = leftColumnReference;
     this.operator = operator;
     this.rightLiteralValue = rightLiteralValue;
   }
 
   /**
-   * @return the zero-based index of the column in the source table, where the column is the
-   *         referenced column on the left side of this simple {@code WHERE} clause expression (not
-   *         negative, and less than {@link java.lang.Byte#MAX_VALUE Byte.MAX_VALUE})
+   * @return the specification of the column reference on the left side of the simple {@code WHERE}
+   *         clause expression (not null)
    */
-  public byte getLeftColumnIndex() {
-    return leftColumnIndex;
+  public CommandWhereColumn getLeftColumnReference() {
+    return leftColumnReference;
   }
 
   /**
@@ -58,11 +65,12 @@ public class CommandWhere {
   }
 
   /**
-   * @return the literal value on the right side of this simple {@code WHERE} clause expression (not
-   *         null, and an instance of one of the types defined by
-   *         {@link edu.utdallas.davisbase.DataType#getJavaClass() DataType.getJavaClass()})
+   * @return the literal value on the right side of this simple {@code WHERE} clause expression
+   *         (either null or an instance of one of the class returned by
+   *         {@link DataType#getJavaClass() DataType.getJavaClass()}) for one of the
+   *         {@link DataType}s)
    */
-  public @NonNull Object getRightLiteralValue() {
+  public @Nullable Object getRightLiteralValue() {
     return rightLiteralValue;
   }
 
@@ -74,20 +82,20 @@ public class CommandWhere {
 
     CommandWhere other = (CommandWhere) obj;
     return
-        getLeftColumnIndex() == other.getLeftColumnIndex() &&
+        getLeftColumnReference() == other.getLeftColumnReference() &&
         getOperator().equals(other.getOperator()) &&
         getRightLiteralValue().equals(other.getRightLiteralValue());
   }
 
   @Override
   public int hashCode() {
-    return hash(getLeftColumnIndex(), getOperator(), getRightLiteralValue());
+    return hash(getLeftColumnReference(), getOperator(), getRightLiteralValue());
   }
 
   @Override
   public String toString() {
     return toStringHelper(CommandWhere.class)
-        .add("leftColumnIndex", getLeftColumnIndex())
+        .add("leftColumnReference", getLeftColumnReference())
         .add("operator", getOperator())
         .add("rightLiteralValue", getRightLiteralValue())
         .toString();
