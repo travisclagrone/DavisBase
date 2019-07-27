@@ -56,6 +56,7 @@ public class Host {
       userInput = new StringBuilder();
 
       printer.println(configuration.getPrompt());
+      printer.flush();
       while (!Pattern.matches("^([^']|('(\\\\\\\\|\\\\'|[^'])*'))*;\\s*$", userInput)) {
         userInput.append(scanner.nextLine());
         userInput.append(configuration.getLineSeparator());
@@ -73,6 +74,7 @@ public class Host {
 
   public void displayWelcome() {
     printer.println(configuration.getWelcome());
+    printer.flush();
   }
 
   // TODO Refactor help message content to configuration, or at least a local constant.
@@ -101,6 +103,7 @@ public class Host {
     printer.println();
     printer.println();
     printer.println(altHorizontalLine);
+    printer.flush();
   }
 
   // region write(Result)
@@ -138,6 +141,7 @@ public class Host {
     else {
       throw newWriteNotImplementedException(result.getClass());
     }
+    printer.flush();
   }
 
   protected void writeCreateIndexResult(CreateIndexResult result) throws IOException {
@@ -252,6 +256,7 @@ public class Host {
     else {
       throw newWriteNotImplementedException(exception.getClass());
     }
+    printer.flush();
   }
 
   protected void writeHostException(HostException exception) throws IOException {
@@ -280,12 +285,14 @@ public class Host {
     checkNotNull(exception, "exception");
 
     printer.println("An IOException occurred with the following message : " + exception.getMessage());
+    printer.flush();
   }
 
   public void write(RuntimeException exception) throws IOException {
     checkNotNull(exception, "exception");
 
     printer.println("A RuntimeException occurred with the following message : " + exception.getMessage());
+    printer.flush();
   }
 
   protected static NotImplementedException newWriteNotImplementedException(Class<?> argumentClass) {
