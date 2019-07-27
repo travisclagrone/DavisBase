@@ -20,7 +20,6 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -72,13 +71,14 @@ public class Compiler {
     }
     else if (command instanceof DeleteCommandRepresentation){
       DeleteCommandRepresentation delete= (DeleteCommandRepresentation)command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(DeleteCommandRepresentation)
+      return new DeleteCommand(
+        delete.getTable(),
+        parseCommandWhere(delete.getWhereClause())
+      );
     }
     else if (command instanceof DropTableCommandRepresentation){
       DropTableCommandRepresentation dropTable = (DropTableCommandRepresentation)command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(DropTableCommandRepresentation)
+      return new DropTableCommand(dropTable.getTable());
     }
     else if (command instanceof ExitCommandRepresentation){
       return new ExitCommand();
@@ -127,7 +127,8 @@ public class Compiler {
       }
       return new SelectCommand(
         validateIsDavisBaseTable(select.getTable()),
-        selectColumns
+        selectColumns,
+        parseCommandWhere(select.getTable(),select.getWhereClause())
       );
     }
     else if (command instanceof ShowTablesCommandRepresentation){
@@ -135,8 +136,23 @@ public class Compiler {
     }
     else if (command instanceof UpdateCommandRepresentation){
       UpdateCommandRepresentation update = (UpdateCommandRepresentation)command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(UpdateCommandRepresentation)
+      List<UpdateCommandColumn> updateCommandColumns = new ArrayList<>();
+      List<Column> columnRepresentations = update.getColumns();
+      List<Expression> valuesList = update.getValues();
+      for(int lcv = 0; lcv < columnRepresentations.size(); lcv++){
+        Column col = columnRepresentations.get(lcv);
+        byte colIndex =  getColumnIndex(col, update.getTable());
+        UpdateCommandColumn updateCommandColumn = new UpdateCommandColumn(
+          colIndex,
+          validateTypeMatchesSchema(update.getTable(), valuesList.get(lcv),getColumnName(update.getTable(), colIndex))
+        );
+        updateCommandColumns.add(updateCommandColumn);
+      }
+      return new UpdateCommand(
+        update.getTable(),
+        updateCommandColumns,
+        parseCommandWhere(update.getWhereClause())
+      );
     }
     else{
       throw new CompileException("Unrecognized command. Unable to compile. ");
@@ -467,6 +483,45 @@ public class Compiler {
       }
     }
     return selectColumns;
+  }
+
+  public @Nullable CommandWhere parseCommandWhere(String tableName, @Nullable WhereExpression where)throws IOException, StorageException,CompileException{
+    if(null==where){
+      return null;
+    }
+    byte columnIndex = getColumnIndex(where.getColumn(), tableName);
+    String columnName = getColumnName(tableName, columnIndex);
+    CommandWhereColumn leftColumnReference = new CommandWhereColumn(
+      columnIndex,
+      columnName,
+      getColumnType(tableName,columnName),
+      getIsNullable(tableName, columnName ),
+      false//TODO: COME BACK AND FIX THIS ONCE INDEX IMPLEMENTED
+    );
+    return new CommandWhere(
+      leftColumnReference,
+      returnCommandOperator(where.getOperator()),
+      validateTypeMatchesSchema(tableName, where.getValue(), columnName)
+    );
+  }
+
+  public CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op)throws CompileException{
+    switch (op){
+      case EQUALSTO:
+        return CommandWhere.Operator.EQUAL;
+      case NOTEQUALTO:
+        return CommandWhere.Operator.NOT_EQUAL;
+      case GREATERTHAN:
+        return CommandWhere.Operator.GREATER_THAN;
+      case GREATERTHANEQUALS:
+        return CommandWhere.Operator.GREATER_THAN_OR_EQUAL;
+      case LESSTHAN:
+        return CommandWhere.Operator.LESS_THAN;
+      case LESSTHANEQUALS:
+        return CommandWhere.Operator.LESS_THAN_OR_EQUAL;
+      default:
+        throw new CompileException("Unrecognized operator");
+    }
   }
 
 }
