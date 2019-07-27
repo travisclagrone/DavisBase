@@ -63,7 +63,7 @@ public class Host {
         userInput.append(configuration.getLineSeparator());
       }
 
-      if (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
+      if (Pattern.matches("(?i)\\s*HELP\\s*;\\s*", userInput)) {
         displayHelp();
         continue;
       }
