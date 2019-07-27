@@ -94,6 +94,7 @@ public class Compiler {
         }
       }
       else {
+    	validateInsertValuesMatchesCountColumns(insert.getTable(),insert.getValues().size());
         for (int lcv = 0; lcv < insert.getColumns().size(); lcv++) {
           byte index = getColumnIndex(insert.getColumns().get(lcv), insert.getTable());
           @Nullable Object obj = validateTypeMatchesSchema(insert.getTable(), insert.getValues().get(lcv), insert.getColumns().get(lcv).toString());
