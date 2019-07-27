@@ -252,6 +252,12 @@ public class Compiler {
               }
               throw new CompileException("Expected an TINYINT value, but found a BIGINT value.");
 
+            case YEAR:
+	          if (Byte.MIN_VALUE <= longValue && longValue <= Byte.MAX_VALUE) {
+	            return (byte) longValue;
+	          }
+	          throw new CompileException("Expected an YEAR value, but found a BIGINT value.");             
+            
             default:
               throw new RuntimeException("This should never happen.");
           }
@@ -286,15 +292,15 @@ public class Compiler {
     }
     else if (value instanceof DateValue) {
       DateValue dateValue = (DateValue) value;
-      return dateValue.getValue();
+      return dateValue.getValue().toLocalDate();
     }
     else if (value instanceof TimestampValue) {
       TimestampValue timestampValue = (TimestampValue) value;
-      return timestampValue.getValue();
+      return timestampValue.getValue().toLocalDateTime();
     }
     else if (value instanceof TimeValue) {
       TimeValue timeValue = (TimeValue) value;
-      return timeValue.getValue();
+      return timeValue.getValue().toLocalTime();
     }
     else if (value instanceof StringValue) {
       StringValue stringValue = (StringValue) value;

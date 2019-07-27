@@ -62,12 +62,11 @@ public class DavisBase {
 
       while (true) {
         try {
-          String statement = host.readStatement();
-          CommandRepresentation representation = parser.parse(statement);
-          Command command = compiler.compile(representation);
+          String statement = host.readStatement();          
+          CommandRepresentation representation = parser.parse(statement);          
+          Command command = compiler.compile(representation);          
           Result result = executor.execute(command, this.storage);
           host.write(result);
-
           if (result instanceof ExitResult) {
             break;
           }
