@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.CatalogTableColumn;
@@ -156,21 +157,15 @@ public class Storage {
 
       List<CatalogTableColumn> davisTableColumnList = davisTable.getColumns();
 
-      for (CatalogTableColumn col : davisTableColumnList) {
 
+
+      for (CatalogTableColumn col : davisTableColumnList) {
         TableRowBuilder row = new TableRowBuilder();
         row.appendText(davisTableName);
         row.appendText(col.getName());
         row.appendText(col.getDataType().name());
-
         row.appendTinyInt(col.getOrdinalPosition());
-
-        if (col.isNullable() == true) {
-          row.appendText("YES");
-        } else {
-          row.appendText("NO");
-        }
-
+        row.appendText(BooleanUtils.toText(col.isNullable()));
         sysColumnFile.appendRow(row);
       }
 
@@ -180,14 +175,8 @@ public class Storage {
         row.appendText(davisColumnName);
         row.appendText(col.getName());
         row.appendText(col.getDataType().name());
-
         row.appendTinyInt(col.getOrdinalPosition());
-
-        if (col.isNullable() == true) {
-          row.appendText("YES");
-        } else {
-          row.appendText("NO");
-        }
+        row.appendText(BooleanUtils.toText(col.isNullable()));
         sysColumnFile.appendRow(row);
       }
 
