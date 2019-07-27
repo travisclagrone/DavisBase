@@ -3,13 +3,11 @@ package edu.utdallas.davisbase.storage;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
-
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.CatalogTableColumn;
@@ -18,183 +16,185 @@ import edu.utdallas.davisbase.common.DavisBaseConstant;
 
 public class Storage {
 
-	private final StorageConfiguration configuration;
-	private final StorageState state;
+  private final StorageConfiguration configuration;
+  private final StorageState state;
 
-	@SuppressWarnings("initialization")
+  @SuppressWarnings("initialization")
 
-	public Storage(StorageConfiguration configuration, StorageState state) {
-		this.configuration = configuration;
-		this.state = state;
-		initDavisBase();
-	}
+  public Storage(StorageConfiguration configuration, StorageState state) {
+    this.configuration = configuration;
+    this.state = state;
+    initDavisBase();
+  }
 
-	public void createTableFile(String tableName) throws IOException {
+  public void createTableFile(String tableName) throws IOException {
 
-		String path = state.getDataDirectory().getPath() + "/" + tableName + "."
-				+ this.configuration.getTableFileExtension();
+    String path = state.getDataDirectory().getPath() + "/" + tableName + "."
+        + this.configuration.getTableFileExtension();
 
-		File file = new File(path);
+    File file = new File(path);
 
-		if (!file.exists()) {
-			RandomAccessFile table = new RandomAccessFile(state.getDataDirectory().getPath() + "/" + tableName + "."
-					+ this.configuration.getTableFileExtension(), "rw");
-//			Page.addTableMetaDataPage(table);
-			table.close();
-		}
-	}
+    if (!file.exists()) {
+      RandomAccessFile table = new RandomAccessFile(state.getDataDirectory().getPath() + "/"
+          + tableName + "." + this.configuration.getTableFileExtension(), "rw");
+      // Page.addTableMetaDataPage(table);
+      table.close();
+    }
+  }
 
-	public TableFile openTableFile(String tableName) throws IOException {
-		checkNotNull(tableName);
+  public TableFile openTableFile(String tableName) throws IOException {
+    checkNotNull(tableName);
 
-		final String tableFileName = tableName + "." + configuration.getTableFileExtension();
-		final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
+    final String tableFileName = tableName + "." + configuration.getTableFileExtension();
+    final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
 
-		checkArgument(tableFileHandle.exists(),
-				String.format("File \"%s\" for table \"%s\" does not exist.", tableFileHandle.toString(), tableName));
-		checkArgument(!tableFileHandle.isDirectory(), String.format(
-				"File \"%s\" for table \"%s\" is actually a directory.", tableFileHandle.toString(), tableName));
+    checkArgument(tableFileHandle.exists(), String.format(
+        "File \"%s\" for table \"%s\" does not exist.", tableFileHandle.toString(), tableName));
+    checkArgument(!tableFileHandle.isDirectory(),
+        String.format("File \"%s\" for table \"%s\" is actually a directory.",
+            tableFileHandle.toString(), tableName));
 
-		final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
-		final long length = randomAccessFile.length();
-		checkState(length % configuration.getPageSize() == 0, String
-				.format("File length %d is not a multiple of page size %d.", length, configuration.getPageSize()));
+    final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
+    final long length = randomAccessFile.length();
+    checkState(length % configuration.getPageSize() == 0, String.format(
+        "File length %d is not a multiple of page size %d.", length, configuration.getPageSize()));
 
-		return new TableFile(randomAccessFile);
-	}
+    return new TableFile(randomAccessFile);
+  }
 
-	public void initDavisBase() {
-		try {
-			File dataDir = state.getDataDirectory();
-			if (!dataDir.exists()) {
-				dataDir.mkdir();
-			}
+  public void initDavisBase() {
+    try {
+      File dataDir = state.getDataDirectory();
+      if (!dataDir.exists()) {
+        dataDir.mkdir();
+      }
 
-			String[] currentTableList = dataDir.list();
-			boolean existSysTable = false;
-			boolean existSysColumn = false;
-			for (int i = 0; i < currentTableList.length; i++) {
-				if (currentTableList[i].equals("davisbase_tables.tbl"))
-					existSysTable = true;
-				if (currentTableList[i].equals("davisbase_columns.tbl"))
-					existSysColumn = true;
-			}
+      String[] currentTableList = dataDir.list();
+      boolean existSysTable = false;
+      boolean existSysColumn = false;
+      for (int i = 0; i < currentTableList.length; i++) {
+        if (currentTableList[i].equals("davisbase_tables.tbl"))
+          existSysTable = true;
+        if (currentTableList[i].equals("davisbase_columns.tbl"))
+          existSysColumn = true;
+      }
 
-			if (!existSysTable) {
-				initSysTable();
-			}
+      if (!existSysTable) {
+        initSysTable();
+      }
 
-			if (!existSysColumn) {
-				initSysColumn();
-			}
+      if (!existSysColumn) {
+        initSysColumn();
+      }
 
-		} catch (SecurityException e) {
-			System.out.println(e);
-		}
+    } catch (SecurityException e) {
+      System.out.println(e);
+    }
 
-	}
+  }
 
-	private void initRootPage(String tablePath) {
+  private void initRootPage(String tablePath) {
 
-		try {
+    try {
 
-			RandomAccessFile sysTable = new RandomAccessFile(tablePath, "rw");
-			sysTable.setLength(this.configuration.getPageSize());
-			sysTable.seek(0);
-			sysTable.writeByte(-1);
-			sysTable.writeInt(1);
-			sysTable.writeInt(2);
-			sysTable.writeInt(-1);
-			sysTable.close();
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-	}
+      RandomAccessFile sysTable = new RandomAccessFile(tablePath, "rw");
+      sysTable.setLength(this.configuration.getPageSize());
+      sysTable.seek(0);
+      sysTable.writeByte(-1);
+      sysTable.writeInt(1);
+      sysTable.writeInt(2);
+      sysTable.writeInt(-1);
+      sysTable.close();
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+  }
 
-	private void initSysTable() {
+  private void initSysTable() {
 
-		try {
-			String davisTableName = this.configuration.getCatalogTablesTableName();
-			String davisColumnName = this.configuration.getCatalogColumnsTableName();
-			String sysTablePath = state.getDataDirectory().getPath() + "/"
-					+ this.configuration.getCatalogTablesTableName() + "." + this.configuration.getTableFileExtension();
+    try {
+      String davisTableName = this.configuration.getCatalogTablesTableName();
+      String davisColumnName = this.configuration.getCatalogColumnsTableName();
+      String sysTablePath =
+          state.getDataDirectory().getPath() + "/" + this.configuration.getCatalogTablesTableName()
+              + "." + this.configuration.getTableFileExtension();
 
-			RandomAccessFile sysTable = new RandomAccessFile(sysTablePath, "rw");
+      RandomAccessFile sysTable = new RandomAccessFile(sysTablePath, "rw");
 
-			TableRowBuilder sysTableRow = new TableRowBuilder();
-			sysTableRow.appendText(davisTableName);
-			TableRowBuilder sysColumnRow = new TableRowBuilder();
-			sysColumnRow.appendText(davisColumnName);
+      TableRowBuilder sysTableRow = new TableRowBuilder();
+      sysTableRow.appendText(davisTableName);
+      TableRowBuilder sysColumnRow = new TableRowBuilder();
+      sysColumnRow.appendText(davisColumnName);
 
-			TableFile sysTableFile = new TableFile(sysTable);
+      TableFile sysTableFile = new TableFile(sysTable);
 
-			sysTableFile.appendRow(sysTableRow);
-			sysTableFile.appendRow(sysColumnRow);
+      sysTableFile.appendRow(sysTableRow);
+      sysTableFile.appendRow(sysColumnRow);
 
-			sysTable.close();
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-	}
+      sysTable.close();
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+  }
 
-	private void initSysColumn() {
+  private void initSysColumn() {
 
-		try {
+    try {
 
-			String davisTableName = this.configuration.getCatalogTablesTableName();
-			String davisColumnName = this.configuration.getCatalogColumnsTableName();
-			String sysColumnPath = state.getDataDirectory().getPath() + "/"
-					+ this.configuration.getCatalogColumnsTableName() + "."
-					+ this.configuration.getTableFileExtension();
+      String davisTableName = this.configuration.getCatalogTablesTableName();
+      String davisColumnName = this.configuration.getCatalogColumnsTableName();
+      String sysColumnPath =
+          state.getDataDirectory().getPath() + "/" + this.configuration.getCatalogColumnsTableName()
+              + "." + this.configuration.getTableFileExtension();
 
-			RandomAccessFile sysTable = new RandomAccessFile(sysColumnPath, "rw");
+      RandomAccessFile sysTable = new RandomAccessFile(sysColumnPath, "rw");
 
-			CatalogTable davisTable = CatalogTable.DAVISBASE_TABLES;
-			CatalogTable davisColumn = CatalogTable.DAVISBASE_COLUMNS;
+      CatalogTable davisTable = CatalogTable.DAVISBASE_TABLES;
+      CatalogTable davisColumn = CatalogTable.DAVISBASE_COLUMNS;
 
-			TableFile sysColumnFile = new TableFile(sysTable);
+      TableFile sysColumnFile = new TableFile(sysTable);
 
-			List<CatalogTableColumn> davisTableColumnList = davisTable.getColumns();
+      List<CatalogTableColumn> davisTableColumnList = davisTable.getColumns();
 
-			for (CatalogTableColumn col : davisTableColumnList) {
+      for (CatalogTableColumn col : davisTableColumnList) {
 
-				TableRowBuilder row = new TableRowBuilder();
-				row.appendText(davisTableName);
-				row.appendText(col.getName());
-				row.appendText(col.getDataType().name());
+        TableRowBuilder row = new TableRowBuilder();
+        row.appendText(davisTableName);
+        row.appendText(col.getName());
+        row.appendText(col.getDataType().name());
 
-				row.appendTinyInt(col.getOrdinalPosition());
+        row.appendTinyInt(col.getOrdinalPosition());
 
-				if (col.isNullable() == true) {
-					row.appendText("YES");
-				} else {
-					row.appendText("NO");
-				}
+        if (col.isNullable() == true) {
+          row.appendText("YES");
+        } else {
+          row.appendText("NO");
+        }
 
-				sysColumnFile.appendRow(row);
-			}
+        sysColumnFile.appendRow(row);
+      }
 
-			List<CatalogTableColumn> davisColumnColumnList = davisColumn.getColumns();
-			for (CatalogTableColumn col : davisColumnColumnList) {
-				TableRowBuilder row = new TableRowBuilder();
-				row.appendText(davisColumnName);
-				row.appendText(col.getName());
-				row.appendText(col.getDataType().name());
+      List<CatalogTableColumn> davisColumnColumnList = davisColumn.getColumns();
+      for (CatalogTableColumn col : davisColumnColumnList) {
+        TableRowBuilder row = new TableRowBuilder();
+        row.appendText(davisColumnName);
+        row.appendText(col.getName());
+        row.appendText(col.getDataType().name());
 
-				row.appendTinyInt(col.getOrdinalPosition());
+        row.appendTinyInt(col.getOrdinalPosition());
 
-				if (col.isNullable() == true) {
-					row.appendText("YES");
-				} else {
-					row.appendText("NO");
-				}
-				sysColumnFile.appendRow(row);
-			}
+        if (col.isNullable() == true) {
+          row.appendText("YES");
+        } else {
+          row.appendText("NO");
+        }
+        sysColumnFile.appendRow(row);
+      }
 
-			sysTable.close();
+      sysTable.close();
 
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-	}
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+  }
 }
