@@ -2,6 +2,8 @@ package edu.utdallas.davisbase.command;
 
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
+import static java.util.Objects.hash;
+import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -10,9 +12,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import edu.utdallas.davisbase.DataType;
 
-/**
- * CommandWhere
- */
 public class CommandWhere {
 
   public static enum Operator {
@@ -65,6 +64,33 @@ public class CommandWhere {
    */
   public @NonNull Object getRightLiteralValue() {
     return rightLiteralValue;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj != null && obj instanceof CommandWhere)) {
+      return false;
+    }
+
+    CommandWhere other = (CommandWhere) obj;
+    return
+        getLeftColumnIndex() == other.getLeftColumnIndex() &&
+        getOperator().equals(other.getOperator()) &&
+        getRightLiteralValue().equals(other.getRightLiteralValue());
+  }
+
+  @Override
+  public int hashCode() {
+    return hash(getLeftColumnIndex(), getOperator(), getRightLiteralValue());
+  }
+
+  @Override
+  public String toString() {
+    return toStringHelper(CommandWhere.class)
+        .add("leftColumnIndex", getLeftColumnIndex())
+        .add("operator", getOperator())
+        .add("rightLiteralValue", getRightLiteralValue())
+        .toString();
   }
 
 }
