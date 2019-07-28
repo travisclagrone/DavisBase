@@ -354,7 +354,7 @@ public class Compiler {
           return castNonNull(table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition()));
         }
       }
-      throw new CompileException("Column does not exist within this table");
+      throw new CompileException("Column " +columnName + " does not exist within this table");
   }
 
   /**
@@ -369,7 +369,7 @@ public class Compiler {
         return tableName;
       }
     }
-    throw new CompileException("Table does not exist within DavisBase");
+    throw new CompileException("Table" +tableName+ " does not exist within DavisBase");
   }
 
   /**
@@ -386,7 +386,7 @@ public class Compiler {
         return DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())));
       }
     }
-    throw new CompileException("Column does not exist within this table");
+    throw new CompileException("Column " +columnName + " does not exist within this table");
   }
 
   public String getColumnName(String tableName, int columnIndex)throws CompileException, StorageException, IOException{
@@ -397,7 +397,7 @@ public class Compiler {
         return (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())));
       }
     }
-    throw new CompileException("Column does not exist within this table");
+    throw new CompileException("Column with index " + columnIndex + " does not exist within this table");
   }
 
   /**
@@ -458,7 +458,7 @@ public class Compiler {
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while(table.goToNextRow()){
       if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)) {
-        throw new CompileException("Table already exists.");
+        throw new CompileException("Table " +tableName+ " already exists.");
       }
     }
   }
@@ -500,7 +500,7 @@ public class Compiler {
         return BooleanUtils.fromText(castNonNull(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition())));
       }
     }
-    throw new CompileException("Column does not exist within this table");
+    throw new CompileException("Column " + columnName + " does not exist within this table");
   }
 
   /**
