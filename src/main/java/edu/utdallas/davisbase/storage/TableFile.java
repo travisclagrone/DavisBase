@@ -93,11 +93,19 @@ public class TableFile implements Closeable {
 			file.seek(rightPageSeekPoint);
 		}
 		if (searchFlag) {
-			 
-            pageOffset = rightPageSeekPoint - 6;
-            currentPageNo = (int) ((pageOffset / Page.pageSize) + 1);
-            searchFlag = false;
-        }
+
+			pageOffset = rightPageSeekPoint - 6;
+			currentPageNo = (int) ((pageOffset / Page.pageSize) + 1);
+			searchFlag = false;
+		}
+
+		int rowId = 0;
+//		if (pageType == 0x05) {
+//			rowId = getnextRowIdInterior(file);
+//			file.seek(0x09);
+//			file.writeInt(rowId);
+//		} else 
+		
 
 		int noOfColumns = tableRowBuilder.getNoOfValues();
 		noOfColumns = noOfColumns + 1;
@@ -111,9 +119,7 @@ public class TableFile implements Closeable {
 			case "Integer":
 				columnSizeArray[i] = 4;
 				break;
-
 			case "String":
-
 				columnSizeArray[i] = data.toString().length();
 				break;
 			case "Byte":
@@ -145,7 +151,6 @@ public class TableFile implements Closeable {
 			case "":
 				columnSizeArray[i] = 0;
 				break;
-
 			default:
 				columnSizeArray[i] = 0;
 				break;
@@ -158,23 +163,29 @@ public class TableFile implements Closeable {
 
 		file.seek(pageOffset);
 		pageType = file.readByte();
+		if (pageType == 0x0D) {
+			rowId = getnextRowId(file);
+			file.seek(0x01);
+			file.writeInt(rowId);
+		}
 		Boolean splitFlag = false;
-
 		totalSpaceRequired = (1 + columnSizeArray.length + payLoad);
 		boolean overflowFlag = checkPagesize(totalSpaceRequired, currentPageNo);
 		if (overflowFlag) {
-			if (pageType == 0x05) {
-				currentPageNo = Page.splitInteriorPage(file, currentPageNo);
-			} else if (pageType == 0x0D) {
-				currentPageNo = Page.splitLeafPage(file, currentPageNo);
+//			if (pageType == 0x05) {
+//				currentPageNo = Page.splitInteriorPage(file, currentPageNo);
+//			} else 
+//				
+			if (pageType == 0x0D) {
+				currentPageNo = Page.splitLeafPage(file, currentPageNo, rowId);
 				splitFlag = true;
 			}
 		}
 		if (splitFlag) {
-			 
-            pageOffset = (currentPageNo - 1) * Page.pageSize;
-            splitFlag = false;
-        }file.seek(pageOffset);
+			pageOffset = (currentPageNo - 1) * Page.pageSize;
+			splitFlag = false;
+		}
+		file.seek(pageOffset);
 		pageType = file.readByte();
 		long seekOffset = pageOffset + 3;
 		file.seek(seekOffset);
@@ -184,22 +195,6 @@ public class TableFile implements Closeable {
 		}
 
 		short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
-
-		int rowId = 0;
-
-//		for (int i = 0; i < columnSizeArray.length; i++) {
-//			file.writeByte(columnSizeArray[i]);
-//		}
-
-		if (pageType == 0x05) {
-			rowId = getnextRowIdInterior(file);
-			file.seek(0x09);
-			file.writeInt(rowId);
-		} else if (pageType == 0x0D) {
-			rowId = getnextRowId(file);
-			file.seek(0x01);
-			file.writeInt(rowId);
-		}
 
 		file.seek(pageOffset + dataEntryPoint);
 		file.writeByte(noOfColumns);
@@ -222,9 +217,13 @@ public class TableFile implements Closeable {
 		file.seek(pageOffset + 16 + 2 * (noOfCellsInPage - 1));
 		file.writeShort(dataEntryPoint);
 
-		// Update table meta data with rowId
-//		file.seek(0x01);
-//		file.writeInt(rowId);
+		// TODO Udpate maximum row ID of the respective page in Parent.
+
+		int parentPageNo = Page.getParent(file, currentPageNo);
+		// updateParentwithLeafPageMaxRowID
+		if (parentPageNo != -1) {
+			Page.updateParentwithLeafPageMaxRowID(file, currentPageNo, parentPageNo, rowId);
+		}
 
 	}
 
@@ -242,7 +241,8 @@ public class TableFile implements Closeable {
 
 	private boolean checkPagesize(int sizeRequired, int currentPageNo) {
 		try {
-			file.seek((currentPageNo - 1) * Page.pageSize);
+			file.seek(Page.convertPageNoToFileOffset(currentPageNo));
+//			file.seek((currentPageNo - 1) * Page.pageSize);
 			byte pageType = file.readByte();
 			if (pageType == 0x0D) {
 
@@ -258,7 +258,7 @@ public class TableFile implements Closeable {
 				if ((startofCellConcent - arryLastEntry - 1) < sizeRequired) {
 					return true;
 				}
-			} else {// to Update in Part 2 for the remainig page types
+			} else {// TODO Update in Part 2 for the remainig page types
 				return false;
 			}
 		} catch (Exception e) {
@@ -333,7 +333,7 @@ public class TableFile implements Closeable {
 					format("columnIndex (%d) is not less than columnCount (%d)", columnIndex, columnCount));
 		}
 
-		int cellOffset = 1+columnCount; // 1 to account for the initial byte of column count.
+		int cellOffset = 1 + columnCount; // 1 to account for the initial byte of column count.
 		for (int i = 0; i < columnIndex; i++) {
 			cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, i);
 //        cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
