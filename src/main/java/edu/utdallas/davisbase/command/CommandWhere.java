@@ -44,7 +44,7 @@ public class CommandWhere {
     checkNotNull(operator, "operator");
     checkArgument(rightLiteralValue == null || stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> castNonNull(rightLiteralValue).getClass().equals(cls)),
         format("rightLiteralValue is an instance of %s, but must be either null or an instance of one of types defined by edu.utdallas.davisbase.DataType#getJavaClass()",
-            castNonNull(rightLiteralValue).getClass().getName()));
+            rightLiteralValue == null ? "null" : castNonNull(rightLiteralValue).getClass().getName()));
 
     this.leftColumnReference = leftColumnReference;
     this.operator = operator;

@@ -73,7 +73,7 @@ public class Compiler {
       DeleteCommandRepresentation delete= (DeleteCommandRepresentation)command;
       return new DeleteCommand(
         delete.getTable(),
-        parseCommandWhere(delete.getTable(), delete.getWhereClause())
+        compileCommandWhere(delete.getTable(), delete.getWhereClause())
       );
     }
     else if (command instanceof DropTableCommandRepresentation){
@@ -128,7 +128,7 @@ public class Compiler {
       return new SelectCommand(
         validateIsDavisBaseTable(select.getTable()),
         selectColumns,
-        parseCommandWhere(select.getTable(),select.getWhereClause())
+        compileCommandWhere(select.getTable(),select.getWhereClause())
       );
     }
     else if (command instanceof ShowTablesCommandRepresentation){
@@ -151,7 +151,7 @@ public class Compiler {
       return new UpdateCommand(
         update.getTable(),
         updateCommandColumns,
-        parseCommandWhere(update.getTable(), update.getWhereClause())
+        compileCommandWhere(update.getTable(), update.getWhereClause())
       );
     }
     else{
@@ -485,7 +485,7 @@ public class Compiler {
     return selectColumns;
   }
 
-  public @Nullable CommandWhere parseCommandWhere(String tableName, @Nullable WhereExpression where)throws IOException, StorageException,CompileException{
+  public @Nullable CommandWhere compileCommandWhere(String tableName, @Nullable WhereExpression where)throws IOException, StorageException,CompileException{
     if(null==where){
       return null;
     }
