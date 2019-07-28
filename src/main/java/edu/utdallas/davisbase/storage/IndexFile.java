@@ -1,5 +1,5 @@
 package edu.utdallas.davisbase.storage;
 
-public class IndexTableFile {
+public class IndexFile {
 
 }
