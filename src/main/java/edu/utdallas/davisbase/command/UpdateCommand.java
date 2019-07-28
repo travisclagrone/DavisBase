@@ -11,6 +11,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -71,11 +72,12 @@ public class UpdateCommand implements Command {
    * @return the simple {@link CommandWhere where} clause expression for this {@code UpdateCommand},
    *         if any (nullable)
    */
-  public CommandWhere getWhere() {
+  public @Nullable CommandWhere getWhere() {
     return where;
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public boolean equals(Object obj) {
     if (!(obj != null && obj instanceof UpdateCommand)) {
       return false;
@@ -84,24 +86,18 @@ public class UpdateCommand implements Command {
     UpdateCommand other = (UpdateCommand) obj;
     return
         getTableName().equals(other.getTableName()) &&
-        getColumns().equals(other.getColumns()) && (
-          (
-            getWhere() == null &&
-            other.getWhere() == null
-          ) || (
-            getWhere() != null &&
-            other.getWhere() != null &&
-            getWhere().equals(other.getWhere())
-          )
-        );
+        getColumns().equals(other.getColumns()) &&
+        Objects.equals(getWhere(), other.getWhere());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public int hashCode() {
     return hash(getTableName(), getColumns(), getWhere());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public String toString() {
     return toStringHelper(UpdateCommand.class)
         .add("tableName", getTableName())

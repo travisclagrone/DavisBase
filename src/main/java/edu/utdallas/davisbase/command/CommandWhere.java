@@ -3,6 +3,9 @@ package edu.utdallas.davisbase.command;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Objects.hash;
+
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+import java.util.Objects;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -39,9 +42,9 @@ public class CommandWhere {
   public CommandWhere(CommandWhereColumn leftColumnReference, Operator operator, @Nullable Object rightLiteralValue) {
     checkNotNull(leftColumnReference, "leftColumnReference");
     checkNotNull(operator, "operator");
-    checkArgument(rightLiteralValue == null || stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> rightLiteralValue.getClass().equals(cls)),
+    checkArgument(rightLiteralValue == null || stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> castNonNull(rightLiteralValue).getClass().equals(cls)),
         format("rightLiteralValue is an instance of %s, but must be either null or an instance of one of types defined by edu.utdallas.davisbase.DataType#getJavaClass()",
-            rightLiteralValue.getClass().getName()));
+            castNonNull(rightLiteralValue).getClass().getName()));
 
     this.leftColumnReference = leftColumnReference;
     this.operator = operator;
@@ -75,6 +78,7 @@ public class CommandWhere {
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public boolean equals(Object obj) {
     if (!(obj != null && obj instanceof CommandWhere)) {
       return false;
@@ -84,15 +88,17 @@ public class CommandWhere {
     return
         getLeftColumnReference() == other.getLeftColumnReference() &&
         getOperator().equals(other.getOperator()) &&
-        getRightLiteralValue().equals(other.getRightLiteralValue());
+        Objects.equals(getRightLiteralValue(), other.getRightLiteralValue());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public int hashCode() {
     return hash(getLeftColumnReference(), getOperator(), getRightLiteralValue());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public String toString() {
     return toStringHelper(CommandWhere.class)
         .add("leftColumnReference", getLeftColumnReference())
