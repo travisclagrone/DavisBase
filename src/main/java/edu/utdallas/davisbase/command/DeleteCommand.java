@@ -3,6 +3,7 @@ package edu.utdallas.davisbase.command;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Objects.hash;
+import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class DeleteCommand implements Command {
@@ -33,6 +34,7 @@ public class DeleteCommand implements Command {
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public boolean equals(Object obj) {
     if (!(obj != null && obj instanceof DeleteCommand)) {
       return false;
@@ -40,24 +42,18 @@ public class DeleteCommand implements Command {
 
     DeleteCommand other = (DeleteCommand) obj;
     return
-        getTableName().equals(other.getTableName()) && (
-          (
-            getWhere() == null &&
-            other.getWhere() == null
-          ) || (
-            getWhere() != null &&
-            other.getWhere() != null
-            && getWhere().equals(other.getWhere())
-          )
-        );
+        getTableName().equals(other.getTableName()) &&
+        Objects.equals(getWhere(), other.getWhere());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public int hashCode() {
     return hash(getTableName(), getWhere());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public String toString() {
     return toStringHelper(DeleteCommand.class)
         .add("tableName", getTableName())

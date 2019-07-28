@@ -73,7 +73,7 @@ public class Compiler {
       DeleteCommandRepresentation delete= (DeleteCommandRepresentation)command;
       return new DeleteCommand(
         delete.getTable(),
-        parseCommandWhere(delete.getWhereClause())
+        parseCommandWhere(delete.getTable(), delete.getWhereClause())
       );
     }
     else if (command instanceof DropTableCommandRepresentation){
@@ -151,7 +151,7 @@ public class Compiler {
       return new UpdateCommand(
         update.getTable(),
         updateCommandColumns,
-        parseCommandWhere(update.getWhereClause())
+        parseCommandWhere(update.getTable(), update.getWhereClause())
       );
     }
     else{
