@@ -435,10 +435,25 @@ public class Compiler {
     throw new CompileException("Values you are trying to insert does not match the table schema");
   }
 
+  /**
+   * @param col Column object to check
+   * @param table table name to check column
+   * @return byte of column index based on parameters
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public byte getColumnIndex(Column col, String table)throws CompileException,StorageException, IOException{
     return (validateIsDavisBaseColumnWithinTable(table, col.getColumnName()));
   }
 
+  /**
+   * Validate that given table exists otherwise throws exception
+   * @param tableName table to check existence
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public void validateTableDoesNotExist(String tableName)throws CompileException, StorageException, IOException{
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while(table.goToNextRow()){
@@ -448,6 +463,16 @@ public class Compiler {
     }
   }
 
+  /**
+   * Validate the nullability of an expression
+   * @param tableName table of column
+   * @param columnName column to check
+   * @param value Expression to check value of
+   * @return
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public boolean validateNullability(String tableName, String columnName, Expression value)throws CompileException, StorageException, IOException{
     if(getIsNullable(tableName, columnName) && value instanceof NullValue){
       return true;
@@ -458,6 +483,15 @@ public class Compiler {
     return false;
   }
 
+  /**
+   * Checks against DAVISBASE_COLUMNS table to see if column is nullable
+   * @param tableName table to check
+   * @param columnName column to check
+   * @return whether column nullable
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public boolean getIsNullable(String tableName, String columnName)throws CompileException, StorageException, IOException {
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while(table.goToNextRow()){
@@ -469,6 +503,12 @@ public class Compiler {
     throw new CompileException("Column does not exist within this table");
   }
 
+  /**
+   * @param tableName table to get columns
+   * @return List of SelectCommandColumn object that represents all columns for given table
+   * @throws StorageException
+   * @throws IOException
+   */
   public List<SelectCommandColumn> getAllColumns(String tableName)throws StorageException, IOException{
     List<SelectCommandColumn> selectColumns = new ArrayList<>();
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
@@ -485,6 +525,14 @@ public class Compiler {
     return selectColumns;
   }
 
+  /**
+   * @param tableName name of table
+   * @param where WhereExpression representation of where clause
+   * @return compiled CommandWhere of where clause
+   * @throws IOException
+   * @throws StorageException
+   * @throws CompileException
+   */
   public @Nullable CommandWhere compileCommandWhere(String tableName, @Nullable WhereExpression where)throws IOException, StorageException,CompileException{
     if(null==where){
       return null;
@@ -505,6 +553,11 @@ public class Compiler {
     );
   }
 
+  /**
+   * @param op WhereExpression Operator enum
+   * @return the CommandWhere Operator Enum given the WhereExpression Operator
+   * @throws CompileException
+   */
   public CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op)throws CompileException{
     switch (op){
       case EQUALSTO:
