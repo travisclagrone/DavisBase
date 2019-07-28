@@ -7,6 +7,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.hash;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class SelectCommand implements Command {
@@ -62,6 +63,7 @@ public class SelectCommand implements Command {
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public boolean equals(Object obj) {
     if (!(obj != null && obj instanceof SelectCommand)) {
       return false;
@@ -70,24 +72,18 @@ public class SelectCommand implements Command {
     SelectCommand other = (SelectCommand) obj;
     return
         tableName.equals(other.getTableName()) &&
-        selectClauseColumns.equals(other.getSelectClauseColumns()) && (
-          (
-            getWhere() == null &&
-            other.getWhere() == null
-          ) || (
-            getWhere() != null &&
-            other.getWhere() != null &&
-            getWhere().equals(other.getWhere())
-          )
-        );
+        selectClauseColumns.equals(other.getSelectClauseColumns()) &&
+        Objects.equals(getWhere(), other.getWhere());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public int hashCode() {
     return hash(getTableName(), getSelectClauseColumns(), getWhere());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public String toString() {
     return toStringHelper(SelectCommand.class)
         .add("tableName", getTableName())

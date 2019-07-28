@@ -4,6 +4,8 @@ import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Objects.hash;
 
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -32,7 +34,7 @@ public class UpdateCommandColumn {
   public UpdateCommandColumn(byte columnIndex, @Nullable Object value) {
     checkArgument(1 <= columnIndex && columnIndex < Byte.MAX_VALUE,
         format("columnIndex %d should be in the range [1, %d)", columnIndex, Byte.MAX_VALUE));
-    checkArgument(value != null || stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> value.getClass().equals(cls)),
+    checkArgument(value != null || stream(DataType.values()).map(DataType::getJavaClass).anyMatch(cls -> castNonNull(value).getClass().equals(cls)),
         "value should be either null or an instance of one of edu.utdallas.davisbase.Datatype#getJavaClass()");
 
     this.columnIndex = columnIndex;
@@ -57,6 +59,7 @@ public class UpdateCommandColumn {
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public boolean equals(Object obj) {
     if (!(obj != null && obj instanceof UpdateCommandColumn)) {
       return false;
@@ -69,11 +72,13 @@ public class UpdateCommandColumn {
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public int hashCode() {
     return hash(getColumnIndex(), getValue());
   }
 
   @Override
+  @SuppressWarnings("nullness")
   public String toString() {
     return toStringHelper(UpdateCommandColumn.class)
         .add("columnIndex", getColumnIndex())
