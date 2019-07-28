@@ -265,7 +265,6 @@ public class Executor {
     return result;
   }
 
-  // TODO Implement support for WHERE clause in Executor#executeSelect(SelectCommand)
   protected SelectResult executeSelectCommand(SelectCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
@@ -273,80 +272,83 @@ public class Executor {
     final String tableName = command.getTableName();
     final List<SelectCommandColumn> columns = command.getSelectClauseColumns();
     final int columnCount = columns.size();
+    final @Nullable CommandWhere where = command.getWhere();
 
     final SelectResultData.Builder dataBuilder = new SelectResultData.Builder();
     try (TableFile tableFile = context.openTableFile(tableName)) {
       while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
 
-        final SelectResultDataRow.Builder dataRowBuilder = new SelectResultDataRow.Builder(columnCount);
-        for (SelectCommandColumn column : columns) {
-          final byte columnIndex = column.getIndex();
+          final SelectResultDataRow.Builder dataRowBuilder = new SelectResultDataRow.Builder(columnCount);
+          for (SelectCommandColumn column : columns) {
+            final byte columnIndex = column.getIndex();
 
-          switch (column.getDataType()) {
-            case TINYINT:
-              final @Nullable Byte maybeTinyInt = tableFile.readTinyInt(columnIndex);
-              dataRowBuilder.addTinyInt(maybeTinyInt);
-              break;
+            switch (column.getDataType()) {
+              case TINYINT:
+                final @Nullable Byte maybeTinyInt = tableFile.readTinyInt(columnIndex);
+                dataRowBuilder.addTinyInt(maybeTinyInt);
+                break;
 
-            case SMALLINT:
-              final @Nullable Short maybeSmallInt = tableFile.readSmallInt(columnIndex);
-              dataRowBuilder.addSmallInt(maybeSmallInt);
-              break;
+              case SMALLINT:
+                final @Nullable Short maybeSmallInt = tableFile.readSmallInt(columnIndex);
+                dataRowBuilder.addSmallInt(maybeSmallInt);
+                break;
 
-            case INT:
-              final @Nullable Integer maybeInt = tableFile.readInt(columnIndex);
-              dataRowBuilder.addInt(maybeInt);
-              break;
+              case INT:
+                final @Nullable Integer maybeInt = tableFile.readInt(columnIndex);
+                dataRowBuilder.addInt(maybeInt);
+                break;
 
-            case BIGINT:
-              final @Nullable Long maybeBigInt = tableFile.readBigInt(columnIndex);
-              dataRowBuilder.addBigInt(maybeBigInt);
-              break;
+              case BIGINT:
+                final @Nullable Long maybeBigInt = tableFile.readBigInt(columnIndex);
+                dataRowBuilder.addBigInt(maybeBigInt);
+                break;
 
-            case FLOAT:
-              final @Nullable Float maybeFloat = tableFile.readFloat(columnIndex);
-              dataRowBuilder.addFloat(maybeFloat);
-              break;
+              case FLOAT:
+                final @Nullable Float maybeFloat = tableFile.readFloat(columnIndex);
+                dataRowBuilder.addFloat(maybeFloat);
+                break;
 
-            case DOUBLE:
-              final @Nullable Double maybeDouble = tableFile.readDouble(columnIndex);
-              dataRowBuilder.addDouble(maybeDouble);
-              break;
+              case DOUBLE:
+                final @Nullable Double maybeDouble = tableFile.readDouble(columnIndex);
+                dataRowBuilder.addDouble(maybeDouble);
+                break;
 
-            case YEAR:
-              final @Nullable Year maybeYear = tableFile.readYear(columnIndex);
-              dataRowBuilder.addYear(maybeYear);
-              break;
+              case YEAR:
+                final @Nullable Year maybeYear = tableFile.readYear(columnIndex);
+                dataRowBuilder.addYear(maybeYear);
+                break;
 
-            case TIME:
-              final @Nullable LocalTime maybeTime = tableFile.readTime(columnIndex);
-              dataRowBuilder.addTime(maybeTime);
-              break;
+              case TIME:
+                final @Nullable LocalTime maybeTime = tableFile.readTime(columnIndex);
+                dataRowBuilder.addTime(maybeTime);
+                break;
 
-            case DATETIME:
-              final @Nullable LocalDateTime maybeDateTime = tableFile.readDateTime(columnIndex);
-              dataRowBuilder.addDateTime(maybeDateTime);
-              break;
+              case DATETIME:
+                final @Nullable LocalDateTime maybeDateTime = tableFile.readDateTime(columnIndex);
+                dataRowBuilder.addDateTime(maybeDateTime);
+                break;
 
-            case DATE:
-              final @Nullable LocalDate maybeDate = tableFile.readDate(columnIndex);
-              dataRowBuilder.addDate(maybeDate);
-              break;
+              case DATE:
+                final @Nullable LocalDate maybeDate = tableFile.readDate(columnIndex);
+                dataRowBuilder.addDate(maybeDate);
+                break;
 
-            case TEXT:
-              final @Nullable String maybeText = tableFile.readText(columnIndex);
-              dataRowBuilder.addText(maybeText);
-              break;
+              case TEXT:
+                final @Nullable String maybeText = tableFile.readText(columnIndex);
+                dataRowBuilder.addText(maybeText);
+                break;
 
-            default:
-              throw new NotImplementedException(format(
-                  "Execution of a SelectCommand over a SelectCommandColumn of DataType %s",
-                      column.getDataType()));
+              default:
+                throw new NotImplementedException(format(
+                    "Execution of a SelectCommand over a SelectCommandColumn of DataType %s",
+                        column.getDataType()));
+            }
           }
-        }
 
-        SelectResultDataRow dataRow = dataRowBuilder.build();
-        dataBuilder.writeRow(dataRow);
+          SelectResultDataRow dataRow = dataRowBuilder.build();
+          dataBuilder.writeRow(dataRow);
+        }
       }
     }
 
