@@ -183,6 +183,7 @@ public class Executor {
     return result;
   }
 
+  // TODO Implement support for WHERE clause in Executor#executeDelete(DeleteCommand)
   protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
@@ -262,6 +263,7 @@ public class Executor {
     return result;
   }
 
+  // TODO Implement support for WHERE clause in Executor#executeSelect(SelectCommand)
   protected SelectResult executeSelectCommand(SelectCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
@@ -376,6 +378,7 @@ public class Executor {
     return result;
   }
 
+  // TODO Implement support for WHERE clause in Executor#executeUpdate(UpdateCommand)
   protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
