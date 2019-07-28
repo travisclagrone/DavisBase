@@ -100,12 +100,6 @@ public class TableFile implements Closeable {
 		}
 
 		int rowId = 0;
-//		if (pageType == 0x05) {
-//			rowId = getnextRowIdInterior(file);
-//			file.seek(0x09);
-//			file.writeInt(rowId);
-//		} else 
-		
 
 		int noOfColumns = tableRowBuilder.getNoOfValues();
 		noOfColumns = noOfColumns + 1;
@@ -576,6 +570,18 @@ public class TableFile implements Closeable {
 
 			int rowId = file.readInt();
 			return (rowId + 1);
+
+		} catch (Exception e) {
+		}
+		return -1;
+	}
+
+	public int getMaxtRowIdInTable(RandomAccessFile file) throws IOException {
+		try {
+			file.seek(0x01);
+
+			int rowId = file.readInt();
+			return (rowId);
 
 		} catch (Exception e) {
 		}
