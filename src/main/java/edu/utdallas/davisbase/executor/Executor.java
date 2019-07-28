@@ -67,44 +67,46 @@ import edu.utdallas.davisbase.storage.TableRowBuilder;
 public class Executor {
 
   protected final ExecutorConfiguration configuration;
+  protected final Storage context;
 
-  public Executor(ExecutorConfiguration configuration) {
+  public Executor(ExecutorConfiguration configuration, Storage context) {
     checkNotNull(configuration, "configuration");
+    checkNotNull(context, "context");
 
     this.configuration = configuration;
+    this.context = context;
   }
 
-  public Result execute(Command command, Storage context) throws ExecuteException, StorageException, IOException {
+  public Result execute(Command command) throws ExecuteException, StorageException, IOException {
     checkNotNull(command, "command");
-    checkNotNull(context, "context");
 
     Result result;
     if (command instanceof CreateIndexCommand) {
-      result = executeCreateIndex((CreateIndexCommand) command, context);
+      result = executeCreateIndex((CreateIndexCommand) command);
     }
     else if (command instanceof CreateTableCommand) {
-      result = executeCreateTable((CreateTableCommand) command, context);
+      result = executeCreateTable((CreateTableCommand) command);
     }
     else if (command instanceof DeleteCommand) {
-      result = executeDelete((DeleteCommand) command, context);
+      result = executeDelete((DeleteCommand) command);
     }
     else if (command instanceof DropTableCommand) {
-      result = executeDropTable((DropTableCommand) command, context);
+      result = executeDropTable((DropTableCommand) command);
     }
     else if (command instanceof ExitCommand) {
-      result = executeExit((ExitCommand) command, context);
+      result = executeExit((ExitCommand) command);
     }
     else if (command instanceof InsertCommand) {
-      result = executeInsert((InsertCommand) command, context);
+      result = executeInsert((InsertCommand) command);
     }
     else if (command instanceof SelectCommand) {
-      result = executeSelectCommand((SelectCommand) command, context);
+      result = executeSelectCommand((SelectCommand) command);
     }
     else if (command instanceof ShowTablesCommand) {
-      result = executeShowTables((ShowTablesCommand) command, context);
+      result = executeShowTables((ShowTablesCommand) command);
     }
     else if (command instanceof UpdateCommand) {
-      result = executeUpdate((UpdateCommand) command, context);
+      result = executeUpdate((UpdateCommand) command);
     }
     else {
       throw new ExecuteException(format("Unimplemented command type: %s", command.getClass().getName()));
@@ -112,7 +114,7 @@ public class Executor {
     return result;
   }
 
-  protected CreateIndexResult executeCreateIndex(CreateIndexCommand command, Storage context) throws ExecuteException, StorageException {
+  protected CreateIndexResult executeCreateIndex(CreateIndexCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -120,7 +122,7 @@ public class Executor {
     throw new NotImplementedException();
   }
 
-  protected CreateTableResult executeCreateTable(CreateTableCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected CreateTableResult executeCreateTable(CreateTableCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -181,7 +183,7 @@ public class Executor {
     return result;
   }
 
-  protected DeleteResult executeDelete(DeleteCommand command, Storage context) throws ExecuteException, StorageException {
+  protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -189,7 +191,7 @@ public class Executor {
     throw new NotImplementedException();
   }
 
-  protected DropTableResult executeDropTable(DropTableCommand command, Storage context) throws ExecuteException, StorageException {
+  protected DropTableResult executeDropTable(DropTableCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -197,14 +199,14 @@ public class Executor {
     throw new NotImplementedException();
   }
 
-  protected ExitResult executeExit(ExitCommand command, Storage context) throws ExecuteException, StorageException {
+  protected ExitResult executeExit(ExitCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
     return new ExitResult();
   }
 
-  protected InsertResult executeInsert(InsertCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected InsertResult executeInsert(InsertCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -260,7 +262,7 @@ public class Executor {
     return result;
   }
 
-  protected SelectResult executeSelectCommand(SelectCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected SelectResult executeSelectCommand(SelectCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -353,7 +355,7 @@ public class Executor {
     return result;
   }
 
-  protected ShowTablesResult executeShowTables(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected ShowTablesResult executeShowTables(ShowTablesCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -374,7 +376,7 @@ public class Executor {
     return result;
   }
 
-  protected UpdateResult executeUpdate(UpdateCommand command, Storage context) throws ExecuteException, StorageException {
+  protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
