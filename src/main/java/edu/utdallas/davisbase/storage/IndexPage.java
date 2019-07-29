@@ -80,35 +80,111 @@ public class IndexPage {
 		file.writeInt(pageNo);
 	}
 
+	// splitting leaf page
 	public static int splitLeafPage(RandomAccessFile file, int pageNo) {
-		SortKeys(file, pageNo);
-		int newleafPageNo = AddLeafPage(file);
+		sortKeys(file, pageNo);
+		int newSiblingPageNo = AddLeafPage(file);
 		boolean rootflag = CheckifRootNode(file, pageNo);
+		int parentPageNo;
 		try {
 			if (rootflag) {
-				int parentPageNo = AddInteriorPage(file);
+				parentPageNo = AddInteriorPage(file);
 				setPageasRoot(file, parentPageNo);
-//				setParent(file, pageNo, parentPageNo);
-//				insertChild(file, pageNo, parentPageNo);
-				return newleafPageNo;
+				setParent(file, pageNo, parentPageNo);
 			} else {
-				int parentPageNo = getParent(file, pageNo);
-//				if (!checkParentspace(file, parentPageNo)) {
-//					int newPageNo = splitInteriorPage(file, parentPageNo);
-//				}
-				return newleafPageNo;
-			}
-
-//			setParent(file, newleafPageNo, parentPageNo);
-//			insertChild(file, newleafPageNo, parentPageNo, rowId);
-////			setRightSibling(file, pageNo, newleafPageNo);
-//			setRightMostChild(file, parentPageNo);
+				parentPageNo = getParent(file, pageNo);
+			} 
+			setParent(file, newSiblingPageNo, parentPageNo);
+			splitLeafNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
+			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+			setRightSiblingPointer(file, pageNo, newSiblingPageNo);
 		} catch (Exception e) {
 		}
 		return -1;
 	}
 
-	public static void SortKeys(RandomAccessFile file, int currentPageNo) {
+	public static void setParent(RandomAccessFile file, int pageNo, int parentPageNo) {
+		long seekParentByte = convertPageNoToFileOffset(pageNo)+ PAGE_OFFSET_OF_CELL_PARENT_PAGE_NO;
+		try {
+			file.seek(seekParentByte);
+			file.writeInt(parentPageNo);
+		} catch (Exception e) {
+
+		}
+	}
+	public static void splitInteriorPage(RandomAccessFile file, int pageNo) {
+		sortKeys(file, pageNo);
+		int newSiblingPageNo = AddInteriorPage(file);
+		boolean rootflag = CheckifRootNode(file, pageNo);
+		int parentPageNo;
+		try {
+			if(rootflag) {
+				parentPageNo=AddInteriorPage(file);
+			}else {
+				parentPageNo=getParent(file, pageNo);
+			}
+			splitInteriorNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
+			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+		} catch (Exception e) {
+
+		}
+	}
+
+	private static void splitInteriorNodeData(RandomAccessFile file, int pageNo, int parentPageNo,
+			int newSiblingPageNo) {
+		//TODO make sure to update left child pointers
+		// TODO Auto-generated method stub
+		
+		
+	}
+
+	private static void setRightSiblingPointer(RandomAccessFile file, int pageNo, int newleafPageNo) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private static void setParentRightChildPointer(RandomAccessFile file, int parentPageNo, int newleafPageNo) {
+		// TODO Auto-generated method stub
+	}
+
+	private static void splitLeafNodeData(RandomAccessFile file, int pageNo, int parentPageNo, int siblingPageNo) {
+		try {
+			long bigPageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(bigPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			int noOfrecordsInBigPage = file.readShort();
+			int splitIndex = (int) Math.floor(noOfrecordsInBigPage / 2); // this record goes into the parent.
+			// add split index + 1 th element in the array to parent.
+			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo);
+
+			// add element above split index+1 from big page to new page.
+			addElementsAboveIToSibling(file, splitIndex, pageNo, siblingPageNo);
+
+			// remove elements from split index +1 th element.
+			removeElementsAfterIthPosition(file, splitIndex, pageNo);
+
+		} catch (IOException e) {
+		}
+
+	}
+
+	private static void removeElementsAfterIthPosition(RandomAccessFile file, int splitIndex, int pageNo) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private static void addElementsAboveIToSibling(RandomAccessFile file, int splitIndex, int pageNo,
+			int siblingPageNo) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private static void addMiddleElementFromChildtoParent(RandomAccessFile file, int splitIndex, int pageNo,
+			int parentPageNo) {
+		// TODO Auto-generated method stub
+		sortKeys(file, parentPageNo);
+	}
+
+	public static void sortKeys(RandomAccessFile file, int currentPageNo) {
 		// TODO Auto-generated method stub
 	}
 
