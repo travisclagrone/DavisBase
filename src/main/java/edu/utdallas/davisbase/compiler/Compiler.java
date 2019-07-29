@@ -548,7 +548,7 @@ public class Compiler {
     );
     return new CommandWhere(
       leftColumnReference,
-      returnCommandOperator(where.getOperator()),
+      returnCommandOperator(where.getOperator(), where.isNot()),
       validateTypeMatchesSchema(tableName, where.getValue(), columnName)
     );
   }
@@ -558,20 +558,49 @@ public class Compiler {
    * @return the CommandWhere Operator Enum given the WhereExpression Operator
    * @throws CompileException
    */
-  public CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op)throws CompileException{
+  public CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op, boolean isNot)throws CompileException{
     switch (op){
       case EQUALSTO:
-        return CommandWhere.Operator.EQUAL;
+        if(isNot){
+          return CommandWhere.Operator.NOT_EQUAL;
+        }else{
+          return CommandWhere.Operator.EQUAL;
+        }
       case NOTEQUALTO:
-        return CommandWhere.Operator.NOT_EQUAL;
+        if(isNot){
+          return CommandWhere.Operator.EQUAL;
+        }
+        else{
+          return CommandWhere.Operator.NOT_EQUAL;
+        }
       case GREATERTHAN:
-        return CommandWhere.Operator.GREATER_THAN;
+        if(isNot){
+          return CommandWhere.Operator.LESS_THAN_OR_EQUAL;
+        }
+        else{
+          return CommandWhere.Operator.GREATER_THAN;
+        }
       case GREATERTHANEQUALS:
-        return CommandWhere.Operator.GREATER_THAN_OR_EQUAL;
+        if(isNot){
+          return CommandWhere.Operator.LESS_THAN;
+        }
+        else{
+          return CommandWhere.Operator.GREATER_THAN_OR_EQUAL;
+        }
       case LESSTHAN:
-        return CommandWhere.Operator.LESS_THAN;
+        if(isNot){
+          return CommandWhere.Operator.GREATER_THAN_OR_EQUAL;
+        }
+        else{
+          return CommandWhere.Operator.LESS_THAN;
+        }
       case LESSTHANEQUALS:
-        return CommandWhere.Operator.LESS_THAN_OR_EQUAL;
+        if(isNot){
+          return CommandWhere.Operator.GREATER_THAN;
+        }
+        else{
+          return CommandWhere.Operator.LESS_THAN_OR_EQUAL;
+        }
       default:
         throw new CompileException("Unrecognized operator");
     }
