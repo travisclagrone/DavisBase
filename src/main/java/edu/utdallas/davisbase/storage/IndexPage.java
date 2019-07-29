@@ -93,7 +93,7 @@ public class IndexPage {
 				setParent(file, pageNo, parentPageNo);
 			} else {
 				parentPageNo = getParent(file, pageNo);
-			} 
+			}
 			setParent(file, newSiblingPageNo, parentPageNo);
 			splitLeafNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
 			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
@@ -104,7 +104,7 @@ public class IndexPage {
 	}
 
 	public static void setParent(RandomAccessFile file, int pageNo, int parentPageNo) {
-		long seekParentByte = convertPageNoToFileOffset(pageNo)+ PAGE_OFFSET_OF_CELL_PARENT_PAGE_NO;
+		long seekParentByte = convertPageNoToFileOffset(pageNo) + PAGE_OFFSET_OF_CELL_PARENT_PAGE_NO;
 		try {
 			file.seek(seekParentByte);
 			file.writeInt(parentPageNo);
@@ -112,16 +112,17 @@ public class IndexPage {
 
 		}
 	}
+
 	public static void splitInteriorPage(RandomAccessFile file, int pageNo) {
 		sortKeys(file, pageNo);
 		int newSiblingPageNo = AddInteriorPage(file);
 		boolean rootflag = CheckifRootNode(file, pageNo);
 		int parentPageNo;
 		try {
-			if(rootflag) {
-				parentPageNo=AddInteriorPage(file);
-			}else {
-				parentPageNo=getParent(file, pageNo);
+			if (rootflag) {
+				parentPageNo = AddInteriorPage(file);
+			} else {
+				parentPageNo = getParent(file, pageNo);
 			}
 			splitInteriorNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
 			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
@@ -132,19 +133,25 @@ public class IndexPage {
 
 	private static void splitInteriorNodeData(RandomAccessFile file, int pageNo, int parentPageNo,
 			int newSiblingPageNo) {
-		//TODO make sure to update left child pointers
+		// TODO make sure to update left child pointers
 		// TODO Auto-generated method stub
-		
-		
+
 	}
 
-	private static void setRightSiblingPointer(RandomAccessFile file, int pageNo, int newleafPageNo) {
-		// TODO Auto-generated method stub
+	private static void setRightSiblingPointer(RandomAccessFile file, int pageNo, int siblingPageNo) {
+		try {
+			long currentPageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(currentPageOffset + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 	}
 
 	private static void setParentRightChildPointer(RandomAccessFile file, int parentPageNo, int newleafPageNo) {
 		// TODO Auto-generated method stub
+		setRightSiblingPointer(file, parentPageNo, newleafPageNo);
 	}
 
 	private static void splitLeafNodeData(RandomAccessFile file, int pageNo, int parentPageNo, int siblingPageNo) {
@@ -152,7 +159,7 @@ public class IndexPage {
 			long bigPageOffset = convertPageNoToFileOffset(pageNo);
 			file.seek(bigPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
 			int noOfrecordsInBigPage = file.readShort();
-			int splitIndex = (int) Math.floor(noOfrecordsInBigPage / 2); // this record goes into the parent.
+			int splitIndex = (int) Math.ceil(noOfrecordsInBigPage / 2); // this record goes into the parent.
 			// add split index + 1 th element in the array to parent.
 			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo);
 
@@ -181,7 +188,52 @@ public class IndexPage {
 	private static void addMiddleElementFromChildtoParent(RandomAccessFile file, int splitIndex, int pageNo,
 			int parentPageNo) {
 		// TODO Auto-generated method stub
-		sortKeys(file, parentPageNo);
+		try {
+			long pageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (splitIndex - 1)));
+			short middleElementOffset = file.readShort();
+			long dataSeekPoint = pageOffset + middleElementOffset;
+
+			file.seek(pageOffset);
+			if (file.readByte() == 0x02) {
+				dataSeekPoint = dataSeekPoint + 4; // because interior page has left child info
+			}
+			
+			file.seek(dataSeekPoint);
+			int noOfRowIds = file.readByte();
+
+			file.seek(pageOffset + middleElementOffset + 1);
+			int indexDataSpace = file.readByte();
+
+			int totalRowSpace = 1 + 1 + indexDataSpace + (4 * noOfRowIds);
+			byte[] data2BCopied = new byte[totalRowSpace];
+			file.seek(dataSeekPoint);
+			file.read(data2BCopied);
+			
+			//writing into parent page
+			long parentPageOffset = convertPageNoToFileOffset(parentPageNo);
+			file.seek(parentPageOffset+PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+			short currentDataStartOffset =file.readShort();
+			long dataEntrySeekPoint = parentPageOffset+currentDataStartOffset-data2BCopied.length-4;
+			file.seek(dataEntrySeekPoint);
+			file.writeInt(pageNo);//writing left child page no
+			file.write(data2BCopied);
+			
+			
+			
+
+			// read from leafPage
+			sortKeys(file, parentPageNo);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static byte[] readBytesFromLeafPage() {
+
+		return null;
+
 	}
 
 	public static void sortKeys(RandomAccessFile file, int currentPageNo) {
