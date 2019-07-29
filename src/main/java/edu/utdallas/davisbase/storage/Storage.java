@@ -3,17 +3,15 @@ package edu.utdallas.davisbase.storage;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
 import java.util.List;
+
 import edu.utdallas.davisbase.BooleanUtils;
-import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.CatalogTableColumn;
-import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
-import edu.utdallas.davisbase.common.DavisBaseConstant;
 
 public class Storage {
 
@@ -21,10 +19,13 @@ public class Storage {
   private final StorageState state;
 
   @SuppressWarnings("initialization")
-
   public Storage(StorageConfiguration configuration, StorageState state) {
+    checkNotNull(configuration, "configuration");
+    checkNotNull(state, "state");
+
     this.configuration = configuration;
     this.state = state;
+
     initDavisBase();
   }
 
