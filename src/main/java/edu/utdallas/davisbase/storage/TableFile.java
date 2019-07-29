@@ -571,6 +571,12 @@ public class TableFile implements Closeable {
     throw new NotImplementedException();
   }
 
+  public int getCurrentMaxRowId() throws IOException {
+    file.seek(0x01);
+    final int currentMaxRowId = file.readInt();
+    return currentMaxRowId;
+  }
+
   private int getNextRowId() throws IOException {
     file.seek(0x01);
     int rowId = file.readInt();
