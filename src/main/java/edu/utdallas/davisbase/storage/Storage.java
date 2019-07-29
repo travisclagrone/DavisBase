@@ -47,9 +47,7 @@ public class Storage {
   public TableFile openTableFile(String tableName) throws IOException {
     checkNotNull(tableName);
 
-    final String tableFileName = tableName + "." + configuration.getTableFileExtension();
-    final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
-
+    final File tableFileHandle = getTableFileHandle(tableName);
     checkArgument(tableFileHandle.exists(), String.format(
         "File \"%s\" for table \"%s\" does not exist.", tableFileHandle.toString(), tableName));
     checkArgument(!tableFileHandle.isDirectory(),
@@ -62,6 +60,15 @@ public class Storage {
         "File length %d is not a multiple of page size %d.", length, configuration.getPageSize()));
 
     return new TableFile(randomAccessFile);
+  }
+
+  private File getTableFileHandle(String tableName) throws IOException {
+    assert tableName != null : "tableName should not be null";
+
+    final String tableFileName = tableName + "." + configuration.getTableFileExtension();
+    final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
+
+    return tableFileHandle;
   }
 
   public void initDavisBase() {
