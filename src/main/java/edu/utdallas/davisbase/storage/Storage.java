@@ -3,10 +3,11 @@ package edu.utdallas.davisbase.storage;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-
+import static java.lang.String.format;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
 import java.util.List;
 
 import edu.utdallas.davisbase.BooleanUtils;
@@ -48,18 +49,41 @@ public class Storage {
     checkNotNull(tableName);
 
     final File tableFileHandle = getTableFileHandle(tableName);
-    checkArgument(tableFileHandle.exists(), String.format(
-        "File \"%s\" for table \"%s\" does not exist.", tableFileHandle.toString(), tableName));
+    checkArgument(tableFileHandle.exists(),
+        format("File '%s' for table '%s' does not exist.",
+            tableFileHandle.toString(),
+            tableName));
     checkArgument(!tableFileHandle.isDirectory(),
-        String.format("File \"%s\" for table \"%s\" is actually a directory.",
-            tableFileHandle.toString(), tableName));
+        format("File '%s' for table '%s' is a directory, but should be a file.",
+            tableFileHandle.toString(),
+            tableName));
 
     final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
     final long length = randomAccessFile.length();
-    checkState(length % configuration.getPageSize() == 0, String.format(
-        "File length %d is not a multiple of page size %d.", length, configuration.getPageSize()));
+    checkState(length % configuration.getPageSize() == 0,
+        format("File length %d is not a multiple of page size %d.",
+            length,
+            configuration.getPageSize()));
 
     return new TableFile(randomAccessFile);
+  }
+
+  public void deleteTableFile(String tableName) throws IOException {
+    checkNotNull(tableName, "tableName");
+
+    final File tableFileHandle = getTableFileHandle(tableName);
+    checkArgument(tableFileHandle.exists(),
+        format("File '%s' for table '%s' does not exist.",
+            tableFileHandle.toString(),
+            tableName));
+    checkArgument(!tableFileHandle.isDirectory(),
+        format("File '%s' for table '%s' is a directory, but should be a file.",
+            tableFileHandle.toString(),
+            tableName));
+
+    // Use java.nio.file.Files#delete(Path) instead of java.io.File#delete() because the former
+    // throws a descriptive exception on failure whereas the latter doesn't.
+    Files.delete(tableFileHandle.toPath());
   }
 
   private File getTableFileHandle(String tableName) throws IOException {
