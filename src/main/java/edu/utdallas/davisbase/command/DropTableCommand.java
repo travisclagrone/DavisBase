@@ -7,6 +7,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class DropTableCommand implements Command {
 
+  // TODO Add field `indexNames: List<String>` (not null, no element null, may be empty) that lists
+  // the names of the indexes on the target table to drop; those indexes must be dropped as well.
+
+  // QUESTION Are indexes in DavisBase named? Or are they identified by table name plus column name?
+
   private final String tableName;
 
   /**

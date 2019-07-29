@@ -198,6 +198,8 @@ public class Executor {
 
     final String commandTableName = command.getTableName();
 
+    // TODO Drop any indexes on the target table.
+
     context.deleteTableFile(commandTableName);
 
     try (final TableFile davisbaseTables = context.openTableFile(DAVISBASE_TABLES.getName())) {
@@ -234,6 +236,8 @@ public class Executor {
         }
       }
     }
+
+    // TODO Delete the catalog rows corresponding to the indexes (if any) on the target table.
 
     final DropTableResult result = new DropTableResult(commandTableName);
     return result;
