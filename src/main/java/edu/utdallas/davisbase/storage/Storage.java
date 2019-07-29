@@ -1,9 +1,11 @@
 package edu.utdallas.davisbase.storage;
 
+import static java.lang.String.format;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -31,18 +33,15 @@ public class Storage {
   }
 
   public void createTableFile(String tableName) throws IOException {
+    checkNotNull(tableName, "tableName");
 
-    String path = state.getDataDirectory().getPath() + "/" + tableName + "."
-        + this.configuration.getTableFileExtension();
+    final File tableFileHandle = getTableFileHandle(tableName);
+    checkArgument(!tableFileHandle.exists(),
+        format("File '%s' for table '%s' already exists.",
+            tableFileHandle.toString(),
+            tableName));
 
-    File file = new File(path);
-
-    if (!file.exists()) {
-      RandomAccessFile table = new RandomAccessFile(state.getDataDirectory().getPath() + "/"
-          + tableName + "." + this.configuration.getTableFileExtension(), "rw");
-      // Page.addTableMetaDataPage(table);
-      table.close();
-    }
+    try (final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw")) {}
   }
 
   public TableFile openTableFile(String tableName) throws IOException {
