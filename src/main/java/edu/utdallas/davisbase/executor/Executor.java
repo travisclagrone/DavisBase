@@ -190,20 +190,20 @@ public class Executor {
     assert context != null : "context should not be null";
 
     final String tableName = command.getTableName();
+    final @Nullable CommandWhere where = command.getWhere();
 
     int rowsDeleted = 0;
     try (final TableFile tableFile = context.openTableFile(tableName)) {
       while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
+          tableFile.removeRow();
 
-        // TODO Implement support for WHERE clause in Executor#executeDelete(DeleteCommand)
+          // TODO Implement support for indexing in Executor#executeDelete(DeleteCommand). I.e. delete
+          // entries from every index on table (if any) as well as from the table itself.
 
-        tableFile.removeRow();
-
-        // TODO Implement support for indexing in Executor#executeDelete(DeleteCommand). I.e. delete
-        // entries from every index on table (if any) as well as from the table itself.
-
-        assert rowsDeleted < Integer.MAX_VALUE : format("Maximum number of rows have already been deleted (%d). Cannot delete any more rows without overflowing.", Integer.MAX_VALUE);
-        rowsDeleted += 1;
+          assert rowsDeleted < Integer.MAX_VALUE : format("Maximum number of rows have already been deleted (%d). Cannot delete any more rows without overflowing.", Integer.MAX_VALUE);
+          rowsDeleted += 1;
+        }
       }
     }
 
