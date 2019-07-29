@@ -54,8 +54,13 @@ public class Compiler {
   public Command compile(CommandRepresentation command) throws CompileException, StorageException,IOException {
     if(command instanceof CreateIndexCommandRepresentation){
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(CreateIndexCommandRepresentation)
+      return new CreateIndexCommand(
+        createIndex.getTable(),
+        createIndex.getIndex(),
+        createIndex.getColumn(),
+        validateIsDavisBaseColumnWithinTable(createIndex.getTable(),createIndex.getColumn()),
+        getColumnType(createIndex.getTable(),createIndex.getColumn())
+      );
     }
     else if (command instanceof CreateTableCommandRepresentation){
       CreateTableCommandRepresentation createTable = (CreateTableCommandRepresentation)command;
