@@ -516,12 +516,14 @@ public class TableFile implements Closeable {
 
     long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
 
-    
-    int cellOffsetOffset = 0x0010;
-    long currentCellOffset = fileOffsetOfPage + cellOffsetOffset;
 
-    file.seek(fileOffsetOfPage + 1);
-    long cellCount = file.readShort();
+    long cellOffsetOffset = 0x0010;
+    long currentCellOffset = fileOffsetOfPage + cellOffsetOffset;
+    long cellCountOffset = fileOffsetOfPage + 1;
+
+
+    file.seek(cellCountOffset);
+    short cellCount = file.readShort();
 
     if (cellCount == 1) {
       // escalate to Parent
@@ -531,6 +533,9 @@ public class TableFile implements Closeable {
     } else {
       removeRow(currentCellOffset, cellCount);
     }
+
+    file.seek(cellCountOffset);
+    file.writeShort(cellCount - 1);
   }
 
   private void removeRow(long offset, long currentCellOffset) throws IOException {
