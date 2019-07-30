@@ -2,7 +2,6 @@ package edu.utdallas.davisbase.compiler;
 
 import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
-import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
@@ -20,7 +19,6 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,8 +52,12 @@ public class Compiler {
   public Command compile(CommandRepresentation command) throws CompileException, StorageException,IOException {
     if(command instanceof CreateIndexCommandRepresentation){
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(CreateIndexCommandRepresentation)
+      return new CreateIndexCommand(
+        createIndex.getTable(),
+        createIndex.getColumn(),
+        validateIsDavisBaseColumnWithinTable(createIndex.getTable(),createIndex.getColumn()),
+        getColumnType(createIndex.getTable(),createIndex.getColumn())
+      );
     }
     else if (command instanceof CreateTableCommandRepresentation){
       CreateTableCommandRepresentation createTable = (CreateTableCommandRepresentation)command;
@@ -72,13 +74,14 @@ public class Compiler {
     }
     else if (command instanceof DeleteCommandRepresentation){
       DeleteCommandRepresentation delete= (DeleteCommandRepresentation)command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(DeleteCommandRepresentation)
+      return new DeleteCommand(
+        delete.getTable(),
+        compileCommandWhere(delete.getTable(), delete.getWhereClause())
+      );
     }
     else if (command instanceof DropTableCommandRepresentation){
       DropTableCommandRepresentation dropTable = (DropTableCommandRepresentation)command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(DropTableCommandRepresentation)
+      return new DropTableCommand(dropTable.getTable());
     }
     else if (command instanceof ExitCommandRepresentation){
       return new ExitCommand();
@@ -127,7 +130,8 @@ public class Compiler {
       }
       return new SelectCommand(
         validateIsDavisBaseTable(select.getTable()),
-        selectColumns
+        selectColumns,
+        compileCommandWhere(select.getTable(),select.getWhereClause())
       );
     }
     else if (command instanceof ShowTablesCommandRepresentation){
@@ -135,8 +139,17 @@ public class Compiler {
     }
     else if (command instanceof UpdateCommandRepresentation){
       UpdateCommandRepresentation update = (UpdateCommandRepresentation)command;
-      throw new NotImplementedException();
-      // COMBAK Implement compile(UpdateCommandRepresentation)
+      Column col = update.getColumn();
+      byte colIndex =  getColumnIndex(col, update.getTable());
+      UpdateCommandColumn updateCommandColumn = new UpdateCommandColumn(
+        colIndex,
+        validateTypeMatchesSchema(update.getTable(), update.getValue(),getColumnName(update.getTable(), colIndex))
+      );
+      return new UpdateCommand(
+        update.getTable(),
+        updateCommandColumn,
+        compileCommandWhere(update.getTable(), update.getWhereClause())
+      );
     }
     else{
       throw new CompileException("Unrecognized command. Unable to compile. ");
@@ -338,7 +351,7 @@ public class Compiler {
           return castNonNull(table.readTinyInt(DavisBaseColumnsTableColumn.ORDINAL_POSITION.getOrdinalPosition()));
         }
       }
-      throw new CompileException("Column does not exist within this table");
+      throw new CompileException("Column " +columnName + " does not exist within this table");
   }
 
   /**
@@ -353,7 +366,7 @@ public class Compiler {
         return tableName;
       }
     }
-    throw new CompileException("Table does not exist within DavisBase");
+    throw new CompileException("Table" +tableName+ " does not exist within DavisBase");
   }
 
   /**
@@ -370,7 +383,7 @@ public class Compiler {
         return DataType.valueOf(castNonNull(table.readText(DavisBaseColumnsTableColumn.DATA_TYPE.getOrdinalPosition())));
       }
     }
-    throw new CompileException("Column does not exist within this table");
+    throw new CompileException("Column " +columnName + " does not exist within this table");
   }
 
   public String getColumnName(String tableName, int columnIndex)throws CompileException, StorageException, IOException{
@@ -381,7 +394,7 @@ public class Compiler {
         return (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition())));
       }
     }
-    throw new CompileException("Column does not exist within this table");
+    throw new CompileException("Column with index " + columnIndex + " does not exist within this table");
   }
 
   /**
@@ -419,19 +432,44 @@ public class Compiler {
     throw new CompileException("Values you are trying to insert does not match the table schema");
   }
 
+  /**
+   * @param col Column object to check
+   * @param table table name to check column
+   * @return byte of column index based on parameters
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public byte getColumnIndex(Column col, String table)throws CompileException,StorageException, IOException{
     return (validateIsDavisBaseColumnWithinTable(table, col.getColumnName()));
   }
 
+  /**
+   * Validate that given table exists otherwise throws exception
+   * @param tableName table to check existence
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public void validateTableDoesNotExist(String tableName)throws CompileException, StorageException, IOException{
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while(table.goToNextRow()){
       if(castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition())).equalsIgnoreCase(tableName)) {
-        throw new CompileException("Table already exists.");
+        throw new CompileException("Table " +tableName+ " already exists.");
       }
     }
   }
 
+  /**
+   * Validate the nullability of an expression
+   * @param tableName table of column
+   * @param columnName column to check
+   * @param value Expression to check value of
+   * @return
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public boolean validateNullability(String tableName, String columnName, Expression value)throws CompileException, StorageException, IOException{
     if(getIsNullable(tableName, columnName) && value instanceof NullValue){
       return true;
@@ -442,6 +480,15 @@ public class Compiler {
     return false;
   }
 
+  /**
+   * Checks against DAVISBASE_COLUMNS table to see if column is nullable
+   * @param tableName table to check
+   * @param columnName column to check
+   * @return whether column nullable
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   public boolean getIsNullable(String tableName, String columnName)throws CompileException, StorageException, IOException {
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while(table.goToNextRow()){
@@ -450,9 +497,15 @@ public class Compiler {
         return BooleanUtils.fromText(castNonNull(table.readText(DavisBaseColumnsTableColumn.IS_NULLABLE.getOrdinalPosition())));
       }
     }
-    throw new CompileException("Column does not exist within this table");
+    throw new CompileException("Column " + columnName + " does not exist within this table");
   }
 
+  /**
+   * @param tableName table to get columns
+   * @return List of SelectCommandColumn object that represents all columns for given table
+   * @throws StorageException
+   * @throws IOException
+   */
   public List<SelectCommandColumn> getAllColumns(String tableName)throws StorageException, IOException{
     List<SelectCommandColumn> selectColumns = new ArrayList<>();
     TableFile table  = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
@@ -467,6 +520,87 @@ public class Compiler {
       }
     }
     return selectColumns;
+  }
+
+  /**
+   * @param tableName name of table
+   * @param where WhereExpression representation of where clause
+   * @return compiled CommandWhere of where clause
+   * @throws IOException
+   * @throws StorageException
+   * @throws CompileException
+   */
+  public @Nullable CommandWhere compileCommandWhere(String tableName, @Nullable WhereExpression where)throws IOException, StorageException,CompileException{
+    if(null==where){
+      return null;
+    }
+    byte columnIndex = getColumnIndex(where.getColumn(), tableName);
+    String columnName = getColumnName(tableName, columnIndex);
+    CommandWhereColumn leftColumnReference = new CommandWhereColumn(
+      columnIndex,
+      columnName,
+      getColumnType(tableName,columnName),
+      getIsNullable(tableName, columnName ),
+      false//TODO: COME BACK AND FIX THIS ONCE INDEX IMPLEMENTED
+    );
+    return new CommandWhere(
+      leftColumnReference,
+      returnCommandOperator(where.getOperator(), where.isNot()),
+      validateTypeMatchesSchema(tableName, where.getValue(), columnName)
+    );
+  }
+
+  /**
+   * @param op WhereExpression Operator enum
+   * @return the CommandWhere Operator Enum given the WhereExpression Operator
+   * @throws CompileException
+   */
+  public CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op, boolean isNot)throws CompileException{
+    switch (op){
+      case EQUALSTO:
+        if(isNot){
+          return CommandWhere.Operator.NOT_EQUAL;
+        }else{
+          return CommandWhere.Operator.EQUAL;
+        }
+      case NOTEQUALTO:
+        if(isNot){
+          return CommandWhere.Operator.EQUAL;
+        }
+        else{
+          return CommandWhere.Operator.NOT_EQUAL;
+        }
+      case GREATERTHAN:
+        if(isNot){
+          return CommandWhere.Operator.LESS_THAN_OR_EQUAL;
+        }
+        else{
+          return CommandWhere.Operator.GREATER_THAN;
+        }
+      case GREATERTHANEQUALS:
+        if(isNot){
+          return CommandWhere.Operator.LESS_THAN;
+        }
+        else{
+          return CommandWhere.Operator.GREATER_THAN_OR_EQUAL;
+        }
+      case LESSTHAN:
+        if(isNot){
+          return CommandWhere.Operator.GREATER_THAN_OR_EQUAL;
+        }
+        else{
+          return CommandWhere.Operator.LESS_THAN;
+        }
+      case LESSTHANEQUALS:
+        if(isNot){
+          return CommandWhere.Operator.GREATER_THAN;
+        }
+        else{
+          return CommandWhere.Operator.LESS_THAN_OR_EQUAL;
+        }
+      default:
+        throw new CompileException("Unrecognized operator");
+    }
   }
 
 }

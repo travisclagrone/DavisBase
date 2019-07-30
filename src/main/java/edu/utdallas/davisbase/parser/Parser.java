@@ -15,6 +15,7 @@ import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.*;
 import net.sf.jsqlparser.statement.update.Update;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -69,7 +70,6 @@ public class Parser {
         CreateIndexCommandRepresentation createIndex = new CreateIndexCommandRepresentation(
           createIndexStatement.toString(),
           createIndexStatement.getTable().getName(),
-          createIndexStatement.getIndex().getName(),
           createIndexStatement.getIndex().getColumnsNames().get(0)
         );
         return createIndex;
@@ -92,11 +92,14 @@ public class Parser {
         return delete;
       } else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
+        if(updateStatement.getColumns().size()>1 || updateStatement.getExpressions().size()>1){
+          throw new ParseException("DavisBase does not support multi-column updates");
+        }
         UpdateCommandRepresentation update = new UpdateCommandRepresentation(
           updateStatement.toString(),
           updateStatement.getTables().get(0).getName(),
-          updateStatement.getColumns(),
-          updateStatement.getExpressions(),
+          updateStatement.getColumns().get(0),
+          updateStatement.getExpressions().get(0),
           parseWhereExpression(updateStatement.getWhere())
         );
         return update;
@@ -112,7 +115,6 @@ public class Parser {
               }
             }
           }
-
         } else {
           throw new ParseException("DavisBase only supports simple select statements");
         }
@@ -120,7 +122,8 @@ public class Parser {
           selectStatement.toString(),
           pSelect.getFromItem().toString(),
           pSelect.getSelectItems(),
-          (pSelect.getSelectItems().get(0) instanceof AllColumns)
+          (pSelect.getSelectItems().get(0) instanceof AllColumns),
+          parseWhereExpression(pSelect.getWhere())
         );
         return select;
       } else {
@@ -135,7 +138,11 @@ public class Parser {
    * @param where clause to parse
    * @return WhereExpression representation of the expression
    */
-  public WhereExpression parseWhereExpression(Expression where) throws ParseWhereException {
+  public @Nullable WhereExpression parseWhereExpression(@Nullable Expression where) throws ParseWhereException {
+    if(null==where){
+      return null;
+    }
+
     WhereExpression whereExpression;
     if (where instanceof EqualsTo) {
       EqualsTo equals = (EqualsTo) where;
