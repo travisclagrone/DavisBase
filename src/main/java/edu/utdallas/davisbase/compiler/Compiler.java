@@ -56,7 +56,6 @@ public class Compiler {
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
       return new CreateIndexCommand(
         createIndex.getTable(),
-        createIndex.getIndex(),
         createIndex.getColumn(),
         validateIsDavisBaseColumnWithinTable(createIndex.getTable(),createIndex.getColumn()),
         getColumnType(createIndex.getTable(),createIndex.getColumn())
