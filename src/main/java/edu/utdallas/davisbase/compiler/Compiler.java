@@ -11,6 +11,7 @@ import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.*;
 import edu.utdallas.davisbase.DataType;
+import edu.utdallas.davisbase.YearUtils;
 import edu.utdallas.davisbase.representation.*;
 import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageException;
@@ -288,12 +289,11 @@ public class Compiler {
               throw new CompileException("Expected an TINYINT value, but found a BIGINT value.");
 
             case YEAR:
-              long tempLongValue = longValue - 2000;
-              if (Byte.MIN_VALUE <= tempLongValue && tempLongValue <= Byte.MAX_VALUE) {
+              if ((YearUtils.YEAR_OFFSET + Byte.MIN_VALUE) <= longValue && longValue <= (YearUtils.YEAR_OFFSET + Byte.MAX_VALUE)) {
+                assert Integer.MIN_VALUE <= longValue && longValue <= Integer.MAX_VALUE : "Literal BIGINT value for DavisBase YEAR data type cannot be safely cast to an int";
                 return Year.of((int) longValue);
               }
-              throw new CompileException(
-                  "Expected an YEAR value between 1873 and 2127, but found value out of range.");
+              throw new CompileException("Expected an YEAR value between 1873 and 2127, but found value out of range.");
 
             default:
               throw new RuntimeException("This should never happen.");

@@ -19,7 +19,7 @@ import java.time.Year;
 import java.time.ZoneOffset;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
-
+import edu.utdallas.davisbase.YearUtils;
 import edu.utdallas.davisbase.NotImplementedException;
 
 /**
@@ -427,7 +427,7 @@ public class TableFile implements Closeable {
     }
 
     goToCurrentLeafPageCellColumnValue(columnIndex);
-    return Year.of(file.readByte());
+    return Year.of(file.readByte() + YearUtils.YEAR_OFFSET);
   }
 
   public @Nullable LocalTime readTime(int columnIndex) throws IOException, StorageException {
