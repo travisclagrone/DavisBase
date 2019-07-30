@@ -3,6 +3,10 @@ package edu.utdallas.davisbase.representation;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Column;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class UpdateCommandRepresentation implements CommandRepresentation {
 
   private final String command;
@@ -31,7 +35,7 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     return value;
   }
 
-  public WhereExpression getWhereClause() {
+  public @Nullable WhereExpression getWhereClause() {
     return whereClause;
   }
 

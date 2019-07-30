@@ -1,12 +1,14 @@
 package edu.utdallas.davisbase.representation;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 public class DeleteCommandRepresentation implements CommandRepresentation {
 
   private final String command;
   private final String table;
-  private final WhereExpression whereClause;
+  private final @Nullable WhereExpression whereClause;
 
-  public DeleteCommandRepresentation(String command, String table, WhereExpression whereClause) {
+  public DeleteCommandRepresentation(String command, String table, @Nullable WhereExpression whereClause) {
     this.command = command;
     this.table = table;
     this.whereClause = whereClause;
@@ -16,7 +18,7 @@ public class DeleteCommandRepresentation implements CommandRepresentation {
     return table;
   }
 
-  public WhereExpression getWhereClause() {
+  public @Nullable WhereExpression getWhereClause() {
     return whereClause;
   }
 
