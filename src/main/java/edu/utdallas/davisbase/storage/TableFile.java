@@ -8,9 +8,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.common.DavisBaseConstant;
+// import test.ArrayList;
 import static java.lang.String.format;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -505,8 +507,46 @@ public class TableFile implements Closeable {
   }
 
   public void removeRow() throws IOException {
-    // TODO Implement TableFile.removeRow()
-    throw new NotImplementedException();
+    // int cellCountoffset = 0x01;
+    goToNextRow();
+
+    checkState(this.hasCurrentRow(),
+        "tableFile is not pointing to a current row from which to read");
+
+
+    long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
+
+    
+    int cellOffsetOffset = 0x0010;
+    long currentCellOffset = fileOffsetOfPage + cellOffsetOffset;
+
+    file.seek(fileOffsetOfPage + 1);
+    long cellCount = file.readShort();
+
+    if (cellCount == 1) {
+      // escalate to Parent
+    } else if (this.currentLeafCellIndex + 1 == cellCount) {
+      // update max row before/after delete
+      // removeRow(currentCellOffset, cellCount);
+    } else {
+      removeRow(currentCellOffset, cellCount);
+    }
+  }
+
+  private void removeRow(long offset, long currentCellOffset) throws IOException {
+    file.seek(offset);
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < currentCellOffset; i++) {
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+    }
+    offsetLocationList.remove(this.currentLeafCellIndex);
+    offsetLocationList.add((short) 0x00);
+    file.seek(offset);
+
+    for (short val : offsetLocationList) {
+      file.writeShort(val);
+    }
   }
 
   public void writeNull(int columnIndex) throws IOException {
@@ -514,9 +554,19 @@ public class TableFile implements Closeable {
     throw new NotImplementedException();
   }
 
-  public void writeTinyInt(int columnIndex, byte value) throws IOException {
-    // TODO Implement TableFile.writeTinyInt(int, byte)
-    throw new NotImplementedException();
+  public void writeTinyInt(int columnIndex, byte value) throws IOException, StorageException {
+    checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+    checkState(this.hasCurrentRow(),
+        "tableFile is not pointing to a current row from which to read");
+
+    if (valueOfCurrentRowColumnIsNull(columnIndex)) {
+      // return null;
+      columnIndex++;
+    }
+
+    goToCurrentLeafPageCellColumnValue(columnIndex);
+    // return file.readByte();
   }
 
   public void writeSmallInt(int columnIndex, short value) throws IOException {
