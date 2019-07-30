@@ -20,16 +20,19 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.Command;
+import edu.utdallas.davisbase.command.CommandWhere;
+import edu.utdallas.davisbase.command.CommandWhereColumn;
 import edu.utdallas.davisbase.command.CreateIndexCommand;
 import edu.utdallas.davisbase.command.CreateTableCommand;
 import edu.utdallas.davisbase.command.CreateTableCommandColumn;
@@ -67,44 +70,46 @@ import edu.utdallas.davisbase.storage.TableRowBuilder;
 public class Executor {
 
   protected final ExecutorConfiguration configuration;
+  protected final Storage context;
 
-  public Executor(ExecutorConfiguration configuration) {
+  public Executor(ExecutorConfiguration configuration, Storage context) {
     checkNotNull(configuration, "configuration");
+    checkNotNull(context, "context");
 
     this.configuration = configuration;
+    this.context = context;
   }
 
-  public Result execute(Command command, Storage context) throws ExecuteException, StorageException, IOException {
+  public Result execute(Command command) throws ExecuteException, StorageException, IOException {
     checkNotNull(command, "command");
-    checkNotNull(context, "context");
 
     Result result;
     if (command instanceof CreateIndexCommand) {
-      result = executeCreateIndex((CreateIndexCommand) command, context);
+      result = executeCreateIndex((CreateIndexCommand) command);
     }
     else if (command instanceof CreateTableCommand) {
-      result = executeCreateTable((CreateTableCommand) command, context);
+      result = executeCreateTable((CreateTableCommand) command);
     }
     else if (command instanceof DeleteCommand) {
-      result = executeDelete((DeleteCommand) command, context);
+      result = executeDelete((DeleteCommand) command);
     }
     else if (command instanceof DropTableCommand) {
-      result = executeDropTable((DropTableCommand) command, context);
+      result = executeDropTable((DropTableCommand) command);
     }
     else if (command instanceof ExitCommand) {
-      result = executeExit((ExitCommand) command, context);
+      result = executeExit((ExitCommand) command);
     }
     else if (command instanceof InsertCommand) {
-      result = executeInsert((InsertCommand) command, context);
+      result = executeInsert((InsertCommand) command);
     }
     else if (command instanceof SelectCommand) {
-      result = executeSelectCommand((SelectCommand) command, context);
+      result = executeSelectCommand((SelectCommand) command);
     }
     else if (command instanceof ShowTablesCommand) {
-      result = executeShowTables((ShowTablesCommand) command, context);
+      result = executeShowTables((ShowTablesCommand) command);
     }
     else if (command instanceof UpdateCommand) {
-      result = executeUpdate((UpdateCommand) command, context);
+      result = executeUpdate((UpdateCommand) command);
     }
     else {
       throw new ExecuteException(format("Unimplemented command type: %s", command.getClass().getName()));
@@ -112,7 +117,7 @@ public class Executor {
     return result;
   }
 
-  protected CreateIndexResult executeCreateIndex(CreateIndexCommand command, Storage context) throws ExecuteException, StorageException {
+  protected CreateIndexResult executeCreateIndex(CreateIndexCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -120,7 +125,7 @@ public class Executor {
     throw new NotImplementedException();
   }
 
-  protected CreateTableResult executeCreateTable(CreateTableCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected CreateTableResult executeCreateTable(CreateTableCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -181,30 +186,91 @@ public class Executor {
     return result;
   }
 
-  protected DeleteResult executeDelete(DeleteCommand command, Storage context) throws ExecuteException, StorageException {
+  protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(DeleteCommand, Storage)
-    throw new NotImplementedException();
+    final String tableName = command.getTableName();
+    final @Nullable CommandWhere where = command.getWhere();
+
+    int rowsDeleted = 0;
+    try (final TableFile tableFile = context.openTableFile(tableName)) {
+      while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
+          tableFile.removeRow();
+
+          // TODO Implement support for indexing in Executor#executeDelete(DeleteCommand). I.e. delete
+          // entries from every index on table (if any) as well as from the table itself.
+
+          assert rowsDeleted < Integer.MAX_VALUE : format("Maximum number of rows have already been deleted (%d). Cannot delete any more rows without overflowing.", Integer.MAX_VALUE);
+          rowsDeleted += 1;
+        }
+      }
+    }
+
+    final DeleteResult result = new DeleteResult(tableName, rowsDeleted);
+    return result;
   }
 
-  protected DropTableResult executeDropTable(DropTableCommand command, Storage context) throws ExecuteException, StorageException {
+  protected DropTableResult executeDropTable(DropTableCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(DropTableCommand, Storage)
-    throw new NotImplementedException();
+    final String commandTableName = command.getTableName();
+
+    // TODO Drop any indexes on the target table.
+
+    context.deleteTableFile(commandTableName);
+
+    try (final TableFile davisbaseTables = context.openTableFile(DAVISBASE_TABLES.getName())) {
+      while (davisbaseTables.goToNextRow()) {
+
+        final String rowTableName = castNonNull(
+            davisbaseTables.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()));
+        assert rowTableName != null : "No row value for column 'table_name' in table 'davisbase_tables' should ever be null.";
+
+        if (rowTableName.equalsIgnoreCase(commandTableName)) {
+          davisbaseTables.removeRow();
+
+          // There should never be more than one row any given value of the 'table_name' column in the
+          // table 'davisbase_tables'. Therefore, we MAY break as soon as we've deleted the first
+          // matching row (if any).
+          break;
+        }
+      }
+    }
+
+    try (final TableFile davisbaseColumns = context.openTableFile(DAVISBASE_COLUMNS.getName())) {
+      while (davisbaseColumns.goToNextRow()) {
+
+        final String rowTableName = castNonNull(
+            davisbaseColumns.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()));
+        assert rowTableName != null : "No row value for column TABLE_NAME in table DAVISBASE_COLUMNS should ever be null.";
+
+        if (rowTableName.equalsIgnoreCase(commandTableName)) {
+          davisbaseColumns.removeRow();
+
+          // There can be multiple rows in the table DAVISBASE_COLUMNS for any given value of the
+          // column TABLE_NAME (i.e. a user-defined table can have multiple columns). Therefore, we
+          // MUST NOT break early, but rather MUST evaluate *every* row for possible removal.
+        }
+      }
+    }
+
+    // TODO Delete the catalog rows corresponding to the indexes (if any) on the target table.
+
+    final DropTableResult result = new DropTableResult(commandTableName);
+    return result;
   }
 
-  protected ExitResult executeExit(ExitCommand command, Storage context) throws ExecuteException, StorageException {
+  protected ExitResult executeExit(ExitCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
     return new ExitResult();
   }
 
-  protected InsertResult executeInsert(InsertCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected InsertResult executeInsert(InsertCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -260,87 +326,90 @@ public class Executor {
     return result;
   }
 
-  protected SelectResult executeSelectCommand(SelectCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected SelectResult executeSelectCommand(SelectCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
     final String tableName = command.getTableName();
     final List<SelectCommandColumn> columns = command.getSelectClauseColumns();
     final int columnCount = columns.size();
+    final @Nullable CommandWhere where = command.getWhere();
 
     final SelectResultData.Builder dataBuilder = new SelectResultData.Builder();
     try (TableFile tableFile = context.openTableFile(tableName)) {
       while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
 
-        final SelectResultDataRow.Builder dataRowBuilder = new SelectResultDataRow.Builder(columnCount);
-        for (SelectCommandColumn column : columns) {
-          final byte columnIndex = column.getIndex();
+          final SelectResultDataRow.Builder dataRowBuilder = new SelectResultDataRow.Builder(columnCount);
+          for (SelectCommandColumn column : columns) {
+            final byte columnIndex = column.getIndex();
 
-          switch (column.getDataType()) {
-            case TINYINT:
-              final @Nullable Byte maybeTinyInt = tableFile.readTinyInt(columnIndex);
-              dataRowBuilder.addTinyInt(maybeTinyInt);
-              break;
+            switch (column.getDataType()) {
+              case TINYINT:
+                final @Nullable Byte maybeTinyInt = tableFile.readTinyInt(columnIndex);
+                dataRowBuilder.addTinyInt(maybeTinyInt);
+                break;
 
-            case SMALLINT:
-              final @Nullable Short maybeSmallInt = tableFile.readSmallInt(columnIndex);
-              dataRowBuilder.addSmallInt(maybeSmallInt);
-              break;
+              case SMALLINT:
+                final @Nullable Short maybeSmallInt = tableFile.readSmallInt(columnIndex);
+                dataRowBuilder.addSmallInt(maybeSmallInt);
+                break;
 
-            case INT:
-              final @Nullable Integer maybeInt = tableFile.readInt(columnIndex);
-              dataRowBuilder.addInt(maybeInt);
-              break;
+              case INT:
+                final @Nullable Integer maybeInt = tableFile.readInt(columnIndex);
+                dataRowBuilder.addInt(maybeInt);
+                break;
 
-            case BIGINT:
-              final @Nullable Long maybeBigInt = tableFile.readBigInt(columnIndex);
-              dataRowBuilder.addBigInt(maybeBigInt);
-              break;
+              case BIGINT:
+                final @Nullable Long maybeBigInt = tableFile.readBigInt(columnIndex);
+                dataRowBuilder.addBigInt(maybeBigInt);
+                break;
 
-            case FLOAT:
-              final @Nullable Float maybeFloat = tableFile.readFloat(columnIndex);
-              dataRowBuilder.addFloat(maybeFloat);
-              break;
+              case FLOAT:
+                final @Nullable Float maybeFloat = tableFile.readFloat(columnIndex);
+                dataRowBuilder.addFloat(maybeFloat);
+                break;
 
-            case DOUBLE:
-              final @Nullable Double maybeDouble = tableFile.readDouble(columnIndex);
-              dataRowBuilder.addDouble(maybeDouble);
-              break;
+              case DOUBLE:
+                final @Nullable Double maybeDouble = tableFile.readDouble(columnIndex);
+                dataRowBuilder.addDouble(maybeDouble);
+                break;
 
-            case YEAR:
-              final @Nullable Year maybeYear = tableFile.readYear(columnIndex);
-              dataRowBuilder.addYear(maybeYear);
-              break;
+              case YEAR:
+                final @Nullable Year maybeYear = tableFile.readYear(columnIndex);
+                dataRowBuilder.addYear(maybeYear);
+                break;
 
-            case TIME:
-              final @Nullable LocalTime maybeTime = tableFile.readTime(columnIndex);
-              dataRowBuilder.addTime(maybeTime);
-              break;
+              case TIME:
+                final @Nullable LocalTime maybeTime = tableFile.readTime(columnIndex);
+                dataRowBuilder.addTime(maybeTime);
+                break;
 
-            case DATETIME:
-              final @Nullable LocalDateTime maybeDateTime = tableFile.readDateTime(columnIndex);
-              dataRowBuilder.addDateTime(maybeDateTime);
-              break;
+              case DATETIME:
+                final @Nullable LocalDateTime maybeDateTime = tableFile.readDateTime(columnIndex);
+                dataRowBuilder.addDateTime(maybeDateTime);
+                break;
 
-            case DATE:
-              final @Nullable LocalDate maybeDate = tableFile.readDate(columnIndex);
-              dataRowBuilder.addDate(maybeDate);
-              break;
+              case DATE:
+                final @Nullable LocalDate maybeDate = tableFile.readDate(columnIndex);
+                dataRowBuilder.addDate(maybeDate);
+                break;
 
-            case TEXT:
-              final @Nullable String maybeText = tableFile.readText(columnIndex);
-              dataRowBuilder.addText(maybeText);
-              break;
+              case TEXT:
+                final @Nullable String maybeText = tableFile.readText(columnIndex);
+                dataRowBuilder.addText(maybeText);
+                break;
 
-            default:
-              throw new NotImplementedException(format(
-                  "Execution of a SelectCommand over a SelectCommandColumn of DataType %s",
-                      column.getDataType()));
+              default:
+                throw new NotImplementedException(format(
+                    "Execution of a SelectCommand over a SelectCommandColumn of DataType %s",
+                        column.getDataType()));
+            }
           }
-        }
 
-        SelectResultDataRow dataRow = dataRowBuilder.build();
-        dataBuilder.writeRow(dataRow);
+          SelectResultDataRow dataRow = dataRowBuilder.build();
+          dataBuilder.writeRow(dataRow);
+        }
       }
     }
 
@@ -353,7 +422,7 @@ public class Executor {
     return result;
   }
 
-  protected ShowTablesResult executeShowTables(ShowTablesCommand command, Storage context) throws ExecuteException, StorageException, IOException {
+  protected ShowTablesResult executeShowTables(ShowTablesCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
@@ -374,12 +443,212 @@ public class Executor {
     return result;
   }
 
-  protected UpdateResult executeUpdate(UpdateCommand command, Storage context) throws ExecuteException, StorageException {
+  // TODO Implement support for WHERE clause in Executor#executeUpdate(UpdateCommand)
+  protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
     // COMBAK Implement Executor.execute(UpdateCommand, Storage)
     throw new NotImplementedException();
+  }
+
+  private @Nullable Object readValue(byte columnIndex, DataType dataType, TableFile tableFile) throws StorageException, IOException {
+    assert 0 <= columnIndex && columnIndex < Byte.MAX_VALUE : format("columnIndex %d should be in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+    assert dataType != null : "dataType should not be null";
+    assert tableFile != null : "tableFile should not be null";
+
+    @Nullable Object value;
+    switch (dataType) {
+      case TINYINT:
+        value = tableFile.readTinyInt(columnIndex);
+        break;
+
+      case SMALLINT:
+        value = tableFile.readSmallInt(columnIndex);
+        break;
+
+      case INT:
+        value = tableFile.readInt(columnIndex);
+        break;
+
+      case BIGINT:
+        value = tableFile.readBigInt(columnIndex);
+        break;
+
+      case FLOAT:
+        value = tableFile.readFloat(columnIndex);
+        break;
+
+      case DOUBLE:
+        value = tableFile.readDouble(columnIndex);
+        break;
+
+      case YEAR:
+        value = tableFile.readYear(columnIndex);
+        break;
+
+      case TIME:
+        value = tableFile.readTime(columnIndex);
+        break;
+
+      case DATETIME:
+        value = tableFile.readDateTime(columnIndex);
+        break;
+
+      case DATE:
+        value = tableFile.readDate(columnIndex);
+        break;
+
+      case TEXT:
+        value = tableFile.readText(columnIndex);
+        break;
+
+      default:
+        throw new NotImplementedException(format("edu.utdallas.davisbase.executor.Executor#readValue(byte, DataType, TableFile) for DataType %s", dataType));
+    }
+    return value;
+  }
+
+  private boolean evaluateWhere(CommandWhere where, TableFile tableFile) throws ExecuteException, StorageException, IOException {
+    assert where != null : "where should not be null";
+    assert !where.getLeftColumnReference().hasIndexFile() : "where.getLeftColumnReference().hasIndexFile() should be false";
+    assert tableFile != null : "tableFile should not be null";
+
+    final CommandWhereColumn leftColumn = where.getLeftColumnReference();
+    final byte leftColumnIndex = leftColumn.getIndex();
+    final DataType leftColumnDataType = leftColumn.getDataType();
+
+    final @Nullable Object leftValue = readValue(leftColumnIndex, leftColumnDataType, tableFile);
+    final @Nullable Object rightValue = where.getRightLiteralValue();
+
+    switch (where.getOperator()) {
+      case EQUAL:
+        return evaluateWhereEqual(leftColumnDataType, leftValue, rightValue);
+
+      case NOT_EQUAL:
+        return evaluateWhereNotEqual(leftColumnDataType, leftValue, rightValue);
+
+      case GREATER_THAN:
+        return evaluateWhereGreaterThan(leftColumnDataType, leftValue, rightValue);
+
+      case GREATER_THAN_OR_EQUAL:
+        return evaluateWhereGreaterThanOrEqual(leftColumnDataType, leftValue, rightValue);
+
+      case LESS_THAN:
+        return evaluateWhereLessThan(leftColumnDataType, leftValue, rightValue);
+
+      case LESS_THAN_OR_EQUAL:
+        return evaluateWhereLessThanOrEqual(leftColumnDataType, leftValue, rightValue);
+
+      default:
+        throw new NotImplementedException(format("edu.utdallas.davisbase.executor.Executor#evaluateWhereTable(CommandWhere, TableFile) for type edu.utdallas.davisbase.command.CommandWhere.Operator#%s", where.getOperator()));
+    }
+  }
+
+  private int evaluateComparison(DataType dataType, Object leftValue, Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+    assert leftValue != null : "leftValue should not be null";
+    assert rightValue != null : "rightValue should not be null";
+
+    switch (dataType) {
+      case TINYINT:
+        return ((Byte) leftValue).compareTo((Byte) rightValue);
+
+      case SMALLINT:
+        return ((Short) leftValue).compareTo((Short) rightValue);
+
+      case INT:
+        return ((Integer) leftValue).compareTo((Integer) rightValue);
+
+      case BIGINT:
+        return ((Long) leftValue).compareTo((Long) rightValue);
+
+      case FLOAT:
+        return ((Float) leftValue).compareTo((Float) rightValue);
+
+      case DOUBLE:
+        return ((Double) leftValue).compareTo((Double) rightValue);
+
+      case YEAR:
+        return ((Year) leftValue).compareTo((Year) rightValue);
+
+      case TIME:
+        return ((LocalTime) leftValue).compareTo((LocalTime) rightValue);
+
+      case DATETIME:
+        return ((LocalDateTime) leftValue).compareTo((LocalDateTime) rightValue);
+
+      case DATE:
+        return ((LocalDate) leftValue).compareTo((LocalDate) rightValue);
+
+      case TEXT:
+        return ((String) leftValue).compareTo((String) rightValue);
+
+      default:
+        throw new NotImplementedException(
+            format("edu.utdallas.davisbase.executor.Executor#evaluateComparison(DataType, Object, Object) for DataType %s",
+                dataType));
+    }
+  }
+
+  private boolean evaluateWhereEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return Objects.equals(leftValue, rightValue);
+  }
+
+  private boolean evaluateWhereNotEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return ! Objects.equals(leftValue, rightValue);
+  }
+
+  private boolean evaluateWhereGreaterThan(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) > 0;
+  }
+
+  private boolean evaluateWhereGreaterThanOrEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) >= 0;
+  }
+
+  private boolean evaluateWhereLessThan(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) < 0;
+  }
+
+  private boolean evaluateWhereLessThanOrEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) <= 0;
   }
 
 }

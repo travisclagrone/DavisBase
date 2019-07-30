@@ -40,7 +40,7 @@ public class DavisBase {
     final StorageState storageState = new StorageState.Builder().build();
     this.storage = new Storage(storageConfiguration, storageState);
 
-    this.executor = new Executor(new ExecutorConfiguration());
+    this.executor = new Executor(new ExecutorConfiguration(), this.storage);
 
     this.compiler = new edu.utdallas.davisbase.compiler.Compiler(this.storage);
 
@@ -62,10 +62,10 @@ public class DavisBase {
 
       while (true) {
         try {
-          String statement = host.readStatement();          
-          CommandRepresentation representation = parser.parse(statement);          
-          Command command = compiler.compile(representation);          
-          Result result = executor.execute(command, this.storage);
+          String statement = host.readStatement();
+          CommandRepresentation representation = parser.parse(statement);
+          Command command = compiler.compile(representation);
+          Result result = executor.execute(command);
           host.write(result);
           if (result instanceof ExitResult) {
             break;
