@@ -70,7 +70,6 @@ public class Parser {
         CreateIndexCommandRepresentation createIndex = new CreateIndexCommandRepresentation(
           createIndexStatement.toString(),
           createIndexStatement.getTable().getName(),
-          createIndexStatement.getIndex().getName(),
           createIndexStatement.getIndex().getColumnsNames().get(0)
         );
         return createIndex;
