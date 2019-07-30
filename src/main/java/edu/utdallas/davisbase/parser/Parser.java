@@ -70,6 +70,7 @@ public class Parser {
         CreateIndexCommandRepresentation createIndex = new CreateIndexCommandRepresentation(
           createIndexStatement.toString(),
           createIndexStatement.getTable().getName(),
+          createIndexStatement.getIndex().getName(),
           createIndexStatement.getIndex().getColumnsNames().get(0)
         );
         return createIndex;
@@ -92,14 +93,11 @@ public class Parser {
         return delete;
       } else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
-        if(updateStatement.getColumns().size()>1 || updateStatement.getExpressions().size()>1){
-          throw new ParseException("DavisBase does not support multi-column updates");
-        }
         UpdateCommandRepresentation update = new UpdateCommandRepresentation(
           updateStatement.toString(),
           updateStatement.getTables().get(0).getName(),
-          updateStatement.getColumns().get(0),
-          updateStatement.getExpressions().get(0),
+          updateStatement.getColumns(),
+          updateStatement.getExpressions(),
           parseWhereExpression(updateStatement.getWhere())
         );
         return update;

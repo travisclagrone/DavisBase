@@ -6,24 +6,16 @@ import edu.utdallas.davisbase.DataType;
 public class CreateIndexCommand implements Command {
 
   private String tableName;
+  private String indexName;
   private String columnName;
   private byte columnIndex;
   private DataType dataType;
 
-  public CreateIndexCommand(String tableName, String columnName, byte columnIndex, DataType dataType) {
+  public CreateIndexCommand(String tableName, String indexName, String columnName, byte columnIndex, DataType dataType) {
     this.tableName = tableName;
+    this.indexName = indexName;
     this.columnName = columnName;
     this.columnIndex = columnIndex;
     this.dataType = dataType;
-  }
-
-  @Override
-  public String toString() {
-    return "CreateIndexCommand{" +
-      "tableName='" + tableName + '\'' +
-      ", columnName='" + columnName + '\'' +
-      ", columnIndex=" + columnIndex +
-      ", dataType=" + dataType +
-      '}';
   }
 }

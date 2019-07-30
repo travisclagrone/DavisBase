@@ -67,7 +67,6 @@ public class DavisBase {
           Command command = compiler.compile(representation);
           Result result = executor.execute(command);
           host.write(result);
-
           if (result instanceof ExitResult) {
             break;
           }

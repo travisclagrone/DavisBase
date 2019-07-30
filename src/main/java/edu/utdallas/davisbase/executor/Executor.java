@@ -1,32 +1,14 @@
 package edu.utdallas.davisbase.executor;
 
-import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
-
-import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
-
 import static com.google.common.base.Preconditions.checkNotNull;
-
 import static edu.utdallas.davisbase.DataType.INT;
 import static edu.utdallas.davisbase.DataType.TEXT;
 import static edu.utdallas.davisbase.DataType.TINYINT;
-import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_COLUMNS;
-import static edu.utdallas.davisbase.catalog.CatalogTable.DAVISBASE_TABLES;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Year;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
+import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
 import edu.utdallas.davisbase.BooleanUtils;
-import edu.utdallas.davisbase.DataType;
-import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
@@ -45,6 +27,8 @@ import edu.utdallas.davisbase.command.SelectCommandColumn;
 import edu.utdallas.davisbase.command.ShowTablesCommand;
 import edu.utdallas.davisbase.command.UpdateCommand;
 import edu.utdallas.davisbase.command.UpdateCommandColumn;
+import edu.utdallas.davisbase.DataType;
+import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.result.CreateIndexResult;
 import edu.utdallas.davisbase.result.CreateTableResult;
 import edu.utdallas.davisbase.result.DeleteResult;
@@ -63,6 +47,16 @@ import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageException;
 import edu.utdallas.davisbase.storage.TableFile;
 import edu.utdallas.davisbase.storage.TableRowBuilder;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Year;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * An executor of {@link Command}s against a {@link Storage} context, and thereby a producer of
@@ -151,13 +145,13 @@ public class Executor {
     final String tableName = command.getTableName();
     context.createTableFile(tableName);
 
-    try (final TableFile davisbaseTables = context.openTableFile(DAVISBASE_TABLES.getName())) {
+    try (final TableFile davisbaseTables = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName())) {
       final TableRowBuilder rowBuilder = new TableRowBuilder();
       rowBuilder.appendText(tableName);
       davisbaseTables.appendRow(rowBuilder);
     }
 
-    try (final TableFile davisbaseColumns = context.openTableFile(DAVISBASE_COLUMNS.getName())) {
+    try (final TableFile davisbaseColumns = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName())) {
       byte ordinalPosition = 0;
 
       // COMBAK Make a static constant class to modularly structure the special "rowid" column that all tables have, then refactor these magic literals to constant references.
@@ -187,13 +181,30 @@ public class Executor {
     return result;
   }
 
-  // TODO Implement support for WHERE clause in Executor#executeDelete(DeleteCommand)
-  protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException {
+  protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(DeleteCommand, Storage)
-    throw new NotImplementedException();
+    final String tableName = command.getTableName();
+    final @Nullable CommandWhere where = command.getWhere();
+
+    int rowsDeleted = 0;
+    try (final TableFile tableFile = context.openTableFile(tableName)) {
+      while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
+          tableFile.removeRow();
+
+          // TODO Implement support for indexing in Executor#executeDelete(DeleteCommand). I.e. delete
+          // entries from every index on table (if any) as well as from the table itself.
+
+          assert rowsDeleted < Integer.MAX_VALUE : format("Maximum number of rows have already been deleted (%d). Cannot delete any more rows without overflowing.", Integer.MAX_VALUE);
+          rowsDeleted += 1;
+        }
+      }
+    }
+
+    final DeleteResult result = new DeleteResult(tableName, rowsDeleted);
+    return result;
   }
 
   protected DropTableResult executeDropTable(DropTableCommand command) throws ExecuteException, StorageException, IOException {
@@ -206,7 +217,7 @@ public class Executor {
 
     context.deleteTableFile(commandTableName);
 
-    try (final TableFile davisbaseTables = context.openTableFile(DAVISBASE_TABLES.getName())) {
+    try (final TableFile davisbaseTables = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName())) {
       while (davisbaseTables.goToNextRow()) {
 
         final String rowTableName = castNonNull(
@@ -224,17 +235,17 @@ public class Executor {
       }
     }
 
-    try (final TableFile davisbaseColumns = context.openTableFile(DAVISBASE_COLUMNS.getName())) {
+    try (final TableFile davisbaseColumns = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName())) {
       while (davisbaseColumns.goToNextRow()) {
 
         final String rowTableName = castNonNull(
             davisbaseColumns.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()));
-        assert rowTableName != null : "No row value for column TABLE_NAME in table DAVISBASE_COLUMNS should ever be null.";
+        assert rowTableName != null : "No row value for column TABLE_NAME in table CatalogTable.DAVISBASE_COLUMNS should ever be null.";
 
         if (rowTableName.equalsIgnoreCase(commandTableName)) {
           davisbaseColumns.removeRow();
 
-          // There can be multiple rows in the table DAVISBASE_COLUMNS for any given value of the
+          // There can be multiple rows in the table CatalogTable.DAVISBASE_COLUMNS for any given value of the
           // column TABLE_NAME (i.e. a user-defined table can have multiple columns). Therefore, we
           // MUST NOT break early, but rather MUST evaluate *every* row for possible removal.
         }
@@ -410,7 +421,7 @@ public class Executor {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    final String catalogTablesTableName = DAVISBASE_TABLES.getName();
+    final String catalogTablesTableName = CatalogTable.DAVISBASE_TABLES.getName();
     final byte catalogTablesTableTableNameColumnIndex = DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition();
 
     final List<String> tableNames = new ArrayList<>();
