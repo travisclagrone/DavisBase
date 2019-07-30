@@ -509,18 +509,18 @@ public class TableFile implements Closeable {
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
     goToNextRow();
+    // goToNextRow();
+    // goToNextRow();
 
     checkState(this.hasCurrentRow(),
         "tableFile is not pointing to a current row from which to read");
-
-    
-
 
     long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     long cellOffsetOffset = 0x0010;
     long currentCellOffset = fileOffsetOfPage + cellOffsetOffset;
     long cellCountOffset = fileOffsetOfPage + 1;
     int maxRowId = getMaxRowId();
+    int currentRowId = getcurrentRowId();
 
 
     file.seek(cellCountOffset);
@@ -558,6 +558,23 @@ public class TableFile implements Closeable {
   private int getMaxRowId() throws IOException {
     file.seek(0x01);
     return file.readInt();
+  }
+
+  private int getcurrentRowId() throws IOException {
+    long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
+    long cellOffsetOffset = 0x0010;
+    long currentCellOffset = fileOffsetOfPage + cellOffsetOffset + 0x02 * this.currentLeafCellIndex;
+    file.seek(currentCellOffset);
+    short currentCellLocation = file.readShort();
+    long currentCellLocationOffset = fileOffsetOfPage + currentCellLocation;
+    file.seek(currentCellLocationOffset);
+    byte columnCount = file.readByte();
+    long currentRowLocationOffset =
+        fileOffsetOfPage + currentCellLocation + 0x01 * (1 + columnCount);
+
+    file.seek(currentRowLocationOffset);
+    int rowId = file.readInt();
+    return rowId;
   }
 
   public void writeNull(int columnIndex) throws IOException {
