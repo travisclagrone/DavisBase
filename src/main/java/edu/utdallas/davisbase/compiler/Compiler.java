@@ -74,6 +74,7 @@ public class Compiler {
     }
     else if (command instanceof DeleteCommandRepresentation){
       DeleteCommandRepresentation delete= (DeleteCommandRepresentation)command;
+      validateNotCatalogTable(delete.getTable());
       return new DeleteCommand(
         delete.getTable(),
         compileCommandWhere(delete.getTable(), delete.getWhereClause())
@@ -81,6 +82,7 @@ public class Compiler {
     }
     else if (command instanceof DropTableCommandRepresentation){
       DropTableCommandRepresentation dropTable = (DropTableCommandRepresentation)command;
+      validateNotCatalogTable(dropTable.getTable());
       return new DropTableCommand(dropTable.getTable());
     }
     else if (command instanceof ExitCommandRepresentation){
@@ -88,6 +90,7 @@ public class Compiler {
     }
     else if (command instanceof InsertCommandRepresentation){
       InsertCommandRepresentation insert = (InsertCommandRepresentation)command;
+      validateNotCatalogTable(insert.getTable());
       List<InsertObject> insertObjects = new ArrayList<>();
       if(insert.getColumns().isEmpty()){
         for(int lcv = 0; lcv< insert.getValues().size(); lcv++){
@@ -139,6 +142,7 @@ public class Compiler {
     }
     else if (command instanceof UpdateCommandRepresentation){
       UpdateCommandRepresentation update = (UpdateCommandRepresentation)command;
+      validateNotCatalogTable(update.getTable());
       Column col = update.getColumn();
       byte colIndex =  getColumnIndex(col, update.getTable());
       UpdateCommandColumn updateCommandColumn = new UpdateCommandColumn(
@@ -600,6 +604,18 @@ public class Compiler {
         }
       default:
         throw new CompileException("Unrecognized operator");
+    }
+  }
+
+  /**
+   * Validate that the table name the command is trying to modify is not one of the catalog tables
+   * @param tableName name  of table to check
+   * @throws CompileException
+   */
+  private void validateNotCatalogTable(String tableName)throws CompileException{
+    if(tableName.equalsIgnoreCase(CatalogTable.DAVISBASE_COLUMNS.getName()) ||
+      tableName.equalsIgnoreCase(CatalogTable.DAVISBASE_TABLES.getName())){
+      throw new CompileException("Unable to modify catalog tables");
     }
   }
 

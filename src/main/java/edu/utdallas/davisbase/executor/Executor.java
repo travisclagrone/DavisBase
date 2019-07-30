@@ -27,6 +27,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.Command;
@@ -195,12 +196,55 @@ public class Executor {
     throw new NotImplementedException();
   }
 
-  protected DropTableResult executeDropTable(DropTableCommand command) throws ExecuteException, StorageException {
+  protected DropTableResult executeDropTable(DropTableCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(DropTableCommand, Storage)
-    throw new NotImplementedException();
+    final String commandTableName = command.getTableName();
+
+    // TODO Drop any indexes on the target table.
+
+    context.deleteTableFile(commandTableName);
+
+    try (final TableFile davisbaseTables = context.openTableFile(DAVISBASE_TABLES.getName())) {
+      while (davisbaseTables.goToNextRow()) {
+
+        final String rowTableName = castNonNull(
+            davisbaseTables.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()));
+        assert rowTableName != null : "No row value for column 'table_name' in table 'davisbase_tables' should ever be null.";
+
+        if (rowTableName.equalsIgnoreCase(commandTableName)) {
+          davisbaseTables.removeRow();
+
+          // There should never be more than one row any given value of the 'table_name' column in the
+          // table 'davisbase_tables'. Therefore, we MAY break as soon as we've deleted the first
+          // matching row (if any).
+          break;
+        }
+      }
+    }
+
+    try (final TableFile davisbaseColumns = context.openTableFile(DAVISBASE_COLUMNS.getName())) {
+      while (davisbaseColumns.goToNextRow()) {
+
+        final String rowTableName = castNonNull(
+            davisbaseColumns.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()));
+        assert rowTableName != null : "No row value for column TABLE_NAME in table DAVISBASE_COLUMNS should ever be null.";
+
+        if (rowTableName.equalsIgnoreCase(commandTableName)) {
+          davisbaseColumns.removeRow();
+
+          // There can be multiple rows in the table DAVISBASE_COLUMNS for any given value of the
+          // column TABLE_NAME (i.e. a user-defined table can have multiple columns). Therefore, we
+          // MUST NOT break early, but rather MUST evaluate *every* row for possible removal.
+        }
+      }
+    }
+
+    // TODO Delete the catalog rows corresponding to the indexes (if any) on the target table.
+
+    final DropTableResult result = new DropTableResult(commandTableName);
+    return result;
   }
 
   protected ExitResult executeExit(ExitCommand command) throws ExecuteException, StorageException {
