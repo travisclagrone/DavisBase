@@ -4,19 +4,23 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Column;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class UpdateCommandRepresentation implements CommandRepresentation {
 
   private final String command;
   private final String table;
-  private final Column column;
-  private final Expression value;
+  private final List<Column> columns;
+  private final List<Expression> values;
   private final @Nullable WhereExpression whereClause;
 
-  public UpdateCommandRepresentation(String command, String table, Column column, Expression value, @Nullable WhereExpression whereClause) {
+  public UpdateCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values, @Nullable WhereExpression whereClause) {
     this.command = command;
     this.table = table;
-    this.column = column;
-    this.value = value;
+    this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
+    this.values = Collections.unmodifiableList(new ArrayList<>(values));
     this.whereClause = whereClause;
   }
 
@@ -24,12 +28,12 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     return table;
   }
 
-  public Column getColumn() {
-    return column;
+  public List<Column> getColumns() {
+    return columns;
   }
 
-  public Expression getValue() {
-    return value;
+  public List<Expression> getValues() {
+    return values;
   }
 
   public @Nullable WhereExpression getWhereClause() {
@@ -51,8 +55,8 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     return "UpdateCommandRepresentation{" +
       "command='" + command + '\'' +
       ", table='" + table + '\'' +
-      ", column=" + column +
-      ", value=" + value +
+      ", columns=" + columns +
+      ", values=" + values +
       ", whereClause=" + whereClause +
       '}';
   }
