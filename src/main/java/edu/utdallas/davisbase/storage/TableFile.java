@@ -508,7 +508,7 @@ public class TableFile implements Closeable {
 
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
-    goToNextRow();
+    //goToNextRow();
 
     checkState(this.hasCurrentRow(),
         "tableFile is not pointing to a current row from which to read");
