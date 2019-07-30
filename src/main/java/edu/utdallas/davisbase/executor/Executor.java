@@ -186,13 +186,30 @@ public class Executor {
     return result;
   }
 
-  // TODO Implement support for WHERE clause in Executor#executeDelete(DeleteCommand)
-  protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException {
+  protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(DeleteCommand, Storage)
-    throw new NotImplementedException();
+    final String tableName = command.getTableName();
+    final @Nullable CommandWhere where = command.getWhere();
+
+    int rowsDeleted = 0;
+    try (final TableFile tableFile = context.openTableFile(tableName)) {
+      while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
+          tableFile.removeRow();
+
+          // TODO Implement support for indexing in Executor#executeDelete(DeleteCommand). I.e. delete
+          // entries from every index on table (if any) as well as from the table itself.
+
+          assert rowsDeleted < Integer.MAX_VALUE : format("Maximum number of rows have already been deleted (%d). Cannot delete any more rows without overflowing.", Integer.MAX_VALUE);
+          rowsDeleted += 1;
+        }
+      }
+    }
+
+    final DeleteResult result = new DeleteResult(tableName, rowsDeleted);
+    return result;
   }
 
   protected DropTableResult executeDropTable(DropTableCommand command) throws ExecuteException, StorageException, IOException {
