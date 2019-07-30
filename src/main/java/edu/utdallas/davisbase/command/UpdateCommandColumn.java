@@ -1,16 +1,19 @@
 package edu.utdallas.davisbase.command;
 
-import edu.utdallas.davisbase.DataType;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.Objects;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Objects.hash;
+
 import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+
+import java.util.Objects;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import edu.utdallas.davisbase.DataType;
 
 /**
  * The specification of a column to update (including the value to update it to) for a

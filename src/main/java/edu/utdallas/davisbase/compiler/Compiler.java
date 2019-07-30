@@ -2,6 +2,7 @@ package edu.utdallas.davisbase.compiler;
 
 import edu.utdallas.davisbase.BooleanUtils;
 import edu.utdallas.davisbase.DataType;
+import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
@@ -143,15 +144,21 @@ public class Compiler {
     else if (command instanceof UpdateCommandRepresentation){
       UpdateCommandRepresentation update = (UpdateCommandRepresentation)command;
       validateNotCatalogTable(update.getTable());
-      Column col = update.getColumn();
-      byte colIndex =  getColumnIndex(col, update.getTable());
-      UpdateCommandColumn updateCommandColumn = new UpdateCommandColumn(
-        colIndex,
-        validateTypeMatchesSchema(update.getTable(), update.getValue(),getColumnName(update.getTable(), colIndex))
-      );
+      List<UpdateCommandColumn> updateCommandColumns = new ArrayList<>();
+      List<Column> columnRepresentations = update.getColumns();
+      List<Expression> valuesList = update.getValues();
+      for(int lcv = 0; lcv < columnRepresentations.size(); lcv++){
+        Column col = columnRepresentations.get(lcv);
+        byte colIndex =  getColumnIndex(col, update.getTable());
+        UpdateCommandColumn updateCommandColumn = new UpdateCommandColumn(
+          colIndex,
+          validateTypeMatchesSchema(update.getTable(), valuesList.get(lcv),getColumnName(update.getTable(), colIndex))
+        );
+        updateCommandColumns.add(updateCommandColumn);
+      }
       return new UpdateCommand(
         update.getTable(),
-        updateCommandColumn,
+        updateCommandColumns,
         compileCommandWhere(update.getTable(), update.getWhereClause())
       );
     }

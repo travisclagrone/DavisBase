@@ -1,17 +1,25 @@
 package edu.utdallas.davisbase.command;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.util.Objects;
+import static java.lang.String.format;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Objects.hash;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Objects.hash;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class UpdateCommand implements Command {
 
   private final String tableName;
-  private final UpdateCommandColumn column;
+  private final List<UpdateCommandColumn> columns;
   private final @Nullable CommandWhere where;
 
   // TODO Implement fields in UpdateCommand for whether a size change could occur (e.g. an update
@@ -19,20 +27,27 @@ public class UpdateCommand implements Command {
 
   /**
    * @param tableName the name of the table to update
-   * @param column    nonnull) column-index-value specifications that
-   *                  make up this {@code UpdateCommand}, where {@code UpdateCommandColumn}
+   * @param columns   the unordered collection of (nonnull) column-index-value specifications that
+   *                  make up this {@code UpdateCommand}, where each {@code UpdateCommandColumn}
    *                  returns a distinct value for {@link UpdateCommandColumn#getColumnIndex()} (not
    *                  null, not empty)
    * @param where     the specification of the simple {@link CommandWhere where} clause expression
    *                  for this {@code UpdateCommand}, if any (nullable)
    */
-  public UpdateCommand(String tableName, UpdateCommandColumn column, @Nullable CommandWhere where) {
+  public UpdateCommand(String tableName, List<UpdateCommandColumn> columns, @Nullable CommandWhere where) {
     checkNotNull(tableName, "tableName");
-    checkNotNull(column, "column");
-    checkNotNull(column.getColumnIndex(), "columnIndex");
+    checkNotNull(columns, "columns");
+    checkArgument(!columns.isEmpty(), "columns should not be empty");
+    final Set<Byte> columnIndexes = new HashSet<>(columns.size());
+    for (int i = 0; i < columns.size(); i++) {
+      checkNotNull(columns.get(i), format("columns.get(%d) should not be null", i));
+      checkArgument(columnIndexes.add(columns.get(i).getColumnIndex()),
+          format("Duplicate column index %d detected in columns at column.get(%d)",
+              columns.get(i).getColumnIndex(), i));
+    }
 
     this.tableName = tableName;
-    this.column = column;
+    this.columns = unmodifiableList(new ArrayList<>(columns));
     this.where = where;
   }
 
@@ -44,11 +59,13 @@ public class UpdateCommand implements Command {
   }
 
   /**
-   * @return (nonnull) column-index-value specification {@link UpdateCommandColumn} has a distinct value for
+   * @return an unmodifiable view of the list of (nonnull) column-index-value specifications that
+   *         make up this {@code UpdateCommand}, where the order of the returned list is not
+   *         significant, and each {@link UpdateCommandColumn} has a distinct value for
    *         {@link UpdateCommandColumn#getColumnIndex()} (not null, not empty)
    */
-  public UpdateCommandColumn getColumn() {
-    return column;
+  public List<UpdateCommandColumn> getColumns() {
+    return columns;
   }
 
   /**
@@ -69,14 +86,14 @@ public class UpdateCommand implements Command {
     UpdateCommand other = (UpdateCommand) obj;
     return
         getTableName().equals(other.getTableName()) &&
-        getColumn().equals(other.getColumn()) &&
+        getColumns().equals(other.getColumns()) &&
         Objects.equals(getWhere(), other.getWhere());
   }
 
   @Override
   @SuppressWarnings("nullness")
   public int hashCode() {
-    return hash(getTableName(), getColumn(), getWhere());
+    return hash(getTableName(), getColumns(), getWhere());
   }
 
   @Override
@@ -84,7 +101,7 @@ public class UpdateCommand implements Command {
   public String toString() {
     return toStringHelper(UpdateCommand.class)
         .add("tableName", getTableName())
-        .add("column", getColumn())
+        .add("columns", getColumns())
         .add("where", getWhere())
         .toString();
   }
