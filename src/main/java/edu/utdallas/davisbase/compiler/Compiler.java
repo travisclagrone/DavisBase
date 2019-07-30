@@ -16,6 +16,7 @@ import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageException;
 import edu.utdallas.davisbase.storage.TableFile;
 import java.io.IOException;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -289,7 +290,7 @@ public class Compiler {
             case YEAR:
               long tempLongValue = longValue - 2000;
               if (Byte.MIN_VALUE <= tempLongValue && tempLongValue <= Byte.MAX_VALUE) {
-                return (byte) (tempLongValue);
+                return Year.of((int) longValue);
               }
               throw new CompileException(
                   "Expected an YEAR value between 1873 and 2127, but found value out of range.");
