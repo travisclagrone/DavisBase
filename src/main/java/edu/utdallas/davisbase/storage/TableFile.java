@@ -508,7 +508,7 @@ public class TableFile implements Closeable {
 
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
-    goToNextRow();
+    // goToNextRow();
     // goToNextRow();
     // goToNextRow();
 
@@ -528,9 +528,10 @@ public class TableFile implements Closeable {
 
     if (cellCount == 1) {
       // escalate to Parent
-    } else if (this.currentLeafCellIndex + 1 == cellCount) {
-      // update max row before/after delete
-      // removeRow(currentCellOffset, cellCount);
+    } else if (currentRowId == maxRowId) {
+      removeRow(currentCellOffset, cellCount);
+      file.seek(0x01);
+      file.writeInt(maxRowId - 1);
     } else {
       removeRow(currentCellOffset, cellCount);
     }
