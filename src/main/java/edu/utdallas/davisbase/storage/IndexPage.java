@@ -2,6 +2,8 @@ package edu.utdallas.davisbase.storage;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IndexPage {
 
@@ -176,12 +178,145 @@ public class IndexPage {
 
 	private static void removeElementsAfterIthPosition(RandomAccessFile file, int splitIndex, int pageNo) {
 		// TODO Auto-generated method stub
+		assert splitIndex > 1;
+		try {
+			long pageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			short noOfRecords = file.readShort();
+			// get the last index
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * (splitIndex - 2));
+			short cellStartPoint2B = file.readShort();
+
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+			file.writeShort(cellStartPoint2B);
+
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			file.writeShort(splitIndex - 1);
+			optimizePageSpace(file, pageNo);
+			// UpdatePagewithProperData.
+
+		} catch (Exception e) {
+
+		}
+
+	}
+
+	private static void optimizePageSpace(RandomAccessFile file, int pageNo) {
+		try {
+			long pageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			int noOfRecords = file.readShort();
+			List<byte[]> recordsInPage = new ArrayList();
+			short recordOffset;
+			byte[] recordBytes;
+			int recordRowIdsCount;
+			int recordIndexSpace;
+			int totalSpaceIn1Rec;
+			for (short i = 0; i < noOfRecords; i++) {
+				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
+				recordOffset = file.readShort();
+				file.seek(pageOffset + recordOffset);
+				recordRowIdsCount = file.readByte();
+				file.seek(pageOffset + recordOffset + 1);
+				recordIndexSpace = file.readByte();
+				totalSpaceIn1Rec = 1 + 1 + recordIndexSpace + recordRowIdsCount * 4;
+
+				file.seek(pageOffset);
+				if (file.readByte() == 0x02) {
+					totalSpaceIn1Rec = totalSpaceIn1Rec + 4;// left child space
+				}
+				recordBytes = new byte[totalSpaceIn1Rec];
+
+				file.seek(pageOffset + recordOffset);
+				file.read(recordBytes);
+				recordsInPage.add(recordBytes);
+			}
+
+			int lastdataEntryPointOffset = pageSize;
+			for (int i = 0; i < recordsInPage.size(); i++) {
+				totalSpaceIn1Rec = recordsInPage.get(i).length;
+				lastdataEntryPointOffset = lastdataEntryPointOffset - totalSpaceIn1Rec;
+				file.seek(pageOffset + lastdataEntryPointOffset);
+				file.write(recordsInPage.get(i));
+
+				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+				file.writeShort(lastdataEntryPointOffset);
+
+				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * i));
+				file.writeShort(lastdataEntryPointOffset);
+			}
+
+		} catch (Exception e) {
+
+		}
 
 	}
 
 	private static void addElementsAboveIToSibling(RandomAccessFile file, int splitIndex, int pageNo,
 			int siblingPageNo) {
 		// TODO Auto-generated method stub
+		try {
+			long pageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			short noOfRecords = file.readShort();
+
+			List<byte[]> records2Add = new ArrayList<byte[]>();
+			byte[] recordBytes;
+			short seekPointOffset = 0;
+			int noOfRowIds;
+			int indexSpace;
+			int totalRecordSpace;
+//			int seekAddBytes = 0;
+			int leftChildPageNoSpace = 0;
+			file.seek(pageOffset);
+			if (file.readByte() == 0x02) {
+				leftChildPageNoSpace = 4; // excluding left childPageNo filed
+			}
+
+			for (int i = splitIndex; i < noOfRecords - 1; i++) {
+				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * splitIndex));
+				seekPointOffset = (short) (file.readShort());
+
+				file.seek(pageOffset + seekPointOffset + leftChildPageNoSpace);
+				noOfRowIds = file.readByte();
+				file.seek(pageOffset + seekPointOffset + 1 + leftChildPageNoSpace);
+				indexSpace = file.readByte();
+				totalRecordSpace = leftChildPageNoSpace + 1 + 1 + indexSpace + (4 * noOfRowIds);
+				recordBytes = new byte[totalRecordSpace];
+
+				file.seek(pageOffset + seekPointOffset);
+				file.read(recordBytes);
+				records2Add.add(recordBytes);
+			}
+
+			long siblingPageOffset = convertPageNoToFileOffset(siblingPageNo);
+			file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			short noOfcellsInSibling = file.readShort();
+			file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+			short lastDataEntryPointOffsetSibling = file.readShort();
+			if (lastDataEntryPointOffsetSibling == 0) {
+				lastDataEntryPointOffsetSibling = (short) pageSize;
+			}
+			int totalDatatoWrite;
+			
+			for (int i = 0; i < records2Add.size(); i++) {
+				totalDatatoWrite = records2Add.get(i).length;
+				file.seek(siblingPageOffset + lastDataEntryPointOffsetSibling - totalDatatoWrite);
+				file.write(records2Add.get(i));
+				
+				lastDataEntryPointOffsetSibling=(short) (lastDataEntryPointOffsetSibling-totalDatatoWrite);
+				file.seek(siblingPageOffset+PAGE_OFFSET_OF_CELL_COUNT);
+				noOfcellsInSibling=(short) (noOfcellsInSibling+1);
+				file.writeShort(noOfcellsInSibling);
+				file.seek(siblingPageOffset+PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+				file.writeShort(lastDataEntryPointOffsetSibling);
+				file.seek(siblingPageOffset+PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY+(2*(noOfcellsInSibling-1)));
+				file.writeShort(lastDataEntryPointOffsetSibling);
+			}
+
+		} catch (Exception e) {
+
+		}
 
 	}
 
@@ -198,7 +333,7 @@ public class IndexPage {
 			if (file.readByte() == 0x02) {
 				dataSeekPoint = dataSeekPoint + 4; // because interior page has left child info
 			}
-			
+
 			file.seek(dataSeekPoint);
 			int noOfRowIds = file.readByte();
 
@@ -209,31 +344,20 @@ public class IndexPage {
 			byte[] data2BCopied = new byte[totalRowSpace];
 			file.seek(dataSeekPoint);
 			file.read(data2BCopied);
-			
-			//writing into parent page
-			long parentPageOffset = convertPageNoToFileOffset(parentPageNo);
-			file.seek(parentPageOffset+PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
-			short currentDataStartOffset =file.readShort();
-			long dataEntrySeekPoint = parentPageOffset+currentDataStartOffset-data2BCopied.length-4;
-			file.seek(dataEntrySeekPoint);
-			file.writeInt(pageNo);//writing left child page no
-			file.write(data2BCopied);
-			
-			
-			
 
-			// read from leafPage
+			// writing into parent page
+			long parentPageOffset = convertPageNoToFileOffset(parentPageNo);
+			file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+			short currentDataStartOffset = file.readShort();
+			long dataEntrySeekPoint = parentPageOffset + currentDataStartOffset - data2BCopied.length - 4;
+			file.seek(dataEntrySeekPoint);
+			file.writeInt(pageNo);// writing left child page no
+			file.write(data2BCopied);
 			sortKeys(file, parentPageNo);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-
-	private static byte[] readBytesFromLeafPage() {
-
-		return null;
-
 	}
 
 	public static void sortKeys(RandomAccessFile file, int currentPageNo) {
