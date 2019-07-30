@@ -2,10 +2,7 @@ package edu.utdallas.davisbase.representation;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Column;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class UpdateCommandRepresentation implements CommandRepresentation {
 
@@ -13,9 +10,9 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
   private final String table;
   private final Column column;
   private final Expression value;
-  private final WhereExpression whereClause;
+  private final @Nullable WhereExpression whereClause;
 
-  public UpdateCommandRepresentation(String command, String table, Column column, Expression value, WhereExpression whereClause) {
+  public UpdateCommandRepresentation(String command, String table, Column column, Expression value, @Nullable WhereExpression whereClause) {
     this.command = command;
     this.table = table;
     this.column = column;
