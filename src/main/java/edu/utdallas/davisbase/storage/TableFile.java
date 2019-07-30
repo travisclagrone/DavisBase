@@ -508,18 +508,19 @@ public class TableFile implements Closeable {
 
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
-    //goToNextRow();
+    goToNextRow();
 
     checkState(this.hasCurrentRow(),
         "tableFile is not pointing to a current row from which to read");
 
+    
+
 
     long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
-
-
     long cellOffsetOffset = 0x0010;
     long currentCellOffset = fileOffsetOfPage + cellOffsetOffset;
     long cellCountOffset = fileOffsetOfPage + 1;
+    int maxRowId = getMaxRowId();
 
 
     file.seek(cellCountOffset);
@@ -552,6 +553,11 @@ public class TableFile implements Closeable {
     for (short val : offsetLocationList) {
       file.writeShort(val);
     }
+  }
+
+  private int getMaxRowId() throws IOException {
+    file.seek(0x01);
+    return file.readInt();
   }
 
   public void writeNull(int columnIndex) throws IOException {
