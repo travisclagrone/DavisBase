@@ -1,6 +1,6 @@
 package edu.utdallas.davisbase.representation;
 
-import net.sf.jsqlparser.expression.*;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Column;
 
 public class WhereExpression {

@@ -20,7 +20,7 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -31,6 +31,8 @@ import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
 import edu.utdallas.davisbase.catalog.DavisBaseTablesTableColumn;
 import edu.utdallas.davisbase.command.Command;
+import edu.utdallas.davisbase.command.CommandWhere;
+import edu.utdallas.davisbase.command.CommandWhereColumn;
 import edu.utdallas.davisbase.command.CreateIndexCommand;
 import edu.utdallas.davisbase.command.CreateTableCommand;
 import edu.utdallas.davisbase.command.CreateTableCommandColumn;
@@ -184,6 +186,7 @@ public class Executor {
     return result;
   }
 
+  // TODO Implement support for WHERE clause in Executor#executeDelete(DeleteCommand)
   protected DeleteResult executeDelete(DeleteCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
@@ -313,80 +316,83 @@ public class Executor {
     final String tableName = command.getTableName();
     final List<SelectCommandColumn> columns = command.getSelectClauseColumns();
     final int columnCount = columns.size();
+    final @Nullable CommandWhere where = command.getWhere();
 
     final SelectResultData.Builder dataBuilder = new SelectResultData.Builder();
     try (TableFile tableFile = context.openTableFile(tableName)) {
       while (tableFile.goToNextRow()) {
+        if (where == null || evaluateWhere(where, tableFile)) {
 
-        final SelectResultDataRow.Builder dataRowBuilder = new SelectResultDataRow.Builder(columnCount);
-        for (SelectCommandColumn column : columns) {
-          final byte columnIndex = column.getIndex();
+          final SelectResultDataRow.Builder dataRowBuilder = new SelectResultDataRow.Builder(columnCount);
+          for (SelectCommandColumn column : columns) {
+            final byte columnIndex = column.getIndex();
 
-          switch (column.getDataType()) {
-            case TINYINT:
-              final @Nullable Byte maybeTinyInt = tableFile.readTinyInt(columnIndex);
-              dataRowBuilder.addTinyInt(maybeTinyInt);
-              break;
+            switch (column.getDataType()) {
+              case TINYINT:
+                final @Nullable Byte maybeTinyInt = tableFile.readTinyInt(columnIndex);
+                dataRowBuilder.addTinyInt(maybeTinyInt);
+                break;
 
-            case SMALLINT:
-              final @Nullable Short maybeSmallInt = tableFile.readSmallInt(columnIndex);
-              dataRowBuilder.addSmallInt(maybeSmallInt);
-              break;
+              case SMALLINT:
+                final @Nullable Short maybeSmallInt = tableFile.readSmallInt(columnIndex);
+                dataRowBuilder.addSmallInt(maybeSmallInt);
+                break;
 
-            case INT:
-              final @Nullable Integer maybeInt = tableFile.readInt(columnIndex);
-              dataRowBuilder.addInt(maybeInt);
-              break;
+              case INT:
+                final @Nullable Integer maybeInt = tableFile.readInt(columnIndex);
+                dataRowBuilder.addInt(maybeInt);
+                break;
 
-            case BIGINT:
-              final @Nullable Long maybeBigInt = tableFile.readBigInt(columnIndex);
-              dataRowBuilder.addBigInt(maybeBigInt);
-              break;
+              case BIGINT:
+                final @Nullable Long maybeBigInt = tableFile.readBigInt(columnIndex);
+                dataRowBuilder.addBigInt(maybeBigInt);
+                break;
 
-            case FLOAT:
-              final @Nullable Float maybeFloat = tableFile.readFloat(columnIndex);
-              dataRowBuilder.addFloat(maybeFloat);
-              break;
+              case FLOAT:
+                final @Nullable Float maybeFloat = tableFile.readFloat(columnIndex);
+                dataRowBuilder.addFloat(maybeFloat);
+                break;
 
-            case DOUBLE:
-              final @Nullable Double maybeDouble = tableFile.readDouble(columnIndex);
-              dataRowBuilder.addDouble(maybeDouble);
-              break;
+              case DOUBLE:
+                final @Nullable Double maybeDouble = tableFile.readDouble(columnIndex);
+                dataRowBuilder.addDouble(maybeDouble);
+                break;
 
-            case YEAR:
-              final @Nullable Year maybeYear = tableFile.readYear(columnIndex);
-              dataRowBuilder.addYear(maybeYear);
-              break;
+              case YEAR:
+                final @Nullable Year maybeYear = tableFile.readYear(columnIndex);
+                dataRowBuilder.addYear(maybeYear);
+                break;
 
-            case TIME:
-              final @Nullable LocalTime maybeTime = tableFile.readTime(columnIndex);
-              dataRowBuilder.addTime(maybeTime);
-              break;
+              case TIME:
+                final @Nullable LocalTime maybeTime = tableFile.readTime(columnIndex);
+                dataRowBuilder.addTime(maybeTime);
+                break;
 
-            case DATETIME:
-              final @Nullable LocalDateTime maybeDateTime = tableFile.readDateTime(columnIndex);
-              dataRowBuilder.addDateTime(maybeDateTime);
-              break;
+              case DATETIME:
+                final @Nullable LocalDateTime maybeDateTime = tableFile.readDateTime(columnIndex);
+                dataRowBuilder.addDateTime(maybeDateTime);
+                break;
 
-            case DATE:
-              final @Nullable LocalDate maybeDate = tableFile.readDate(columnIndex);
-              dataRowBuilder.addDate(maybeDate);
-              break;
+              case DATE:
+                final @Nullable LocalDate maybeDate = tableFile.readDate(columnIndex);
+                dataRowBuilder.addDate(maybeDate);
+                break;
 
-            case TEXT:
-              final @Nullable String maybeText = tableFile.readText(columnIndex);
-              dataRowBuilder.addText(maybeText);
-              break;
+              case TEXT:
+                final @Nullable String maybeText = tableFile.readText(columnIndex);
+                dataRowBuilder.addText(maybeText);
+                break;
 
-            default:
-              throw new NotImplementedException(format(
-                  "Execution of a SelectCommand over a SelectCommandColumn of DataType %s",
-                      column.getDataType()));
+              default:
+                throw new NotImplementedException(format(
+                    "Execution of a SelectCommand over a SelectCommandColumn of DataType %s",
+                        column.getDataType()));
+            }
           }
-        }
 
-        SelectResultDataRow dataRow = dataRowBuilder.build();
-        dataBuilder.writeRow(dataRow);
+          SelectResultDataRow dataRow = dataRowBuilder.build();
+          dataBuilder.writeRow(dataRow);
+        }
       }
     }
 
@@ -420,12 +426,212 @@ public class Executor {
     return result;
   }
 
+  // TODO Implement support for WHERE clause in Executor#executeUpdate(UpdateCommand)
   protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
     // COMBAK Implement Executor.execute(UpdateCommand, Storage)
     throw new NotImplementedException();
+  }
+
+  private @Nullable Object readValue(byte columnIndex, DataType dataType, TableFile tableFile) throws StorageException, IOException {
+    assert 0 <= columnIndex && columnIndex < Byte.MAX_VALUE : format("columnIndex %d should be in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+    assert dataType != null : "dataType should not be null";
+    assert tableFile != null : "tableFile should not be null";
+
+    @Nullable Object value;
+    switch (dataType) {
+      case TINYINT:
+        value = tableFile.readTinyInt(columnIndex);
+        break;
+
+      case SMALLINT:
+        value = tableFile.readSmallInt(columnIndex);
+        break;
+
+      case INT:
+        value = tableFile.readInt(columnIndex);
+        break;
+
+      case BIGINT:
+        value = tableFile.readBigInt(columnIndex);
+        break;
+
+      case FLOAT:
+        value = tableFile.readFloat(columnIndex);
+        break;
+
+      case DOUBLE:
+        value = tableFile.readDouble(columnIndex);
+        break;
+
+      case YEAR:
+        value = tableFile.readYear(columnIndex);
+        break;
+
+      case TIME:
+        value = tableFile.readTime(columnIndex);
+        break;
+
+      case DATETIME:
+        value = tableFile.readDateTime(columnIndex);
+        break;
+
+      case DATE:
+        value = tableFile.readDate(columnIndex);
+        break;
+
+      case TEXT:
+        value = tableFile.readText(columnIndex);
+        break;
+
+      default:
+        throw new NotImplementedException(format("edu.utdallas.davisbase.executor.Executor#readValue(byte, DataType, TableFile) for DataType %s", dataType));
+    }
+    return value;
+  }
+
+  private boolean evaluateWhere(CommandWhere where, TableFile tableFile) throws ExecuteException, StorageException, IOException {
+    assert where != null : "where should not be null";
+    assert !where.getLeftColumnReference().hasIndexFile() : "where.getLeftColumnReference().hasIndexFile() should be false";
+    assert tableFile != null : "tableFile should not be null";
+
+    final CommandWhereColumn leftColumn = where.getLeftColumnReference();
+    final byte leftColumnIndex = leftColumn.getIndex();
+    final DataType leftColumnDataType = leftColumn.getDataType();
+
+    final @Nullable Object leftValue = readValue(leftColumnIndex, leftColumnDataType, tableFile);
+    final @Nullable Object rightValue = where.getRightLiteralValue();
+
+    switch (where.getOperator()) {
+      case EQUAL:
+        return evaluateWhereEqual(leftColumnDataType, leftValue, rightValue);
+
+      case NOT_EQUAL:
+        return evaluateWhereNotEqual(leftColumnDataType, leftValue, rightValue);
+
+      case GREATER_THAN:
+        return evaluateWhereGreaterThan(leftColumnDataType, leftValue, rightValue);
+
+      case GREATER_THAN_OR_EQUAL:
+        return evaluateWhereGreaterThanOrEqual(leftColumnDataType, leftValue, rightValue);
+
+      case LESS_THAN:
+        return evaluateWhereLessThan(leftColumnDataType, leftValue, rightValue);
+
+      case LESS_THAN_OR_EQUAL:
+        return evaluateWhereLessThanOrEqual(leftColumnDataType, leftValue, rightValue);
+
+      default:
+        throw new NotImplementedException(format("edu.utdallas.davisbase.executor.Executor#evaluateWhereTable(CommandWhere, TableFile) for type edu.utdallas.davisbase.command.CommandWhere.Operator#%s", where.getOperator()));
+    }
+  }
+
+  private int evaluateComparison(DataType dataType, Object leftValue, Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+    assert leftValue != null : "leftValue should not be null";
+    assert rightValue != null : "rightValue should not be null";
+
+    switch (dataType) {
+      case TINYINT:
+        return ((Byte) leftValue).compareTo((Byte) rightValue);
+
+      case SMALLINT:
+        return ((Short) leftValue).compareTo((Short) rightValue);
+
+      case INT:
+        return ((Integer) leftValue).compareTo((Integer) rightValue);
+
+      case BIGINT:
+        return ((Long) leftValue).compareTo((Long) rightValue);
+
+      case FLOAT:
+        return ((Float) leftValue).compareTo((Float) rightValue);
+
+      case DOUBLE:
+        return ((Double) leftValue).compareTo((Double) rightValue);
+
+      case YEAR:
+        return ((Year) leftValue).compareTo((Year) rightValue);
+
+      case TIME:
+        return ((LocalTime) leftValue).compareTo((LocalTime) rightValue);
+
+      case DATETIME:
+        return ((LocalDateTime) leftValue).compareTo((LocalDateTime) rightValue);
+
+      case DATE:
+        return ((LocalDate) leftValue).compareTo((LocalDate) rightValue);
+
+      case TEXT:
+        return ((String) leftValue).compareTo((String) rightValue);
+
+      default:
+        throw new NotImplementedException(
+            format("edu.utdallas.davisbase.executor.Executor#evaluateComparison(DataType, Object, Object) for DataType %s",
+                dataType));
+    }
+  }
+
+  private boolean evaluateWhereEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return Objects.equals(leftValue, rightValue);
+  }
+
+  private boolean evaluateWhereNotEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return ! Objects.equals(leftValue, rightValue);
+  }
+
+  private boolean evaluateWhereGreaterThan(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) > 0;
+  }
+
+  private boolean evaluateWhereGreaterThanOrEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) >= 0;
+  }
+
+  private boolean evaluateWhereLessThan(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) < 0;
+  }
+
+  private boolean evaluateWhereLessThanOrEqual(DataType dataType, @Nullable Object leftValue, @Nullable Object rightValue) {
+    assert dataType != null : "dataType should not be null";
+
+    if (leftValue == null || rightValue == null) {
+      return false;
+    }
+
+    return evaluateComparison(dataType, leftValue, rightValue) <= 0;
   }
 
 }
