@@ -43,6 +43,7 @@ import edu.utdallas.davisbase.command.SelectCommand;
 import edu.utdallas.davisbase.command.SelectCommandColumn;
 import edu.utdallas.davisbase.command.ShowTablesCommand;
 import edu.utdallas.davisbase.command.UpdateCommand;
+import edu.utdallas.davisbase.command.UpdateCommandColumn;
 import edu.utdallas.davisbase.result.CreateIndexResult;
 import edu.utdallas.davisbase.result.CreateTableResult;
 import edu.utdallas.davisbase.result.DeleteResult;
@@ -382,16 +383,82 @@ public class Executor {
     return result;
   }
 
-  // TODO Implement support for WHERE clause in Executor#executeUpdate(UpdateCommand)
-  protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException {
+  protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(UpdateCommand, Storage)
-    throw new NotImplementedException();
+    final String tableName = command.getTableName();
+    final @Nullable CommandWhere where = command.getWhere();
+    final UpdateCommandColumn column = command.getColumn();
+    final byte columnIndex = column.getColumnIndex();
+    final @Nullable Object columnValue = column.getValue();
+
+    int rowsUpdated = 0;
+    try (final TableFile tableFile = context.openTableFile(tableName)) {
+      final int originalMaxRowId = tableFile.getCurrentMaxRowId();
+
+      while (tableFile.goToNextRow()) {
+        final int currentRowId = readRowId(tableFile);
+
+        if (currentRowId > originalMaxRowId) {
+          break;
+        }
+
+        if (where == null || evaluateWhere(where, tableFile)) {
+
+          if (columnValue == null) {
+            tableFile.writeNull(columnIndex);
+          }
+          else if (DataType.TINYINT.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeTinyInt(columnIndex, (Byte) columnValue);
+          }
+          else if (DataType.SMALLINT.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeSmallInt(columnIndex, (Short) columnValue);
+          }
+          else if (DataType.INT.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeInt(columnIndex, (Integer) columnValue);
+          }
+          else if (DataType.BIGINT.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeBigInt(columnIndex, (Long) columnValue);
+          }
+          else if (DataType.FLOAT.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeFloat(columnIndex, (Float) columnValue);
+          }
+          else if (DataType.DOUBLE.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeDouble(columnIndex, (Double) columnValue);
+          }
+          else if (DataType.YEAR.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeYear(columnIndex, (Year) columnValue);
+          }
+          else if (DataType.TIME.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeTime(columnIndex, (LocalTime) columnValue);
+          }
+          else if (DataType.DATETIME.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeDateTime(columnIndex, (LocalDateTime) columnValue);
+          }
+          else if (DataType.DATE.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeDate(columnIndex, (LocalDate) columnValue);
+          }
+          else if (DataType.TEXT.getJavaClass().isInstance(columnValue)) {
+            tableFile.writeText(columnIndex, (String) columnValue);
+          }
+          else {
+            throw new ExecuteException(
+                format("Java class of UPDATE command column value is recognized as a DavisBase data type: %s",
+                    columnValue.getClass().getName()));
+          }
+
+          assert rowsUpdated <= Integer.MAX_VALUE : "Cannot increment rowsUpdated further without overflowing.";
+          rowsUpdated += 1;
+        }
+      }
+    }
+
+    final UpdateResult result = new UpdateResult(tableName, rowsUpdated);
+    return result;
   }
 
-  private @Nullable Object readValue(byte columnIndex, DataType dataType, TableFile tableFile) throws StorageException, IOException {
+  private static @Nullable Object readValue(byte columnIndex, DataType dataType, TableFile tableFile) throws StorageException, IOException {
     assert 0 <= columnIndex && columnIndex < Byte.MAX_VALUE : format("columnIndex %d should be in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     assert dataType != null : "dataType should not be null";
     assert tableFile != null : "tableFile should not be null";
@@ -446,6 +513,10 @@ public class Executor {
         throw new NotImplementedException(format("edu.utdallas.davisbase.executor.Executor#readValue(byte, DataType, TableFile) for DataType %s", dataType));
     }
     return value;
+  }
+
+  private static int readRowId(TableFile tableFile) throws StorageException, IOException {
+    return (Integer) castNonNull(readValue((byte) 0, DataType.INT, tableFile));
   }
 
   private boolean evaluateWhere(CommandWhere where, TableFile tableFile) throws ExecuteException, StorageException, IOException {
