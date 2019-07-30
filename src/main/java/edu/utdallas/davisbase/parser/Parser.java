@@ -92,11 +92,14 @@ public class Parser {
         return delete;
       } else if (stmt instanceof Update) {
         Update updateStatement = (Update) stmt;
+        if(updateStatement.getColumns().size()>1 || updateStatement.getExpressions().size()>1){
+          throw new ParseException("DavisBase does not support multi-column updates");
+        }
         UpdateCommandRepresentation update = new UpdateCommandRepresentation(
           updateStatement.toString(),
           updateStatement.getTables().get(0).getName(),
-          updateStatement.getColumns(),
-          updateStatement.getExpressions(),
+          updateStatement.getColumns().get(0),
+          updateStatement.getExpressions().get(0),
           parseWhereExpression(updateStatement.getWhere())
         );
         return update;
