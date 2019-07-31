@@ -1,10 +1,8 @@
 package edu.utdallas.davisbase.storage;
 
-import static java.lang.String.format;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import edu.utdallas.davisbase.BooleanUtils;
+import edu.utdallas.davisbase.catalog.CatalogTable;
+import edu.utdallas.davisbase.catalog.CatalogTableColumn;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,9 +10,8 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.util.List;
 
-import edu.utdallas.davisbase.BooleanUtils;
-import edu.utdallas.davisbase.catalog.CatalogTable;
-import edu.utdallas.davisbase.catalog.CatalogTableColumn;
+import static com.google.common.base.Preconditions.*;
+import static java.lang.String.format;
 
 public class Storage {
 
@@ -197,6 +194,8 @@ public class Storage {
         row.appendText(col.getDataType().name());
         row.appendTinyInt(col.getOrdinalPosition());
         row.appendText(BooleanUtils.toText(col.isNullable()));
+        row.appendText(BooleanUtils.toText(col.isUnique()));
+        row.appendText(BooleanUtils.toText(col.isPrimaryKey()));
         sysColumnFile.appendRow(row);
       }
 
@@ -208,6 +207,8 @@ public class Storage {
         row.appendText(col.getDataType().name());
         row.appendTinyInt(col.getOrdinalPosition());
         row.appendText(BooleanUtils.toText(col.isNullable()));
+        row.appendText(BooleanUtils.toText(col.isUnique()));
+        row.appendText(BooleanUtils.toText(col.isPrimaryKey()));
         sysColumnFile.appendRow(row);
       }
 
