@@ -254,7 +254,6 @@ public class IndexPage {
 
 	private static void addElementsAboveIToSibling(RandomAccessFile file, int splitIndex, int pageNo,
 			int siblingPageNo) {
-		// TODO Auto-generated method stub
 		try {
 			long pageOffset = convertPageNoToFileOffset(pageNo);
 			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
@@ -298,19 +297,19 @@ public class IndexPage {
 				lastDataEntryPointOffsetSibling = (short) pageSize;
 			}
 			int totalDatatoWrite;
-			
+
 			for (int i = 0; i < records2Add.size(); i++) {
 				totalDatatoWrite = records2Add.get(i).length;
 				file.seek(siblingPageOffset + lastDataEntryPointOffsetSibling - totalDatatoWrite);
 				file.write(records2Add.get(i));
-				
-				lastDataEntryPointOffsetSibling=(short) (lastDataEntryPointOffsetSibling-totalDatatoWrite);
-				file.seek(siblingPageOffset+PAGE_OFFSET_OF_CELL_COUNT);
-				noOfcellsInSibling=(short) (noOfcellsInSibling+1);
+
+				lastDataEntryPointOffsetSibling = (short) (lastDataEntryPointOffsetSibling - totalDatatoWrite);
+				file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+				noOfcellsInSibling = (short) (noOfcellsInSibling + 1);
 				file.writeShort(noOfcellsInSibling);
-				file.seek(siblingPageOffset+PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+				file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
 				file.writeShort(lastDataEntryPointOffsetSibling);
-				file.seek(siblingPageOffset+PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY+(2*(noOfcellsInSibling-1)));
+				file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (noOfcellsInSibling - 1)));
 				file.writeShort(lastDataEntryPointOffsetSibling);
 			}
 
@@ -360,8 +359,54 @@ public class IndexPage {
 		}
 	}
 
-	public static void sortKeys(RandomAccessFile file, int currentPageNo) {
+	public static void sortKeys(RandomAccessFile file, int currentPageNo) throws IOException {
 		// TODO Auto-generated method stub
+		long pageOffset = convertPageNoToFileOffset(currentPageNo);
+		file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+		short noOfCells = file.readShort();
+		short ithRead, jthRead;
+		short ithNoOfBytes, jthNoOfBytes;
+		byte[] ithByteArray;
+		byte[] jthByteArray;
+		for (int i = 0; i < noOfCells; i++) {
+			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
+			ithRead = file.readShort();
+			file.seek(pageOffset + ithRead + 1);
+			ithNoOfBytes = file.readByte();
+			ithByteArray = new byte[ithNoOfBytes];
+			file.seek(pageOffset + ithRead + 1 + 1);
+			file.read(ithByteArray);
+			for (int j = i + 1; j < noOfCells; j++) {
+				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (j)));
+				jthRead = file.readShort();
+				file.seek(pageOffset + jthRead + 1);
+				jthNoOfBytes = file.readByte();
+				jthByteArray = new byte[jthNoOfBytes];
+				file.seek(pageOffset + jthRead + 1);
+				file.read(jthByteArray);
+				if (prevIndexGreaterThanLaterIndex(ithByteArray, jthByteArray)) {
+					file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
+					file.writeShort(jthRead);
+					file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (j)));
+					file.writeShort(ithRead);
+				}
+
+			}
+		}
+
+	}
+
+	private static Object convetIntoComparableTerms(byte[] byteArray) {
+		return null;
+	}
+
+	private static boolean prevIndexGreaterThanLaterIndex(byte[] prev, byte[] later) {
+		for (int i = 0; i < Math.min(prev.length, later.length); i++) {
+			if (prev[i] > later[i]) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static int getParent(RandomAccessFile file, int pageNo) {
