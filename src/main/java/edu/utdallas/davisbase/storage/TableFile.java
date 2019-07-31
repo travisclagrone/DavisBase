@@ -123,6 +123,7 @@ public class TableFile implements Closeable {
           break;
         case "Double":
           columnSizeArray[i] = 8;
+          break;
         case "Year":
           columnSizeArray[i] = 1;
           break;
