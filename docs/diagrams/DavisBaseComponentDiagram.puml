@@ -1,0 +1,35 @@
+@startuml DavisBase Component Diagram
+
+frame "DavisBase" {
+
+  component ":Host" as host
+  component ":Parser" as parser
+  component ":Compiler" as compiler
+  component ":Executor" as executor
+  component ":Storage" as storage
+
+  host -[hidden]> parser
+  parser -[hidden]> compiler
+  compiler .right.> storage
+  storage <.right. executor
+
+  interface "statement: String" as statement
+  interface ":CommandRepresentation" as representation
+  interface ":Command" as command
+  interface ":Result" as result
+
+  host -down- statement
+  statement <.up. parser
+
+  parser -down- representation
+  representation <.up. compiler
+
+  compiler -down- command
+  command <.up. executor
+
+  executor --down-- result
+  result <.up. host
+
+}
+
+@enduml

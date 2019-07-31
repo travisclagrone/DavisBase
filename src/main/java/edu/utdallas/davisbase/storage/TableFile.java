@@ -107,44 +107,44 @@ public class TableFile implements Closeable {
       data = tableRowBuilder.getValueAt(i - 1);
       switch (data.getClass().getSimpleName()) {
         case "Integer":
-        columnSizeArray[i] = 4;
-        break;
+          columnSizeArray[i] = 4;
+          break;
         case "String":
-        columnSizeArray[i] = data.toString().length();
-        break;
+          columnSizeArray[i] = data.toString().length();
+          break;
         case "Byte":
-        columnSizeArray[i] = 1;
-        break;
+          columnSizeArray[i] = 1;
+          break;
         case "Short":
-        columnSizeArray[i] = 2;
-        break;
+          columnSizeArray[i] = 2;
+          break;
         case "Long":
-        columnSizeArray[i] = 8;
-        break;
+          columnSizeArray[i] = 8;
+          break;
         case "Float":
-        columnSizeArray[i] = 4;
-        break;
+          columnSizeArray[i] = 4;
+          break;
         case "Double":
-        columnSizeArray[i] = 8;
+          columnSizeArray[i] = 8;
+          break;
         case "Year":
-        columnSizeArray[i] = 1;
-        break;
+          columnSizeArray[i] = 1;
+          break;
         case "LocalTime":
-        columnSizeArray[i] = 4;
-        break;
+          columnSizeArray[i] = 4;
+          break;
         case "LocalDateTime":
-        columnSizeArray[i] = 8;
-        break;
+          columnSizeArray[i] = 8;
+          break;
         case "LocalDate":
-        columnSizeArray[i] = 8;
-        break;
+          columnSizeArray[i] = 8;
+          break;
         case "":
-        columnSizeArray[i] = 0;
-        break;
+          columnSizeArray[i] = 0;
+          break;
         default:
-        columnSizeArray[i] = 0;
-        break;
-
+          columnSizeArray[i] = 0;
+          break;
       }
       payLoad = (short) (payLoad + columnSizeArray[i]);
     }
