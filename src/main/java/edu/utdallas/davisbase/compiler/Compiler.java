@@ -21,6 +21,7 @@ import java.time.Year;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.schema.Column;
@@ -358,7 +359,7 @@ public class Compiler {
   }
 
   /**
-   * @param columnSpecs column constraints for give column
+   * @param columnSpecs column constraints for some given column
    * @return whether column is NOT NULL
    */
   public boolean checkIsNotNull(List<String> columnSpecs) {
@@ -737,6 +738,7 @@ public class Compiler {
    * @throws IOException
    * @throws CompileException
    */
+  @SuppressWarnings("nullness")
   public void validateUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
     //TODO: Add index logic
     if(isUnique(tableName, columnName)){
@@ -745,41 +747,38 @@ public class Compiler {
       TableFile table = context.openTableFile(tableName);
       final String UNIQUENESS_EXCEPTION = "Invalid insert. Column " + columnName + " has uniqueness constraint";
       while(table.goToNextRow()){
-        if(colType==DataType.TINYINT && castNonNull(table.readTinyInt(colIndex)).equals(value)){
+        if(colType==DataType.TINYINT && Objects.equals(table.readTinyInt(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.SMALLINT && castNonNull(table.readSmallInt(colIndex)).equals(value)){
+        else if(colType==DataType.SMALLINT && Objects.equals(table.readSmallInt(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.INT && castNonNull(table.readInt(colIndex)).equals(value)){
+        else if(colType==DataType.INT && Objects.equals(table.readInt(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.BIGINT && castNonNull(table.readBigInt(colIndex)).equals(value)){
+        else if(colType==DataType.BIGINT && Objects.equals(table.readBigInt(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.FLOAT && castNonNull(table.readFloat(colIndex)).equals(value)){
+        else if(colType==DataType.FLOAT && Objects.equals(table.readFloat(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.DOUBLE && castNonNull(table.readDouble(colIndex)).equals(value)){
+        else if(colType==DataType.DOUBLE && Objects.equals(table.readDouble(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.YEAR && castNonNull(table.readYear(colIndex)).equals(value)){
+        else if(colType==DataType.YEAR && Objects.equals(table.readYear(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.TIME && castNonNull(table.readTime(colIndex)).equals(value)){
+        else if(colType==DataType.TIME && Objects.equals(table.readTime(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.DATETIME && castNonNull(table.readDateTime(colIndex)).equals(value)){
+        else if(colType==DataType.DATETIME && Objects.equals(table.readDateTime(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
-        else if(colType==DataType.DATE && castNonNull(table.readDate(colIndex)).equals(value)){
+        else if(colType==DataType.DATE && Objects.equals(table.readDate(colIndex), value)){
           throw new CompileException(UNIQUENESS_EXCEPTION);
         }
         else if(colType==DataType.TEXT && castNonNull(table.readText(colIndex)).equalsIgnoreCase(value.toString())){
           throw new CompileException(UNIQUENESS_EXCEPTION);
-        }
-        else{
-          return;
         }
       }
     }
