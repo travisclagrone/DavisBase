@@ -15,7 +15,8 @@ public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
   DATA_TYPE        (DataType.TEXT,    false, false, false),
   ORDINAL_POSITION (DataType.TINYINT, false, false, false),
   IS_NULLABLE      (DataType.TEXT,    false, false, false),
-  IS_UNIQUE      (DataType.TEXT,false, false, false);
+  IS_UNIQUE      (DataType.TEXT,false, false, false),
+  IS_PRIMARYKEY      (DataType.TEXT,false, false, false);;
 
   private final DataType dataType;
   private final boolean isNullable;
