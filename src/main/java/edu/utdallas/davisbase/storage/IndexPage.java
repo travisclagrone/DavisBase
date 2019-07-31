@@ -83,7 +83,7 @@ public class IndexPage {
 	}
 
 	// splitting leaf page
-	public static int splitLeafPage(RandomAccessFile file, int pageNo) {
+	public static int splitLeafPage(RandomAccessFile file, int pageNo) throws IOException {
 		sortKeys(file, pageNo);
 		int newSiblingPageNo = AddLeafPage(file);
 		boolean rootflag = CheckifRootNode(file, pageNo);
@@ -115,7 +115,7 @@ public class IndexPage {
 		}
 	}
 
-	public static void splitInteriorPage(RandomAccessFile file, int pageNo) {
+	public static void splitInteriorPage(RandomAccessFile file, int pageNo) throws IOException {
 		sortKeys(file, pageNo);
 		int newSiblingPageNo = AddInteriorPage(file);
 		boolean rootflag = CheckifRootNode(file, pageNo);
@@ -133,10 +133,26 @@ public class IndexPage {
 		}
 	}
 
-	private static void splitInteriorNodeData(RandomAccessFile file, int pageNo, int parentPageNo,
-			int newSiblingPageNo) {
+	private static void splitInteriorNodeData(RandomAccessFile file, int pageNo, int parentPageNo, int siblingPageNo) {
 		// TODO make sure to update left child pointers
 		// TODO Auto-generated method stub
+
+		try {
+			long bigPageOffset = convertPageNoToFileOffset(pageNo);
+			file.seek(bigPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			int noOfrecordsInBigPage = file.readShort();
+			int splitIndex = (int) Math.ceil(noOfrecordsInBigPage / 2); // this record goes into the parent.
+			// add split index + 1 th element in the array to parent.
+			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo);
+
+			// add element above split index+1 from big page to new page.
+			addElementsAboveIToSibling(file, splitIndex, pageNo, siblingPageNo);
+
+			// remove elements from split index +1 th element.
+			removeElementsAfterIthPosition(file, splitIndex, pageNo);
+
+		} catch (IOException e) {
+		}
 
 	}
 
@@ -265,7 +281,6 @@ public class IndexPage {
 			int noOfRowIds;
 			int indexSpace;
 			int totalRecordSpace;
-//			int seekAddBytes = 0;
 			int leftChildPageNoSpace = 0;
 			file.seek(pageOffset);
 			if (file.readByte() == 0x02) {
@@ -275,7 +290,6 @@ public class IndexPage {
 			for (int i = splitIndex; i < noOfRecords - 1; i++) {
 				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * splitIndex));
 				seekPointOffset = (short) (file.readShort());
-
 				file.seek(pageOffset + seekPointOffset + leftChildPageNoSpace);
 				noOfRowIds = file.readByte();
 				file.seek(pageOffset + seekPointOffset + 1 + leftChildPageNoSpace);
@@ -327,11 +341,12 @@ public class IndexPage {
 			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (splitIndex - 1)));
 			short middleElementOffset = file.readShort();
 			long dataSeekPoint = pageOffset + middleElementOffset;
-
+			int childPageNoSpace = 0;
 			file.seek(pageOffset);
 			if (file.readByte() == 0x02) {
-				dataSeekPoint = dataSeekPoint + 4; // because interior page has left child info
+				childPageNoSpace = 4; // because interior page has left child info
 			}
+			dataSeekPoint = dataSeekPoint + childPageNoSpace;
 
 			file.seek(dataSeekPoint);
 			int noOfRowIds = file.readByte();
@@ -352,6 +367,19 @@ public class IndexPage {
 			file.seek(dataEntrySeekPoint);
 			file.writeInt(pageNo);// writing left child page no
 			file.write(data2BCopied);
+
+			file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			short noOfRecordsInParent = file.readShort();
+			noOfRecordsInParent = (short) (noOfRecordsInParent + 1);
+			file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+			file.writeShort(noOfRecordsInParent);
+
+			file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_CONTENT_START_POINT);
+			file.writeShort((short) (dataEntrySeekPoint - parentPageOffset));
+
+			file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * (noOfRecordsInParent - 1));
+			file.writeShort((short) (dataEntrySeekPoint - parentPageOffset));
+
 			sortKeys(file, parentPageNo);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -394,10 +422,6 @@ public class IndexPage {
 			}
 		}
 
-	}
-
-	private static Object convetIntoComparableTerms(byte[] byteArray) {
-		return null;
 	}
 
 	private static boolean prevIndexGreaterThanLaterIndex(byte[] prev, byte[] later) {
