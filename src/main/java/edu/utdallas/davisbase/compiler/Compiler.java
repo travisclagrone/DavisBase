@@ -739,7 +739,6 @@ public class Compiler {
    */
   public void validateUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
     //TODO: Add index logic
-    //TODO: Deal w nulls assume multiple cool
     if(isUnique(tableName, columnName)){
       byte colIndex = validateIsDavisBaseColumnWithinTable(tableName, columnName);
       DataType colType = getColumnType(tableName, columnName);
