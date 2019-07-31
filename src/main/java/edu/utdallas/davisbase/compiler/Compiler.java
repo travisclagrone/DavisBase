@@ -105,7 +105,9 @@ public class Compiler {
               insert.getTable(),
               insert.getValues().get(lcv),
               columnName);
-          validateUniqueness(insert.getTable(), columnName, obj);
+          if(null!=obj){
+            validateUniqueness(insert.getTable(), columnName, obj);
+          }
           insertObjects.add(new InsertObject(lcv, obj));
         }
       }
