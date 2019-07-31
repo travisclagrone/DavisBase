@@ -807,7 +807,7 @@ public class Compiler {
           table.readText(DavisBaseColumnsTableColumn.IS_UNIQUE.getOrdinalPosition())));
       }
     }
-    return false;
+    throw new IllegalStateException();
   }
 
 }
