@@ -1,0 +1,27 @@
+@startuml DavisBase Package Diagram
+
+package storage
+
+package parser
+package representation
+package compiler
+package command
+package executor
+package result
+package host
+
+parser --> representation
+compiler ..> representation
+
+compiler ...> storage
+
+compiler --> command
+executor ..> command
+
+executor ...> storage
+
+executor --> result
+host ..> result
+
+
+@enduml
