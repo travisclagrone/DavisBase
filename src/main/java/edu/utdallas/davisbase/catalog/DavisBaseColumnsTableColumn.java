@@ -9,24 +9,26 @@ import static java.lang.String.format;
  * catalog table.
  */
 public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
-  ROWID            (DataType.INT,     false, false),
-  TABLE_NAME       (DataType.TEXT,    false, true),
-  COLUMN_NAME      (DataType.TEXT,    false, false),
-  DATA_TYPE        (DataType.TEXT,    false, false),
-  ORDINAL_POSITION (DataType.TINYINT, false, false),
-  IS_NULLABLE      (DataType.TEXT,    false, false),
-  IS_UNIQUE      (DataType.TEXT,false, false);
+  ROWID            (DataType.INT,     false, false, false),
+  TABLE_NAME       (DataType.TEXT,    false, true, false),
+  COLUMN_NAME      (DataType.TEXT,    false, false, false),
+  DATA_TYPE        (DataType.TEXT,    false, false, false),
+  ORDINAL_POSITION (DataType.TINYINT, false, false, false),
+  IS_NULLABLE      (DataType.TEXT,    false, false, false),
+  IS_UNIQUE      (DataType.TEXT,false, false, false);
 
   private final DataType dataType;
   private final boolean isNullable;
   private final boolean isUnique;
+  private final boolean isPrimaryKey;
 
-  private DavisBaseColumnsTableColumn(DataType dataType, boolean isNullable, boolean isUnique) {
+  private DavisBaseColumnsTableColumn(DataType dataType, boolean isNullable, boolean isUnique, boolean isPrimaryKey) {
     assert dataType != null : "dataType should not be null";
 
     this.dataType = dataType;
     this.isNullable = isNullable;
     this.isUnique = isUnique;
+    this.isPrimaryKey = isPrimaryKey;
   }
 
   @Override
@@ -56,5 +58,9 @@ public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
     return isUnique;
   }
 
+  @Override
+  public boolean isPrimaryKey() {
+    return isPrimaryKey;
+  }
 
 }
