@@ -36,7 +36,7 @@ public class TableRowWrite implements Iterable<Map.Entry<@NonNull Byte, @Nullabl
     assert valuesByColumnIndex.values().stream().allMatch(val -> val == null || stream(DataType.values()).anyMatch(dt -> dt.getJavaClass().isInstance(val)));
 
     // Copy map for compile-time encapsulation, and wrap in an unmodifiable view for run-time immutability.
-    this.valuesByColumnIndex = unmodifiableSortedMap(new TreeMap<>(valuesByColumnIndex));
+    this.valuesByColumnIndex = unmodifiableSortedMap(new TreeMap<@NonNull Byte, @Nullable Object>(valuesByColumnIndex));
   }
 
   /**
@@ -53,6 +53,7 @@ public class TableRowWrite implements Iterable<Map.Entry<@NonNull Byte, @Nullabl
    * @return
    * @see java.util.Map#containsValue(java.lang.Object)
    */
+  @SuppressWarnings("nullness")  // For whatever reason, the parameter of java.util.SortedMap#containsValue(Object) is incorrectly annotated @NonNull.
   public boolean containsValue(@Nullable Object value) {
     return valuesByColumnIndex.containsValue(value);
   }
@@ -109,6 +110,7 @@ public class TableRowWrite implements Iterable<Map.Entry<@NonNull Byte, @Nullabl
    * @see java.util.Map#equals(java.lang.Object)
    */
   @Override
+  @SuppressWarnings("nullness")  // For whatever reason, the parameter of java.util.SortedMap#equals(Object) is incorrectly annotated @NonNull.
   public boolean equals(@Nullable Object o) {
     return valuesByColumnIndex.equals(o);
   }
