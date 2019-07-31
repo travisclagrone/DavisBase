@@ -9,6 +9,7 @@ import static com.google.common.base.Strings.repeat;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -62,7 +63,7 @@ public class Host {
         userInput.append(configuration.getLineSeparator());
       }
 
-      if (Pattern.matches("(?i)\\s*HELP\\*;\\s*", userInput)) {
+      if (Pattern.matches("(?i)\\s*HELP\\s*;\\s*", userInput)) {
         displayHelp();
         continue;
       }
@@ -191,19 +192,22 @@ public class Host {
           + "|");
     }
     printer.println();
-    printer.println(repeat("-", ((result.getSchema().size()) * 8) + 3));
+    printer.println(repeat("-", ((result.getSchema().size()) * 8) + 3)); 
 
     if (result.getData().size() <= 0) {
       printer.println("Empty result set.");
       return;
-    }
-
+    }    
+    
     for (SelectResultDataRow row : result.getData()) {
+      int iColumn = 0;
       for (@Nullable Object value : row) {
-        printer.print(formatCellValue(10, Objects.toString(castNonNull(value))) + "|");  // NOTE `value` actually can be null, and `Objects#toString(Object)` can actually accept a null argument, but the annotated JDK is over-strict here.
+        printer.print(formatCellValue(result.getSchema().getColumnName(iColumn).length(), Objects.toString(castNonNull(value))) + "|");  // NOTE `value` actually can be null, and `Objects#toString(Object)` can actually accept a null argument, but the annotated JDK is over-strict here.
+        iColumn++;
       }
       printer.println();
     }
+    
   }
 
   protected void writeShowTablesResult(ShowTablesResult result) throws IOException {

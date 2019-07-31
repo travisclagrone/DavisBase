@@ -1,6 +1,8 @@
 package edu.utdallas.davisbase.representation;
 
+import jdk.nashorn.internal.objects.annotations.Where;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,13 +14,14 @@ public class SelectCommandRepresentation implements CommandRepresentation {
   private final List<SelectItem> columns;
   private final String table;
   private final boolean all;
-  //professor indicated where expression would not be tested for part 1
+  private final @Nullable WhereExpression whereClause;
 
-  public SelectCommandRepresentation(String command, String table, List<SelectItem> columns, boolean all){
+  public SelectCommandRepresentation(String command, String table, List<SelectItem> columns, boolean all, @Nullable WhereExpression whereClause){
     this.command=command;
     this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
     this.table=table;
     this.all=all;
+    this.whereClause = whereClause;
   }
 
   public List<SelectItem> getColumns() {
@@ -31,6 +34,10 @@ public class SelectCommandRepresentation implements CommandRepresentation {
 
   public boolean isAll() {
     return all;
+  }
+
+  public @Nullable WhereExpression getWhereClause() {
+    return whereClause;
   }
 
   @Override
@@ -50,6 +57,7 @@ public class SelectCommandRepresentation implements CommandRepresentation {
       ", columns=" + columns +
       ", table='" + table + '\'' +
       ", all=" + all +
+      ", whereClause=" + whereClause +
       '}';
   }
 }
