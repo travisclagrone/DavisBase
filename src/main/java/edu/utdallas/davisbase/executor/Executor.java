@@ -141,7 +141,9 @@ public class Executor {
     assert DavisBaseColumnsTableColumn.IS_NULLABLE.getDataType() == TEXT;
     assert DavisBaseColumnsTableColumn.IS_UNIQUE.getOrdinalPosition() == 6;
     assert DavisBaseColumnsTableColumn.IS_UNIQUE.getDataType() == TEXT;
-    assert DavisBaseColumnsTableColumn.values().length == 7;
+    assert DavisBaseColumnsTableColumn.IS_PRIMARYKEY.getOrdinalPosition() == 7;
+    assert DavisBaseColumnsTableColumn.IS_PRIMARYKEY.getDataType() == TEXT;
+    assert DavisBaseColumnsTableColumn.values().length == 8;
 
     final String tableName = command.getTableName();
     context.createTableFile(tableName);
@@ -175,6 +177,7 @@ public class Executor {
         rowBuilder.appendTinyInt(ordinalPosition);
         rowBuilder.appendText(BooleanUtils.toText(!column.isNotNull()));  // COMBAK Refactor (name + logic) CreateTableCommandColumn#isNotNull() to #isNullable().
         rowBuilder.appendText(BooleanUtils.toText(column.isUnique()));
+        rowBuilder.appendText(BooleanUtils.toText(column.isPrimaryKey()));
         davisbaseColumns.appendRow(rowBuilder);
       }
     }
