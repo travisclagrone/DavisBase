@@ -9,17 +9,19 @@ import edu.utdallas.davisbase.DataType;
  * catalog table.
  */
 public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
-  ROWID      (DataType.INT,  false),
-  TABLE_NAME (DataType.TEXT, false);
+  ROWID      (DataType.INT,  false, false),
+  TABLE_NAME (DataType.TEXT, false, false);
 
   private final DataType dataType;
   private final boolean isNullable;
+  private final boolean isUnique;
 
-  private DavisBaseTablesTableColumn(DataType dataType, boolean isNullable) {
+  private DavisBaseTablesTableColumn(DataType dataType, boolean isNullable, boolean isUnique) {
     assert dataType != null : "dataType should not be null";
 
     this.dataType = dataType;
     this.isNullable = isNullable;
+    this.isUnique = isUnique;
   }
 
   @Override
@@ -44,4 +46,8 @@ public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
     return isNullable;
   }
 
+  @Override
+  public boolean isUnique() {
+    return isUnique;
+  }
 }

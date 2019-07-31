@@ -104,6 +104,7 @@ public class Compiler {
               insert.getTable(),
               insert.getValues().get(lcv),
               columnName);
+          validateUniqueness(insert.getTable(), columnName, obj);
           insertObjects.add(new InsertObject(lcv, obj));
         }
       }
@@ -264,7 +265,6 @@ public class Compiler {
     if (validateNullability(tableName, columnName, value)) {
       return null;
     }
-
     DataType schemaDefinedColumnType = getColumnType(tableName, columnName);
     DataType convertedType = convertToDavisType(value);
 
@@ -723,6 +723,88 @@ public class Compiler {
         || tableName.equalsIgnoreCase(CatalogTable.DAVISBASE_TABLES.getName())) {
       throw new CompileException("Unable to modify catalog tables");
     }
+  }
+
+  /**
+   * Throws CompileException if column constraint is unique but trying to insert non unique value
+   * @param tableName name of table
+   * @param columnName name of column with constraint
+   * @param value value trying to insert
+   * @throws StorageException
+   * @throws IOException
+   * @throws CompileException
+   */
+  public void validateUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
+    if(isUnique(tableName, columnName)){
+      byte colIndex = validateIsDavisBaseColumnWithinTable(tableName, columnName);
+      DataType colType = getColumnType(tableName, columnName);
+      TableFile table = context.openTableFile(tableName);
+      final String UNIQUENESS_EXCEPTION = "Invalid insert. Column " + columnName + " has uniqueness constraint";
+      while(table.goToNextRow()){
+        if(colType==DataType.TINYINT && castNonNull(table.readTinyInt(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.SMALLINT && castNonNull(table.readSmallInt(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.INT && castNonNull(table.readInt(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.BIGINT && castNonNull(table.readBigInt(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.FLOAT && castNonNull(table.readFloat(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.DOUBLE && castNonNull(table.readDouble(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.YEAR && castNonNull(table.readYear(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.TIME && castNonNull(table.readTime(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.DATETIME && castNonNull(table.readDateTime(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.DATE && castNonNull(table.readDate(colIndex)).equals(value)){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else if(colType==DataType.TEXT && castNonNull(table.readText(colIndex)).equalsIgnoreCase(value.toString())){
+          throw new CompileException(UNIQUENESS_EXCEPTION);
+        }
+        else{
+          return;
+        }
+      }
+    }
+    else{
+      return;
+    }
+  }
+
+  /**
+   * Checks DAVISBASE_COLUMNS table to see if given column has UNIQUE constraint
+   * @param tableName table name to check
+   * @param columnName column name within given table
+   * @return whether given column has UNIQUE constraint
+   * @throws IOException
+   * @throws StorageException
+   */
+  public boolean isUnique(String tableName, String columnName)throws IOException, StorageException {
+    TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
+    while (table.goToNextRow()) {
+      if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
+        .equalsIgnoreCase(columnName)
+        && castNonNull(
+        table.readText(DavisBaseColumnsTableColumn.TABLE_NAME.getOrdinalPosition()))
+        .equalsIgnoreCase(tableName)) {
+        return BooleanUtils.fromText(castNonNull(
+          table.readText(DavisBaseColumnsTableColumn.IS_UNIQUE.getOrdinalPosition())));
+      }
+    }
+    return false;
   }
 
 }

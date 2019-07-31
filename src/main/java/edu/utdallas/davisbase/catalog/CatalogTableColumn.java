@@ -29,4 +29,9 @@ public interface CatalogTableColumn {
    */
   public boolean isNullable();
 
+  /**
+   * @return {@code true} if-and-only-if this column accepts only unique values
+   */
+  public boolean isUnique();
+
 }
