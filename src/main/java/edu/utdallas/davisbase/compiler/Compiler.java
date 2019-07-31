@@ -187,7 +187,7 @@ public class Compiler {
    * @return DataType from given ColDataType
    * @throws CompileException
    */
-  public DataType getDavisBaseType(ColDataType dataType) throws CompileException {
+  private DataType getDavisBaseType(ColDataType dataType) throws CompileException {
     String type = dataType.getDataType();
     if (type.equalsIgnoreCase(DataType.TINYINT.name())) {
       return DataType.TINYINT;
@@ -232,7 +232,7 @@ public class Compiler {
    * @return DataType corresponding with Expression
    * @throws CompileException
    */
-  public DataType convertToDavisType(Expression type) throws CompileException {
+  private DataType convertToDavisType(Expression type) throws CompileException {
     checkArgument(!(type instanceof NullValue));
 
     if (type instanceof DoubleValue) {
@@ -264,7 +264,7 @@ public class Compiler {
    * @return valid Object to Insert
    * @throws CompileException
    */
-  public @Nullable Object validateTypeMatchesSchema(String tableName, Expression value,
+  private @Nullable Object validateTypeMatchesSchema(String tableName, Expression value,
       String columnName) throws CompileException, StorageException, IOException {
     if (validateNullability(tableName, columnName, value)) {
       return null;
@@ -378,7 +378,7 @@ public class Compiler {
    * @param columnSpecs column constraints for give column
    * @return whether column is UNIQUE
    */
-  public boolean checkIsUnique(List<String> columnSpecs) {
+  private boolean checkIsUnique(List<String> columnSpecs) {
     if (null != columnSpecs) {
       if(columnSpecs.contains("UNIQUE")){
         return true;
@@ -391,7 +391,7 @@ public class Compiler {
    * @param columnSpecs column constraints for give column
    * @return whether column is PRIMARY KEY
    */
-  public boolean checkIsPrimaryKey(List<String> columnSpecs, Index index, String columnName) {
+  private boolean checkIsPrimaryKey(List<String> columnSpecs, Index index, String columnName) {
     if (null != columnSpecs) {
       for (int lcv = 0; lcv < columnSpecs.size() - 1; lcv++) {
         if (columnSpecs.get(lcv).equalsIgnoreCase("PRIMARY")
@@ -412,7 +412,7 @@ public class Compiler {
    * @return column index if valid column within table
    * @throws CompileException
    */
-  public byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName) throws CompileException, StorageException, IOException {
+  private byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
@@ -432,7 +432,7 @@ public class Compiler {
    * @return table name if valid table name
    * @throws CompileException
    */
-  public String validateIsDavisBaseTable(String tableName) throws CompileException, StorageException, IOException {
+  private String validateIsDavisBaseTable(String tableName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
@@ -449,7 +449,7 @@ public class Compiler {
    * @return DataType associated with the column for given table
    * @throws CompileException
    */
-  public DataType getColumnType(String tableName, String columnName) throws CompileException, StorageException, IOException {
+  private DataType getColumnType(String tableName, String columnName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
@@ -464,7 +464,7 @@ public class Compiler {
     throw new CompileException("Column " + columnName + " does not exist within this table");
   }
 
-  public String getColumnName(String tableName, int columnIndex) throws CompileException, StorageException, IOException {
+  private String getColumnName(String tableName, int columnIndex) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readTinyInt(
@@ -481,41 +481,6 @@ public class Compiler {
   }
 
   /**
-   * Expression has less DataTypeValues defined than Davisbase. Perform checks to group into DavisBase DataType
-   * @param schemaDefinedColumnType
-   * @param value
-   * @return
-   * @throws CompileException
-   */
-  public DataType checkLongValues(DataType schemaDefinedColumnType, String value) throws CompileException {
-    long parsedVal = Long.parseLong(value);
-    if (schemaDefinedColumnType.equals(DataType.TINYINT)) {
-      if (parsedVal >= Byte.MIN_VALUE && parsedVal <= Byte.MAX_VALUE) {
-        return DataType.TINYINT;
-      }
-    }
-    else if (schemaDefinedColumnType.equals(DataType.SMALLINT)) {
-      if (parsedVal >= Short.MIN_VALUE && parsedVal <= Short.MAX_VALUE) {
-        return DataType.SMALLINT;
-      }
-    }
-    else if (schemaDefinedColumnType.equals(DataType.INT)) {
-      if (parsedVal >= Integer.MIN_VALUE && parsedVal <= Integer.MAX_VALUE) {
-        return DataType.INT;
-      }
-    }
-    else if (schemaDefinedColumnType.equals(DataType.BIGINT)) {
-      if (parsedVal >= Long.MIN_VALUE && parsedVal <= Long.MAX_VALUE) {
-        return DataType.BIGINT;
-      }
-    }
-    else {
-      throw new CompileException("Values you are trying to insert does not match the table schema");
-    }
-    throw new CompileException("Values you are trying to insert does not match the table schema");
-  }
-
-  /**
    * @param col Column object to check
    * @param table table name to check column
    * @return byte of column index based on parameters
@@ -523,7 +488,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  public byte getColumnIndex(Column col, String table) throws CompileException, StorageException, IOException {
+  private byte getColumnIndex(Column col, String table) throws CompileException, StorageException, IOException {
     return (validateIsDavisBaseColumnWithinTable(table, col.getColumnName()));
   }
 
@@ -534,7 +499,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  public void validateTableDoesNotExist(String tableName) throws CompileException, StorageException, IOException {
+  private void validateTableDoesNotExist(String tableName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
@@ -554,7 +519,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  public boolean validateNullability(String tableName, String columnName, Expression value) throws CompileException, StorageException, IOException {
+  private boolean validateNullability(String tableName, String columnName, Expression value) throws CompileException, StorageException, IOException {
     if (getIsNullable(tableName, columnName) && value instanceof NullValue) {
       return true;
     }
@@ -573,7 +538,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  public boolean getIsNullable(String tableName, String columnName) throws CompileException, StorageException, IOException {
+  private boolean getIsNullable(String tableName, String columnName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
@@ -594,7 +559,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  public List<SelectCommandColumn> getAllColumns(String tableName) throws StorageException, IOException {
+  private List<SelectCommandColumn> getAllColumns(String tableName) throws StorageException, IOException {
     List<SelectCommandColumn> selectColumns = new ArrayList<>();
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
@@ -613,7 +578,7 @@ public class Compiler {
     return selectColumns;
   }
 
-  public void validateInsertValuesMatchesCountColumns(String tableName, int size) throws IOException, StorageException, CompileException {
+  private void validateInsertValuesMatchesCountColumns(String tableName, int size) throws IOException, StorageException, CompileException {
     int actualColumns = 0;
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
@@ -643,7 +608,7 @@ public class Compiler {
    * @throws StorageException
    * @throws CompileException
    */
-  public @Nullable CommandWhere compileCommandWhere(String tableName,
+  private @Nullable CommandWhere compileCommandWhere(String tableName,
       @Nullable WhereExpression where) throws IOException, StorageException, CompileException {
     if (null == where) {
       return null;
@@ -668,7 +633,7 @@ public class Compiler {
    * @return the CommandWhere Operator Enum given the WhereExpression Operator
    * @throws CompileException
    */
-  public CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op, boolean isNot) throws CompileException {
+  private CommandWhere.Operator returnCommandOperator(WhereExpression.Operator op, boolean isNot) throws CompileException {
     switch (op) {
       case EQUALSTO:
         if (isNot) {
@@ -739,7 +704,7 @@ public class Compiler {
    * @throws CompileException
    */
   @SuppressWarnings("nullness")
-  public void validateUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
+  private void validateUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
     //TODO: Add index logic
     if(isUnique(tableName, columnName)){
       byte colIndex = validateIsDavisBaseColumnWithinTable(tableName, columnName);
@@ -795,7 +760,7 @@ public class Compiler {
    * @throws IOException
    * @throws StorageException
    */
-  public boolean isUnique(String tableName, String columnName)throws IOException, StorageException {
+  private boolean isUnique(String tableName, String columnName)throws IOException, StorageException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
