@@ -1,5 +1,14 @@
 package edu.utdallas.davisbase.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
+import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
+import static java.lang.String.format;
+
+import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.YearUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -10,15 +19,6 @@ import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import edu.utdallas.davisbase.NotImplementedException;
-import edu.utdallas.davisbase.common.DavisBaseConstant;
-// import test.ArrayList;
-import static java.lang.String.format;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
-import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 
 /**
  * A DavisBase "Table" file.
@@ -124,6 +124,7 @@ public class TableFile implements Closeable {
           break;
         case "Double":
           columnSizeArray[i] = 8;
+          break;
         case "Year":
           columnSizeArray[i] = 1;
           break;
@@ -187,11 +188,11 @@ public class TableFile implements Closeable {
     // }
 
     if (pageType == 0x05) {
-      rowId = getnextRowIdInterior(file);
+      rowId = getNextRowIdInterior();
       file.seek(0x09);
       file.writeInt(rowId);
     } else if (pageType == 0x0D) {
-      rowId = getnextRowId(file);
+      rowId = getNextRowId();
       file.seek(0x01);
       file.writeInt(rowId);
     }
@@ -220,18 +221,6 @@ public class TableFile implements Closeable {
     // Update table meta data with rowId
     // file.seek(0x01);
     // file.writeInt(rowId);
-
-  }
-
-  public static int getnextRowIdInterior(RandomAccessFile file) {
-    try {
-      file.seek(0x09);
-      int rowId = file.readInt();
-      return (rowId + 1);
-
-    } catch (Exception e) {
-    }
-    return -1;
 
   }
 
@@ -437,7 +426,7 @@ public class TableFile implements Closeable {
     }
 
     goToCurrentLeafPageCellColumnValue(columnIndex);
-    return Year.of(file.readByte());
+    return Year.of(file.readByte() + YearUtils.YEAR_OFFSET);
   }
 
   public @Nullable LocalTime readTime(int columnIndex) throws IOException, StorageException {
@@ -658,17 +647,22 @@ public class TableFile implements Closeable {
     throw new NotImplementedException();
   }
 
-  public int getnextRowId(RandomAccessFile file) throws IOException {
-    // checkNotNull(pageNo);
-    try {
-      file.seek(0x01);
+  public int getCurrentMaxRowId() throws IOException {
+    file.seek(0x01);
+    final int currentMaxRowId = file.readInt();
+    return currentMaxRowId;
+  }
 
-      int rowId = file.readInt();
-      return (rowId + 1);
+  private int getNextRowId() throws IOException {
+    file.seek(0x01);
+    int rowId = file.readInt();
+    return (rowId + 1);
+  }
 
-    } catch (Exception e) {
-    }
-    return -1;
+  private int getNextRowIdInterior() throws IOException {
+    file.seek(0x09);
+    int rowId = file.readInt();
+    return (rowId + 1);
   }
 
   private boolean hasCurrentLeafPageNo() {

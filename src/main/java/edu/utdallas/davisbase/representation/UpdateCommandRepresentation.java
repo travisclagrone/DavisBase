@@ -2,6 +2,7 @@ package edu.utdallas.davisbase.representation;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Column;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,9 +14,9 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
   private final String table;
   private final List<Column> columns;
   private final List<Expression> values;
-  private final WhereExpression whereClause;
+  private final @Nullable WhereExpression whereClause;
 
-  public UpdateCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values, WhereExpression whereClause) {
+  public UpdateCommandRepresentation(String command, String table, List<Column> columns, List<Expression> values, @Nullable WhereExpression whereClause) {
     this.command = command;
     this.table = table;
     this.columns = Collections.unmodifiableList(new ArrayList<>(columns));
@@ -35,7 +36,7 @@ public class UpdateCommandRepresentation implements CommandRepresentation {
     return values;
   }
 
-  public WhereExpression getWhereClause() {
+  public @Nullable WhereExpression getWhereClause() {
     return whereClause;
   }
 
