@@ -99,7 +99,9 @@ public class IndexPage {
 			setParent(file, newSiblingPageNo, parentPageNo);
 			splitLeafNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
 			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+			setRightSiblingPointer(file, newSiblingPageNo, getRightSiblingPointer(file, pageNo));
 			setRightSiblingPointer(file, pageNo, newSiblingPageNo);
+
 		} catch (Exception e) {
 		}
 		return -1;
@@ -128,6 +130,7 @@ public class IndexPage {
 			}
 			splitInteriorNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
 			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+
 		} catch (Exception e) {
 
 		}
@@ -160,10 +163,18 @@ public class IndexPage {
 		try {
 			long currentPageOffset = convertPageNoToFileOffset(pageNo);
 			file.seek(currentPageOffset + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO);
+			file.writeInt(siblingPageNo);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+	}
+
+	private static int getRightSiblingPointer(RandomAccessFile file, int pageNo) throws IOException {
+		long currentPageOffset = convertPageNoToFileOffset(pageNo);
+		file.seek(currentPageOffset + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO);
+		return file.readInt();
 
 	}
 
@@ -189,7 +200,6 @@ public class IndexPage {
 
 		} catch (IOException e) {
 		}
-
 	}
 
 	private static void removeElementsAfterIthPosition(RandomAccessFile file, int splitIndex, int pageNo) {
@@ -222,7 +232,7 @@ public class IndexPage {
 			long pageOffset = convertPageNoToFileOffset(pageNo);
 			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_COUNT);
 			int noOfRecords = file.readShort();
-			List<byte[]> recordsInPage = new ArrayList();
+			List<byte[]> recordsInPage = new ArrayList<byte[]>();
 			short recordOffset;
 			byte[] recordBytes;
 			int recordRowIdsCount;
@@ -287,9 +297,17 @@ public class IndexPage {
 				leftChildPageNoSpace = 4; // excluding left childPageNo filed
 			}
 
+			int[] leftChildPageNoArray = new int[noOfRecords - splitIndex];
+
 			for (int i = splitIndex; i < noOfRecords - 1; i++) {
 				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * splitIndex));
 				seekPointOffset = (short) (file.readShort());
+
+				// these below 2 lines of has proper data only when the node to be splitted is
+				// an interior node.
+				file.seek(pageOffset + seekPointOffset);
+				leftChildPageNoArray[i - splitIndex] = file.readInt();
+
 				file.seek(pageOffset + seekPointOffset + leftChildPageNoSpace);
 				noOfRowIds = file.readByte();
 				file.seek(pageOffset + seekPointOffset + 1 + leftChildPageNoSpace);
@@ -314,9 +332,14 @@ public class IndexPage {
 
 			for (int i = 0; i < records2Add.size(); i++) {
 				totalDatatoWrite = records2Add.get(i).length;
+				file.seek(siblingPageOffset);
+
+				if (file.readByte() == 0x02) {
+					file.seek(siblingPageOffset + lastDataEntryPointOffsetSibling - totalDatatoWrite - 4);
+					file.writeInt(leftChildPageNoArray[i]);
+				}
 				file.seek(siblingPageOffset + lastDataEntryPointOffsetSibling - totalDatatoWrite);
 				file.write(records2Add.get(i));
-
 				lastDataEntryPointOffsetSibling = (short) (lastDataEntryPointOffsetSibling - totalDatatoWrite);
 				file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
 				noOfcellsInSibling = (short) (noOfcellsInSibling + 1);
@@ -326,9 +349,7 @@ public class IndexPage {
 				file.seek(siblingPageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (noOfcellsInSibling - 1)));
 				file.writeShort(lastDataEntryPointOffsetSibling);
 			}
-
 		} catch (Exception e) {
-
 		}
 
 	}
@@ -347,6 +368,14 @@ public class IndexPage {
 				childPageNoSpace = 4; // because interior page has left child info
 			}
 			dataSeekPoint = dataSeekPoint + childPageNoSpace;
+
+			file.seek(pageOffset);
+			if (file.readByte() == 0x02) {// Updating RightChild Pointer
+				file.seek(dataSeekPoint);
+				int page2BRightChildPageNo = file.readInt();
+				file.seek(pageOffset + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO);
+				file.writeInt(page2BRightChildPageNo);
+			}
 
 			file.seek(dataSeekPoint);
 			int noOfRowIds = file.readByte();
