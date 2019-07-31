@@ -1,14 +1,14 @@
 package edu.utdallas.davisbase.storage;
 
-import static java.lang.String.format;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
+import static java.lang.String.format;
 
+import edu.utdallas.davisbase.YearUtils;
+import edu.utdallas.davisbase.NotImplementedException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -17,10 +17,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
-import edu.utdallas.davisbase.YearUtils;
-import edu.utdallas.davisbase.NotImplementedException;
 
 /**
  * A DavisBase "Table" file.
@@ -501,74 +498,24 @@ public class TableFile implements Closeable {
     throw new NotImplementedException();
   }
 
-  public void writeNull(int columnIndex) throws IOException {
-    // TODO Implement TableFile.writeNull(int)
-    throw new NotImplementedException();
-  }
+  /**
+   * Overwrites zero-or-more pre-existing (but nullable) columns of the current row.
+   * <p>
+   * May delete and re-append the row with a new {@code rowid}, but does not modify this
+   * {@code TableFile}'s current row pointer. However, if the current row is deleted and
+   * re-appended, then this method not be called again until the current row pointer is updated
+   * (e.g. by invoking {@link #goToNextRow()}). When the current row is deleted and re-appended is
+   * implementation-defined.
+   *
+   * @param row the set of zero-or-more {@code columnIndex}-keyed nullable values with which to
+   *        update the current row
+   * @see TableRowWrite
+   */
+  public void writeRow(TableRowWrite row) {
+    checkNotNull(row, "row");
 
-  public void writeTinyInt(int columnIndex, byte value) throws IOException {
-    // TODO Implement TableFile.writeTinyInt(int, byte)
-    throw new NotImplementedException();
-  }
-
-  public void writeSmallInt(int columnIndex, short value) throws IOException {
-    // TODO Implement TableFile.writeSmallInt(int, short)
-    throw new NotImplementedException();
-  }
-
-  public void writeInt(int columnIndex, int value) throws IOException {
-    // TODO Implement TableFile.writeInt(int, int)
-    throw new NotImplementedException();
-  }
-
-  public void writeBigInt(int columnIndex, long value) throws IOException {
-    // TODO Implement TableFile.writeBigInt(int, long)
-    throw new NotImplementedException();
-  }
-
-  public void writeFloat(int columnIndex, float value) throws IOException {
-    // TODO Implement TableFile.writeFloat(int, float)
-    throw new NotImplementedException();
-  }
-
-  public void writeDouble(int columnIndex, double value) throws IOException {
-    // TODO Implement TableFile.writeDouble(int, double)
-    throw new NotImplementedException();
-  }
-
-  public void writeYear(int columnIndex, Year value) throws IOException {
-    checkNotNull(value);
-
-    // TODO Implement TableFile.writeYear(int, Year)
-    throw new NotImplementedException();
-  }
-
-  public void writeTime(int columnIndex, LocalTime value) throws IOException {
-    checkNotNull(value);
-
-    // TODO Implement TableFile.writeTime(int, LocalTime)
-    throw new NotImplementedException();
-  }
-
-  public void writeDateTime(int columnIndex, LocalDateTime value) throws IOException {
-    checkNotNull(value);
-
-    // TODO Implement TableFile.writeDateTime(int, value)
-    throw new NotImplementedException();
-  }
-
-  public void writeDate(int columnIndex, LocalDate value) throws IOException {
-    checkNotNull(value);
-
-    // TODO Implement TableFile.writeDate(int, LocalDate)
-    throw new NotImplementedException();
-  }
-
-  public void writeText(int columnIndex, String value) throws IOException {
-    checkNotNull(value);
-
-    // TODO Implement TableFile.writeText(int, String)
-    throw new NotImplementedException();
+    // TODO Implement TableFile.writeRow(TableRowWrite)
+    throw new NotImplementedException("edu.utdallas.davisbase.storage.TableFile#writeRow(TableRowWrite)");
   }
 
   public int getCurrentMaxRowId() throws IOException {
