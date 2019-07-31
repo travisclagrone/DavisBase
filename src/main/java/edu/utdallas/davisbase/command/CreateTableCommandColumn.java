@@ -13,22 +13,28 @@ public class CreateTableCommandColumn {
   private final String name;
   private final DataType dataType;
   private final boolean isNotNull;
-  // COMBAK Implement CreateTableCommandColumn.isUnique
-  // COMBAK Implement CreateTableCommandColumn.isPrimaryKey
+  private final boolean isUnique;
+  private final boolean isPrimaryKey;
 
   /**
    * @param name      the name of the column (not null)
    * @param dataType  the {@link DataType} of the column (not null)
    * @param isNotNull {@code true} if this column has the {@code NOT NULL} constraint, otherwise
    *                  {@code false}
+   * @param isUnique  {@code true} if this column has the {@code UNIQUE} constraint, otherwise
+   *                  {@code false}
+   * @param isPrimaryKey {@code true} if this column has the {@code PRIMARY} constraint, otherwise
+   *                     {@code false}
    */
-  public CreateTableCommandColumn(String name, DataType dataType, boolean isNotNull) {
+  public CreateTableCommandColumn(String name, DataType dataType, boolean isNotNull, boolean isUnique, boolean isPrimaryKey) {
     checkNotNull(name, "name");
     checkNotNull(dataType, "dataType");
 
     this.name = name;
     this.dataType = dataType;
     this.isNotNull = isNotNull;
+    this.isUnique=isUnique;
+    this.isPrimaryKey=isPrimaryKey;
   }
 
   /**
@@ -50,6 +56,20 @@ public class CreateTableCommandColumn {
    */
   public boolean isNotNull() {
     return isNotNull;
+  }
+
+  /**
+   * @return {@code true} if this column has the {@code UNIQUE} constraint, otherwise {@code false}
+   */
+  public boolean isUnique() {
+    return isUnique;
+  }
+
+  /**
+   * @return {@code true} if this column has the {@code PRIMARY KEY} constraint, otherwise {@code false}
+   */
+  public boolean isPrimaryKey() {
+    return isPrimaryKey;
   }
 
   @Override
@@ -76,6 +96,8 @@ public class CreateTableCommandColumn {
         .add("name", getName())
         .add("dataType", getDataType())
         .add("isNotNull", isNotNull())
+        .add("isUnique", isUnique)
+        .add("isPrimaryKey", isPrimaryKey)
         .toString();
   }
 

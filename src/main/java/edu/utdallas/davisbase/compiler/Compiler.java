@@ -26,6 +26,7 @@ import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
+import net.sf.jsqlparser.statement.create.table.Index;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -66,7 +67,10 @@ public class Compiler {
         CreateTableCommandColumn col = new CreateTableCommandColumn(
             colDef.getColumnName(),
             getDavisBaseType(colDef.getColDataType()),
-            checkIsNotNull(colDef.getColumnSpecStrings()));
+            checkIsNotNull(colDef.getColumnSpecStrings()),
+            checkIsUnique(colDef.getColumnSpecStrings()),
+            checkIsPrimaryKey(colDef.getColumnSpecStrings(), createTable.getIndex(), colDef.getColumnName())
+        );
         columnSchemas.add(col);
       }
       return new CreateTableCommand(createTable.getTable(), columnSchemas);
@@ -351,8 +355,8 @@ public class Compiler {
   }
 
   /**
-   * @param columnSpecs
-   * @return whether columnSpecs is NOT NULL
+   * @param columnSpecs column constraints for give column
+   * @return whether column is NOT NULL
    */
   public boolean checkIsNotNull(List<String> columnSpecs) {
     if (null != columnSpecs) {
@@ -362,6 +366,38 @@ public class Compiler {
           return true;
         }
       }
+    }
+    return false;
+  }
+
+  /**
+   * @param columnSpecs column constraints for give column
+   * @return whether column is UNIQUE
+   */
+  public boolean checkIsUnique(List<String> columnSpecs) {
+    if (null != columnSpecs) {
+      if(columnSpecs.contains("UNIQUE")){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * @param columnSpecs column constraints for give column
+   * @return whether column is PRIMARY KEY
+   */
+  public boolean checkIsPrimaryKey(List<String> columnSpecs, Index index, String columnName) {
+    if (null != columnSpecs) {
+      for (int lcv = 0; lcv < columnSpecs.size() - 1; lcv++) {
+        if (columnSpecs.get(lcv).equalsIgnoreCase("PRIMARY")
+          && columnSpecs.get(lcv + 1).equalsIgnoreCase("KEY")) {
+          return true;
+        }
+      }
+    }
+    if(null!= index && index.getColumnsNames().get(0).equalsIgnoreCase(columnName)){
+        return true;
     }
     return false;
   }
