@@ -1,9 +1,18 @@
 package edu.utdallas.davisbase.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkElementIndex;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_COLUMN_INDEX;
+import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableSortedMap;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Year;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -120,6 +129,114 @@ public class TableRowWrite implements Iterable<Map.Entry<@NonNull Byte, @Nullabl
   @Override
   public String toString() {
     return valuesByColumnIndex.toString();
+  }
+
+  public static class Builder {
+
+    private final Map<@NonNull Byte, @Nullable Object> valuesByColumnIndex = new HashMap<>();
+
+    private void checkColumnIndex(byte columnIndex) {
+      checkElementIndex(columnIndex, Byte.MAX_VALUE,
+          format("columnIndex must be in range [0, %d)",
+              Byte.MAX_VALUE));
+      checkArgument(columnIndex != ROWID_COLUMN_INDEX,
+          format("May not write to rowid columnIndex %d",
+              ROWID_COLUMN_INDEX));
+    }
+
+    public Builder writeNull(byte columnIndex) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, null);
+      return this;
+    }
+
+    public Builder writeTinyInt(byte columnIndex, byte value) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeSmallInt(byte columnIndex, short value) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeInt(byte columnIndex, int value) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeBigInt(byte columnIndex, long value) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeFloat(byte columnIndex, float value) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeDouble(byte columnIndex, double value) {
+      checkColumnIndex(columnIndex);
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeYear(byte columnIndex, Year value) {
+      checkColumnIndex(columnIndex);
+      checkNotNull(value, "value");
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeTime(byte columnIndex, LocalTime value) {
+      checkColumnIndex(columnIndex);
+      checkNotNull(value, "value");
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeDateTime(byte columnIndex, LocalDateTime value) {
+      checkColumnIndex(columnIndex);
+      checkNotNull(value, "value");
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeDate(byte columnIndex, LocalDate value) {
+      checkColumnIndex(columnIndex);
+      checkNotNull(value, "value");
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public Builder writeText(byte columnIndex, String value) {
+      checkColumnIndex(columnIndex);
+      checkNotNull(value, "value");
+
+      valuesByColumnIndex.put(columnIndex, value);
+      return this;
+    }
+
+    public TableRowWrite build() {
+      return new TableRowWrite(this.valuesByColumnIndex);
+    }
+
   }
 
 }
