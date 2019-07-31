@@ -9,7 +9,7 @@ import edu.utdallas.davisbase.DataType;
  * catalog table.
  */
 public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
-  ROWID      (DataType.INT,  false, true, false),
+  ROWID      (DataType.INT,  false, true,  false),
   TABLE_NAME (DataType.TEXT, false, false, false);
 
   private final DataType dataType;
@@ -19,6 +19,7 @@ public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
 
   private DavisBaseTablesTableColumn(DataType dataType, boolean isNullable, boolean isUnique, boolean isPrimaryKey) {
     assert dataType != null : "dataType should not be null";
+    assert !isPrimaryKey || (isNullable && isUnique);
 
     this.dataType = dataType;
     this.isNullable = isNullable;

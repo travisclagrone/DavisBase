@@ -10,13 +10,13 @@ import static java.lang.String.format;
  */
 public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
   ROWID            (DataType.INT,     false, false, false),
-  TABLE_NAME       (DataType.TEXT,    false, true, false),
+  TABLE_NAME       (DataType.TEXT,    false, true,  false),
   COLUMN_NAME      (DataType.TEXT,    false, false, false),
   DATA_TYPE        (DataType.TEXT,    false, false, false),
   ORDINAL_POSITION (DataType.TINYINT, false, false, false),
   IS_NULLABLE      (DataType.TEXT,    false, false, false),
-  IS_UNIQUE      (DataType.TEXT,false, false, false),
-  IS_PRIMARYKEY      (DataType.TEXT,false, false, false);
+  IS_UNIQUE        (DataType.TEXT,    false, false, false),
+  IS_PRIMARY_KEY   (DataType.TEXT,    false, false, false);
 
   private final DataType dataType;
   private final boolean isNullable;
@@ -25,6 +25,7 @@ public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
 
   private DavisBaseColumnsTableColumn(DataType dataType, boolean isNullable, boolean isUnique, boolean isPrimaryKey) {
     assert dataType != null : "dataType should not be null";
+    assert !isPrimaryKey || (isNullable && isUnique);
 
     this.dataType = dataType;
     this.isNullable = isNullable;

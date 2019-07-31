@@ -1,6 +1,7 @@
 package edu.utdallas.davisbase.command;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Objects.hash;
 import edu.utdallas.davisbase.DataType;
@@ -29,6 +30,7 @@ public class CreateTableCommandColumn {
   public CreateTableCommandColumn(String name, DataType dataType, boolean isNotNull, boolean isUnique, boolean isPrimaryKey) {
     checkNotNull(name, "name");
     checkNotNull(dataType, "dataType");
+    checkArgument(!isPrimaryKey || (isNotNull && isUnique), "If isPrimaryKey is true, then isNotNull and isUnique must also be true.");
 
     this.name = name;
     this.dataType = dataType;
