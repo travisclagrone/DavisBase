@@ -5,6 +5,8 @@ import static edu.utdallas.davisbase.DataType.INT;
 import static edu.utdallas.davisbase.DataType.TEXT;
 import static edu.utdallas.davisbase.DataType.TINYINT;
 import static java.lang.String.format;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
@@ -47,6 +49,7 @@ import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageException;
 import edu.utdallas.davisbase.storage.TableFile;
 import edu.utdallas.davisbase.storage.TableRowBuilder;
+import edu.utdallas.davisbase.storage.TableRowWrite;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -444,9 +447,67 @@ public class Executor {
 
     final String tableName = command.getTableName();
     final @Nullable CommandWhere where = command.getWhere();
-    final UpdateCommandColumn column = command.getColumn();
-    final byte columnIndex = column.getColumnIndex();
-    final @Nullable Object columnValue = column.getValue();
+    final List<UpdateCommandColumn> columns = command.getColumns();
+
+    assert columns.stream().allMatch(Objects::nonNull);
+    assert columns.size() == columns.stream().map(UpdateCommandColumn::getColumnIndex).distinct().count();
+
+    if (columns.isEmpty()) {
+      final UpdateResult result = new UpdateResult(tableName, 0);
+      return result;
+    }
+
+    final TableRowWrite.Builder builder = new TableRowWrite.Builder();
+    for (int i = 0; i < columns.size(); i += 1) {
+      final UpdateCommandColumn column = columns.get(i);
+
+      final byte columnIndex = column.getColumnIndex();
+      final @Nullable Object value = column.getValue();
+
+      if (value == null) {
+        builder.writeNull(columnIndex);
+      }
+      else if (DataType.TINYINT.getJavaClass().isInstance(value)) {
+        builder.writeTinyInt(columnIndex, (Byte) value);
+      }
+      else if (DataType.SMALLINT.getJavaClass().isInstance(value)) {
+        builder.writeSmallInt(columnIndex, (Short) value);
+      }
+      else if (DataType.INT.getJavaClass().isInstance(value)) {
+        builder.writeInt(columnIndex, (Integer) value);
+      }
+      else if (DataType.BIGINT.getJavaClass().isInstance(value)) {
+        builder.writeBigInt(columnIndex, (Long) value);
+      }
+      else if (DataType.FLOAT.getJavaClass().isInstance(value)) {
+        builder.writeFloat(columnIndex, (Float) value);
+      }
+      else if (DataType.DOUBLE.getJavaClass().isInstance(value)) {
+        builder.writeDouble(columnIndex, (Double) value);
+      }
+      else if (DataType.YEAR.getJavaClass().isInstance(value)) {
+        builder.writeYear(columnIndex, (Year) value);
+      }
+      else if (DataType.TIME.getJavaClass().isInstance(value)) {
+        builder.writeTime(columnIndex, (LocalTime) value);
+      }
+      else if (DataType.DATETIME.getJavaClass().isInstance(value)) {
+        builder.writeDateTime(columnIndex, (LocalDateTime) value);
+      }
+      else if (DataType.DATE.getJavaClass().isInstance(value)) {
+        builder.writeDate(columnIndex, (LocalDate) value);
+      }
+      else if (DataType.TEXT.getJavaClass().isInstance(value)) {
+        builder.writeText(columnIndex, (String) value);
+      }
+      else {
+        throw new IllegalStateException(
+            format("Unsupported Java class %s encountered at command.getColumns().get(%d).getValue()",
+                value.getClass().getName(),
+                i));
+      }
+    }
+    final TableRowWrite rowWrite = builder.build();
 
     int rowsUpdated = 0;
     try (final TableFile tableFile = context.openTableFile(tableName)) {
@@ -460,48 +521,7 @@ public class Executor {
         }
 
         if (where == null || evaluateWhere(where, tableFile)) {
-
-          if (columnValue == null) {
-            tableFile.writeNull(columnIndex);
-          }
-          else if (DataType.TINYINT.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeTinyInt(columnIndex, (Byte) columnValue);
-          }
-          else if (DataType.SMALLINT.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeSmallInt(columnIndex, (Short) columnValue);
-          }
-          else if (DataType.INT.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeInt(columnIndex, (Integer) columnValue);
-          }
-          else if (DataType.BIGINT.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeBigInt(columnIndex, (Long) columnValue);
-          }
-          else if (DataType.FLOAT.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeFloat(columnIndex, (Float) columnValue);
-          }
-          else if (DataType.DOUBLE.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeDouble(columnIndex, (Double) columnValue);
-          }
-          else if (DataType.YEAR.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeYear(columnIndex, (Year) columnValue);
-          }
-          else if (DataType.TIME.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeTime(columnIndex, (LocalTime) columnValue);
-          }
-          else if (DataType.DATETIME.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeDateTime(columnIndex, (LocalDateTime) columnValue);
-          }
-          else if (DataType.DATE.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeDate(columnIndex, (LocalDate) columnValue);
-          }
-          else if (DataType.TEXT.getJavaClass().isInstance(columnValue)) {
-            tableFile.writeText(columnIndex, (String) columnValue);
-          }
-          else {
-            throw new ExecuteException(
-                format("Java class of UPDATE command column value is recognized as a DavisBase data type: %s",
-                    columnValue.getClass().getName()));
-          }
+          tableFile.writeRow(rowWrite);
 
           assert rowsUpdated <= Integer.MAX_VALUE : "Cannot increment rowsUpdated further without overflowing.";
           rowsUpdated += 1;
