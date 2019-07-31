@@ -9,7 +9,7 @@ import edu.utdallas.davisbase.DataType;
  * catalog table.
  */
 public enum DavisBaseTablesTableColumn implements CatalogTableColumn {
-  ROWID      (DataType.INT,  false, false, false),
+  ROWID      (DataType.INT,  false, true, false),
   TABLE_NAME (DataType.TEXT, false, false, false);
 
   private final DataType dataType;
