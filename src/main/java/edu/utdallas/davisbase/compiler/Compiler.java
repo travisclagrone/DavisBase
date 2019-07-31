@@ -64,12 +64,13 @@ public class Compiler {
       validateTableDoesNotExist(createTable.getTable());
       List<CreateTableCommandColumn> columnSchemas = new ArrayList<>();
       for (ColumnDefinition colDef : createTable.getDefinitions()) {
+        boolean isPrimaryKey =  checkIsPrimaryKey(colDef.getColumnSpecStrings(), createTable.getIndex(), colDef.getColumnName());
         CreateTableCommandColumn col = new CreateTableCommandColumn(
             colDef.getColumnName(),
             getDavisBaseType(colDef.getColDataType()),
-            checkIsNotNull(colDef.getColumnSpecStrings()),
-            checkIsUnique(colDef.getColumnSpecStrings()),
-            checkIsPrimaryKey(colDef.getColumnSpecStrings(), createTable.getIndex(), colDef.getColumnName())
+            isPrimaryKey ? true : checkIsNotNull(colDef.getColumnSpecStrings()),
+            isPrimaryKey ? true: checkIsUnique(colDef.getColumnSpecStrings()),
+            isPrimaryKey
         );
         columnSchemas.add(col);
       }
@@ -735,6 +736,8 @@ public class Compiler {
    * @throws CompileException
    */
   public void validateUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
+    //TODO: Add index logic
+    //TODO: Deal w nulls assume multiple cool
     if(isUnique(tableName, columnName)){
       byte colIndex = validateIsDavisBaseColumnWithinTable(tableName, columnName);
       DataType colType = getColumnType(tableName, columnName);
