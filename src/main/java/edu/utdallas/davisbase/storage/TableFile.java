@@ -590,8 +590,9 @@ public class TableFile implements Closeable {
        * SINCE 2019-08-01
        */
 
+      this.removeRow();
 
-
+      // TODO Implement case 2/2
     }
 
     /*
