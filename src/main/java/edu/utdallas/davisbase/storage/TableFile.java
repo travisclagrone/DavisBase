@@ -43,7 +43,7 @@ public class TableFile implements Closeable {
 
   protected final RandomAccessFile file;
   private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
-  private int currentLeafCellIndex = NULL_LEAF_CELL_INDEX;
+  private short currentLeafCellIndex = NULL_LEAF_CELL_INDEX;
 
   public TableFile(RandomAccessFile file) {
     checkNotNull(file);
@@ -293,7 +293,7 @@ public class TableFile implements Closeable {
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     final short pageOffsetOfCell =
-        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
+        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final int valueSizeInBytes =
@@ -311,7 +311,7 @@ public class TableFile implements Closeable {
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     final short pageOffsetOfCell =
-        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
+        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final byte columnCount = Page.getNumberOfColumnsOfTableLeafCell(file, fileOffsetOfPageCell);
@@ -479,7 +479,7 @@ public class TableFile implements Closeable {
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     final short pageOffsetOfCell =
-        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
+        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final int valueSizeInBytes =
