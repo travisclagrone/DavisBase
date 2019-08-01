@@ -510,10 +510,43 @@ public class TableFile implements Closeable {
    *
    * @param row the set of zero-or-more {@code columnIndex}-keyed nullable values with which to
    *        update the current row
+   * @throws IOException
    * @see TableRowWrite
    */
-  public void writeRow(TableRowWrite row) {
-    checkNotNull(row, "row");
+  public void writeRow(TableRowWrite rowWrite) throws IOException {
+    checkNotNull(rowWrite, "rowWrite");
+    checkState(this.hasCurrentRow(),
+        format("This %s{currentLeafPageNo=%d, currentLeafCellIndex=%d, fileLength=%d} is not currently pointing to any row to which to write.",
+            this.getClass().getName(),
+            this.currentLeafPageNo,
+            this.currentLeafCellIndex,
+            this.file.length()));
+
+    /*
+
+    measure size of current cell
+    calculate expected size of current cell after applying write
+    if newSize > oldSize:
+      measure available space on page
+      if spaceAvailable >= (newSize - oldSize):
+        cache cell
+        remove cell
+        defragment/compact page
+        update cell in memory
+        insert cell
+        return
+      else:
+        cache cell
+        remove row
+        update cell in memory
+        append row to table
+        return
+    else:
+      cache cell
+      update cell in memory
+      overwrite-insert old cell
+      return
+    */
 
     // TODO Implement TableFile.writeRow(TableRowWrite)
     throw new NotImplementedException("edu.utdallas.davisbase.storage.TableFile#writeRow(TableRowWrite)");
@@ -548,8 +581,10 @@ public class TableFile implements Closeable {
   private boolean hasCurrentRow() throws IOException {
     assert this.hasCurrentLeafPageNo() == this.hasCurrentLeafCellIndex();
 
-    return this.hasCurrentLeafPageNo() && Page.exists(file, this.currentLeafPageNo)
-        && this.currentLeafCellIndex < Page.getNumberOfCells(file, currentLeafPageNo);
+    return
+        this.hasCurrentLeafPageNo() &&
+        Page.exists(file, this.currentLeafPageNo) &&
+        this.currentLeafCellIndex < Page.getNumberOfCells(file, currentLeafPageNo);
   }
 
   private int getLeftmostLeafPageNo() throws IOException {
