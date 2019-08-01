@@ -1,9 +1,10 @@
 package edu.utdallas.davisbase.storage;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
+
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
 public class Page {
 
@@ -115,7 +116,7 @@ public class Page {
             if (leftChildDataOffsetPageNo == 0) {
                 return -1;
             }
- 
+
             file.seek(currentPageOffset + leftChildDataOffsetPageNo);
             leftChildPageNo = file.readInt();
 			return leftChildPageNo;
@@ -253,7 +254,7 @@ public class Page {
 			file.seek(siblingPageOffset + 1);
 			short noOfSiblingRecords = file.readShort();
 			noOfSiblingRecords = (short) (noOfSiblingRecords + 1);
-			 
+
 			file.seek(siblingPageOffset+1);
 			file.writeShort(noOfSiblingRecords);
 
@@ -268,7 +269,7 @@ public class Page {
 			setParent(file, getRightMostChildPageNo(file, siblingInteriorPageNo), siblingInteriorPageNo);
 
 			updateLeftChildInfo(file, siblingInteriorPageNo);
-			 
+
 		} catch (Exception e) {
 
 		}
@@ -277,7 +278,7 @@ public class Page {
 		// rightmost child for current and sibling to be updated.
 		return;
 	}
-	
+
 	public static void updateLeftChildInfo(RandomAccessFile file, int currentPageNo) {
         try {
             int pageOffset = ((currentPageNo - 1) * Page.pageSize);
@@ -289,9 +290,9 @@ public class Page {
             file.seek(pageOffset+firstChilddataOffset);
             file.writeInt(leftChildPageNo);
         } catch (Exception e) {
- 
+
         }
- 
+
     }
 
 	public static Boolean checkParentspace(RandomAccessFile file, int currentPageNo) {
