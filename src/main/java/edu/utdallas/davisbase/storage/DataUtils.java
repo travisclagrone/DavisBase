@@ -14,8 +14,6 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.Shorts;
 import edu.utdallas.davisbase.DataType;
-import org.checkerframework.checker.nullness.qual.NonNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -23,6 +21,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Utilities and constants for performing internal
@@ -31,8 +31,20 @@ import java.time.Year;
  */
 class DataUtils {
 
-  private static byte[] EMPTY_BYTE_ARRAY = new byte[0];
+  private static byte[] EMPTY_BYTE_ARRAY  = new byte[0];
   private static byte[] NULL_BINARY_VALUE = EMPTY_BYTE_ARRAY;
+
+  public static final int      NULL_DATA_SIZE = 0;
+  public static final int   TINYINT_DATA_SIZE = 1;
+  public static final int  SMALLINT_DATA_SIZE = 2;
+  public static final int       INT_DATA_SIZE = 4;
+  public static final int    BIGINT_DATA_SIZE = 8;
+  public static final int     FLOAT_DATA_SIZE = 4;
+  public static final int    DOUBLE_DATA_SIZE = 8;
+  public static final int      YEAR_DATA_SIZE = 1;
+  public static final int      TIME_DATA_SIZE = 4;
+  public static final int  DATETIME_DATA_SIZE = 8;
+  public static final int      DATE_DATA_SIZE = 8;
 
   private DataUtils() {
     throw new IllegalStateException(
@@ -40,7 +52,11 @@ class DataUtils {
             DataUtils.class.getName()));
   }
 
-  //region Convert (to byte array)
+  public static int getTextDataSize(@NonNull String value) {
+    return convertTextToBytes(value).length;
+  }
+
+  //region Convert Value to Bytes
 
   public static byte[] convertToBytes(@Nullable Object value) {
     final byte[] binaryValue;
@@ -166,7 +182,7 @@ class DataUtils {
 
   //endregion
 
-  //region Output (to binary stream)
+  //region Output Value
 
   public static void output(DataOutput output, @Nullable Object value) throws IOException {
     if (value == null) {
@@ -271,7 +287,7 @@ class DataUtils {
 
   //endregion
 
-  //region Input (from binary stream)
+  //region Input Value
 
   public static @Nullable Object inputNull(DataInput input) throws IOException {
     assert EMPTY_BYTE_ARRAY != null && EMPTY_BYTE_ARRAY.length == 0;
