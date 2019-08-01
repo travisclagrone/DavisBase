@@ -62,7 +62,9 @@ public class Compiler {
     }
     else if (command instanceof CreateTableCommandRepresentation) {
       CreateTableCommandRepresentation createTable = (CreateTableCommandRepresentation) command;
-      checkTableExists(createTable.getTable());
+      if(isTableExisting(createTable.getTable())){
+        throw new CompileException("Table already exists within DavisBase with that name");
+      }
       List<CreateTableCommandColumn> columnSchemas = new ArrayList<>();
       for (ColumnDefinition colDef : createTable.getDefinitions()) {
         boolean isPrimaryKey =  isPrimaryKey(colDef.getColumnSpecStrings(), createTable.getIndex(), colDef.getColumnName());
@@ -499,22 +501,33 @@ public class Compiler {
   }
 
   /**
-   * Validates that the table exists within DavisBase
+   * @param tableName
+   * @return whether or not the table exists within DavisBase
+   * @throws StorageException
+   * @throws IOException
+   */
+  private boolean isTableExisting(String tableName) throws StorageException, IOException {
+    TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
+    while (table.goToNextRow()) {
+      if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
+          .equalsIgnoreCase(tableName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Validates that the table exists
    * @param tableName
    * @throws CompileException
    * @throws IOException
    * @throws StorageException
    */
   private void checkTableExists(String tableName)throws CompileException, IOException, StorageException{
-    TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
-    while (table.goToNextRow()) {
-      if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
-        .equalsIgnoreCase(tableName)) {
-        return;
-      }
+    if(!isTableExisting(tableName)){
+      throw new CompileException("Table " + tableName + " does not exist within DavisBase");
     }
-    throw new CompileException("Table " + tableName + " does not exist within DavisBase");
-
   }
 
   /**
