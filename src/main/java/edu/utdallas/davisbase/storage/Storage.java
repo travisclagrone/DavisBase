@@ -1,6 +1,7 @@
 package edu.utdallas.davisbase.storage;
 
 import edu.utdallas.davisbase.BooleanUtils;
+import edu.utdallas.davisbase.PrimaryKeyUtils;
 import edu.utdallas.davisbase.catalog.CatalogTable;
 import edu.utdallas.davisbase.catalog.CatalogTableColumn;
 
@@ -195,7 +196,7 @@ public class Storage {
         row.appendTinyInt(col.getOrdinalPosition());
         row.appendText(BooleanUtils.toText(col.isNullable()));
         row.appendText(BooleanUtils.toText(col.isUnique()));
-        row.appendText(BooleanUtils.toText(col.isPrimaryKey()));
+        row.appendText(PrimaryKeyUtils.toText(col.isPrimaryKey()));
         sysColumnFile.appendRow(row);
       }
 
@@ -208,7 +209,7 @@ public class Storage {
         row.appendTinyInt(col.getOrdinalPosition());
         row.appendText(BooleanUtils.toText(col.isNullable()));
         row.appendText(BooleanUtils.toText(col.isUnique()));
-        row.appendText(BooleanUtils.toText(col.isPrimaryKey()));
+        row.appendText(PrimaryKeyUtils.toText(col.isPrimaryKey()));
         sysColumnFile.appendRow(row);
       }
 
