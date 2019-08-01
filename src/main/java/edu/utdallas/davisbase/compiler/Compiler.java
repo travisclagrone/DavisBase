@@ -57,7 +57,7 @@ public class Compiler {
       CreateIndexCommandRepresentation createIndex = (CreateIndexCommandRepresentation) command;
       return new CreateIndexCommand(createIndex.getTable(), createIndex.getIndex(),
           createIndex.getColumn(),
-          validateIsDavisBaseColumnWithinTable(createIndex.getTable(), createIndex.getColumn()),
+          getColumnIndex(createIndex.getTable(), createIndex.getColumn()),
           getColumnType(createIndex.getTable(), createIndex.getColumn()));
     }
     else if (command instanceof CreateTableCommandRepresentation) {
@@ -68,7 +68,7 @@ public class Compiler {
         boolean isPrimaryKey =  isPrimaryKey(colDef.getColumnSpecStrings(), createTable.getIndex(), colDef.getColumnName());
         CreateTableCommandColumn col = new CreateTableCommandColumn(
             colDef.getColumnName(),
-            getDavisBaseType(colDef.getColDataType()),
+            getCorrespondingDataTypeFromColDataType(colDef.getColDataType()),
             isPrimaryKey ? true : checkIsNotNull(colDef.getColumnSpecStrings()),
             isPrimaryKey ? true: isUnique(colDef.getColumnSpecStrings()),
             isPrimaryKey
@@ -80,6 +80,7 @@ public class Compiler {
     else if (command instanceof DeleteCommandRepresentation) {
       DeleteCommandRepresentation delete = (DeleteCommandRepresentation) command;
       checkNotCatalogTable(delete.getTable());
+      checkTableExists(delete.getTable());
       return new DeleteCommand(
           delete.getTable(),
           compileCommandWhere(delete.getTable(),
@@ -88,6 +89,7 @@ public class Compiler {
     else if (command instanceof DropTableCommandRepresentation) {
       DropTableCommandRepresentation dropTable = (DropTableCommandRepresentation) command;
       checkNotCatalogTable(dropTable.getTable());
+      checkTableExists(dropTable.getTable());
       return new DropTableCommand(dropTable.getTable());
     }
     else if (command instanceof ExitCommandRepresentation) {
@@ -96,13 +98,14 @@ public class Compiler {
     else if (command instanceof InsertCommandRepresentation) {
       InsertCommandRepresentation insert = (InsertCommandRepresentation) command;
       checkNotCatalogTable(insert.getTable());
+      checkTableExists(insert.getTable());
       List<InsertObject> insertObjects = new ArrayList<>();
       if (insert.getColumns().isEmpty()) {
         checkInsertValuesMatchesCountColumns(insert.getTable(), insert.getValues().size());
         for (int lcv = 0; lcv < insert.getValues().size(); lcv++) {
           String columnName = getColumnName(insert.getTable(), lcv + 1);  // add one to account for rowId
           @Nullable
-          Object obj = getObjectMatchingSchema(
+          Object obj = getValidObjectMatchingSchema(
               insert.getTable(),
               insert.getValues().get(lcv),
               columnName);
@@ -115,10 +118,10 @@ public class Compiler {
       else {
         checkInsertValuesMatchesCountColumns(insert.getTable(), insert.getValues().size());
         for (int lcv = 0; lcv < insert.getColumns().size(); lcv++) {
-          byte index = getColumnIndex(insert.getColumns().get(lcv), insert.getTable());
+          byte index = getColumnIndex(insert.getTable(),insert.getColumns().get(lcv).getColumnName());
           String columnName=insert.getColumns().get(lcv).toString();
           @Nullable
-          Object obj = getObjectMatchingSchema(
+          Object obj = getValidObjectMatchingSchema(
               insert.getTable(),
               insert.getValues().get(lcv),
               columnName
@@ -131,13 +134,14 @@ public class Compiler {
         Collections.sort(insertObjects);
       }
       return new InsertCommand(
-          validateIsDavisBaseTable(insert.getTable()),
+          getValidatedDavisBaseTableName(insert.getTable()),
           insertObjects.stream()
                        .map(InsertObject::getObject)
                        .collect(Collectors.toList()));
     }
     else if (command instanceof SelectCommandRepresentation) {
       SelectCommandRepresentation select = (SelectCommandRepresentation) command;
+      checkTableExists(select.getTable());
       List<SelectCommandColumn> selectColumns = new ArrayList<>();
       // check if * then add all columns
       for (SelectItem item : select.getColumns()) {
@@ -146,14 +150,14 @@ public class Compiler {
         }
         else {
           SelectCommandColumn col = new SelectCommandColumn(
-              validateIsDavisBaseColumnWithinTable(select.getTable(), item.toString()),
-              item.toString(),  // QUESTION If the SelectItem is a plain column reference, does this return _exactly_ the colum name? Or do we need to switch on concrete type, cast, and then invoke a method to get the name?
+              getColumnIndex(select.getTable(), item.toString()),
+              item.toString(),
               getColumnType(select.getTable(), item.toString()));
           selectColumns.add(col);
         }
       }
       return new SelectCommand(
-          validateIsDavisBaseTable(select.getTable()),
+          getValidatedDavisBaseTableName(select.getTable()),
           selectColumns,
           compileCommandWhere(select.getTable(), select.getWhereClause()));
     }
@@ -163,15 +167,16 @@ public class Compiler {
     else if (command instanceof UpdateCommandRepresentation) {
       UpdateCommandRepresentation update = (UpdateCommandRepresentation) command;
       checkNotCatalogTable(update.getTable());
+      checkTableExists(update.getTable());
       List<UpdateCommandColumn> updateCommandColumns = new ArrayList<>();
       List<Column> columnRepresentations = update.getColumns();
       List<Expression> valuesList = update.getValues();
       for (int lcv = 0; lcv < columnRepresentations.size(); lcv++) {
         Column col = columnRepresentations.get(lcv);
-        byte colIndex = getColumnIndex(col, update.getTable());
+        byte colIndex = getColumnIndex(update.getTable(),col.getColumnName());
         String columnName=getColumnName(update.getTable(), colIndex);
         @Nullable
-        Object obj = getObjectMatchingSchema(update.getTable(),valuesList.get(lcv), columnName);
+        Object obj = getValidObjectMatchingSchema(update.getTable(),valuesList.get(lcv), columnName);
         if(null!=obj){
           checkUniqueness(update.getTable(), columnName, obj);
         }
@@ -192,7 +197,7 @@ public class Compiler {
    * @return DataType from given ColDataType
    * @throws CompileException
    */
-  private DataType getDavisBaseType(ColDataType dataType) throws CompileException {
+  private DataType getCorrespondingDataTypeFromColDataType(ColDataType dataType) throws CompileException {
     String type = dataType.getDataType();
     if (type.equalsIgnoreCase(DataType.TINYINT.name())) {
       return DataType.TINYINT;
@@ -237,7 +242,7 @@ public class Compiler {
    * @return DataType corresponding with Expression
    * @throws CompileException
    */
-  private DataType convertToDavisType(Expression type) throws CompileException {
+  private DataType getDataTypeFromExpression(Expression type) throws CompileException {
     checkArgument(!(type instanceof NullValue));
 
     if (type instanceof DoubleValue) {
@@ -266,16 +271,16 @@ public class Compiler {
   /**
    * @param tableName
    * @param value
-   * @return valid Object to Insert
+   * @return valid Object from given Expression value
    * @throws CompileException
    */
-  private @Nullable Object getObjectMatchingSchema(String tableName, Expression value,
-                                                   String columnName) throws CompileException, StorageException, IOException {
+  private @Nullable Object getValidObjectMatchingSchema(String tableName, Expression value,
+                                                        String columnName) throws CompileException, StorageException, IOException {
     if (isNullValue(tableName, columnName, value)) {
       return null;
     }
     DataType schemaDefinedColumnType = getColumnType(tableName, columnName);
-    DataType convertedType = convertToDavisType(value);
+    DataType convertedType = getDataTypeFromExpression(value);
 
     if (!schemaDefinedColumnType.equals(convertedType)) {  // Supported implicit narrowing conversions from literal values for integral and floating-point types.
       switch (convertedType) {
@@ -417,7 +422,7 @@ public class Compiler {
    * @return column index if valid column within table
    * @throws CompileException
    */
-  private byte validateIsDavisBaseColumnWithinTable(String tableName, String columnName) throws CompileException, StorageException, IOException {
+  private byte getColumnIndex(String tableName, String columnName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.name());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
@@ -437,7 +442,7 @@ public class Compiler {
    * @return table name if valid table name
    * @throws CompileException
    */
-  private String validateIsDavisBaseTable(String tableName) throws CompileException, StorageException, IOException {
+  private String getValidatedDavisBaseTableName(String tableName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
@@ -469,6 +474,14 @@ public class Compiler {
     throw new CompileException("Column " + columnName + " does not exist within this table");
   }
 
+  /**
+   * @param tableName
+   * @param columnIndex
+   * @return column name corresponding with given column index within table
+   * @throws CompileException
+   * @throws StorageException
+   * @throws IOException
+   */
   private String getColumnName(String tableName, int columnIndex) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
@@ -486,31 +499,32 @@ public class Compiler {
   }
 
   /**
-   * @param col Column object to check
-   * @param table table name to check column
-   * @return byte of column index based on parameters
-   * @throws CompileException
+   * @param tableName
+   * @return whether or not the table exists within DavisBase
    * @throws StorageException
    * @throws IOException
    */
-  private byte getColumnIndex(Column col, String table) throws CompileException, StorageException, IOException {
-    return (validateIsDavisBaseColumnWithinTable(table, col.getColumnName()));
-  }
-
-  /**
-   * Validate that given table exists otherwise throws exception
-   * @param tableName table to check existence
-   * @throws CompileException
-   * @throws StorageException
-   * @throws IOException
-   */
-  private void checkTableExists(String tableName) throws CompileException, StorageException, IOException {
+  private boolean isTableExisting(String tableName) throws StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
           .equalsIgnoreCase(tableName)) {
-        throw new CompileException("Table " + tableName + " already exists.");
+        return true;
       }
+    }
+    return false;
+  }
+
+  /**
+   * Validates that the table exists
+   * @param tableName
+   * @throws CompileException
+   * @throws IOException
+   * @throws StorageException
+   */
+  private void checkTableExists(String tableName)throws CompileException, IOException, StorageException{
+    if(!isTableExisting(tableName)){
+      throw new CompileException("Table " + tableName + " does not exist within DavisBase");
     }
   }
 
@@ -583,6 +597,14 @@ public class Compiler {
     return selectColumns;
   }
 
+  /**
+   * Validate the number of values the user is trying to insert matches the amount of columns defined in the schema for the given table
+   * @param tableName
+   * @param size
+   * @throws IOException
+   * @throws StorageException
+   * @throws CompileException
+   */
   private void checkInsertValuesMatchesCountColumns(String tableName, int size) throws IOException, StorageException, CompileException {
     int actualColumns = 0;
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
@@ -618,7 +640,7 @@ public class Compiler {
     if (null == where) {
       return null;
     }
-    byte columnIndex = getColumnIndex(where.getColumn(), tableName);
+    byte columnIndex = getColumnIndex(tableName,where.getColumn().getColumnName());
     String columnName = getColumnName(tableName, columnIndex);
     CommandWhereColumn leftColumnReference = new CommandWhereColumn(
         columnIndex,
@@ -630,7 +652,7 @@ public class Compiler {
     return new CommandWhere(
         leftColumnReference,
         returnCommandOperator(where.getOperator(), where.isNot()),
-        getObjectMatchingSchema(tableName, where.getValue(), columnName));
+        getValidObjectMatchingSchema(tableName, where.getValue(), columnName));
   }
 
   /**
@@ -712,7 +734,7 @@ public class Compiler {
   private void checkUniqueness(String tableName, String columnName, Object value)throws StorageException, IOException, CompileException{
     //TODO: Add index logic
     if(isColumnUnique(tableName, columnName)){
-      byte colIndex = validateIsDavisBaseColumnWithinTable(tableName, columnName);
+      byte colIndex = getColumnIndex(tableName, columnName);
       DataType colType = getColumnType(tableName, columnName);
       TableFile table = context.openTableFile(tableName);
       final String UNIQUENESS_EXCEPTION = "Invalid insert. Column " + columnName + " has uniqueness constraint";
