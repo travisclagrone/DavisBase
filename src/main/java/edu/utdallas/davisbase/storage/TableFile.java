@@ -528,15 +528,20 @@ public class TableFile implements Closeable {
             this.currentLeafCellIndex,
             this.file.length()));
 
+    //region Locate and read "old" cell.
+
     final short pageOffsetOfCell = getPageOffsetOfCell(this.file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfCell = convertPageNoToFileOffset(this.currentLeafPageNo) + pageOffsetOfCell;
-
-    // NOTE TableLeafCellBuffer is *mutable* (albeit encapsulated).
     file.seek(fileOffsetOfCell);
     final TableLeafCellBuffer cellBuffer = TableLeafCellBuffer.fromBytes(file);
 
     final int oldCellLength = cellBuffer.length();
 
+    //endregion
+
+    //region Create "new" updated cell in-memory.
+
+    // Apply the column-wise updates to the "old" cell data in the cell buffer.
     for (final Map.Entry<Byte, @Nullable Object> column : rowWrite) {
       assert 1 <= column.getKey() && column.getKey() < cellBuffer.size();  // Cannot be zero because that is built-in reserved for rowId, which is not user-writable.
       assert column.getValue() == null || stream(DataType.values()).allMatch(dt -> dt.getJavaClass().isInstance(column.getValue()));
@@ -546,35 +551,54 @@ public class TableFile implements Closeable {
 
       cellBuffer.set(columnIndex, data);
     }
+    // The cell buffer now contains the "new" cell data.
 
-    // NOTE newCellData is a *complete* cell, both header and body included.
-    final byte[] newCellData = cellBuffer.toBytes();
-    final int newCellLength = newCellData.length;
+    final int newCellLength = cellBuffer.length();
+
+    //endregion
+
+    // CASE 1/2 : The new cell is *not* larger, so we can just overwrite the old cell in-place.
+    if (newCellLength <= oldCellLength) {
+      final byte[] newCellData = cellBuffer.toBytes();
+      file.seek(fileOffsetOfCell);
+      file.write(newCellData);
+    }
+
+    // CASE 2/2 : The new cell *is* larger, so we have to do some reorganizing to make it fit.
+    else {
+      /* IMPORTANT
+       *
+       * The professor has verbally stated during lecture that if an UPDATE command causes a cell to
+       * increase in size (of bytes), we are **not** required to either of the following:
+       *
+       * - Defragment the cell content area _within_ the affected page in an attempt to re-fit the
+       *   now-larger cell
+       * - Balance cells _across_ sibling pages (using rotations and/or splits) in order to make
+       *   room for the now-large cell on one of those pages
+       *
+       * Rather, he both permitted as well as actively suggested simply deleting the "old" row and
+       * inserting the "new" (updated) row. The professor did verbally acknowledge that this would
+       * necessarily (albeit not preferably) alter the rowId of the updated row. However, he stated
+       * that he would not take off grade points for that considering the extensive project scope
+       * and compressed course timeline of the summer.
+       *
+       * In light of the professor's aforementioned statements, this second case (i.e. the updated
+       * row _is_ larger), is simply implemented using the one catch-all strategy of naively
+       * deleting and re-inserting the updated row.
+       *
+       * AUTHOR Travis C. LaGrone
+       * SINCE 2019-08-01
+       */
+
+
+
+    }
 
     /*
-
-    measure size of current cell
-    calculate expected size of current cell after applying write
-    if newSize > oldSize:
-      measure available space on page
-      if spaceAvailable >= (newSize - oldSize):
-        cache cell
-        remove cell
-        defragment/compact page
-        update cell in memory
-        insert cell
-        return
-      else:
-        cache cell
-        remove row
-        update cell in memory
-        append row to table
-        return
     else:
-      cache cell
-      update cell in memory
-      overwrite-insert old cell
-      return
+      removeRow()
+      appendRow()
+      this.isCurrentRowRemoved = true
     */
 
     // TODO Implement TableFile.writeRow(TableRowWrite)
