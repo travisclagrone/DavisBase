@@ -16,6 +16,9 @@ public class TextUtils {
 
   public static final Charset TEXT_CHARSET = US_ASCII;
 
+  public static final int TEXT_MIN_LENGTH = 1;  // May not be empty. Otherwise, it will be interpreted as null in our current implementation.
+  public static final int TEXT_MAX_LENGTH = Byte.MAX_VALUE;
+
   private TextUtils() {
     throw new IllegalStateException(
         format("%s may not be instantiated.",
