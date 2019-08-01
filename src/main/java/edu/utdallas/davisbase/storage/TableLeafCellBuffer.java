@@ -110,6 +110,14 @@ class TableLeafCellBuffer implements Iterable<byte[]> {
     return (byte) binaryValues.size();
   }
 
+  /**
+   * @return the length of the byte array that {@link #toBytes()} would return given the current
+   *         state of this {@code TableLeafCellBuffer}
+   */
+  public int length() {
+    return this.toBytes().length;
+  }
+
   @Override
   public Iterator<byte[]> iterator() {
     final List<byte[]> publicBinaryValues = new ArrayList<>(this.size());
