@@ -169,8 +169,12 @@ public class Compiler {
       for (int lcv = 0; lcv < columnRepresentations.size(); lcv++) {
         Column col = columnRepresentations.get(lcv);
         byte colIndex = getColumnIndex(col, update.getTable());
+        String columnName=getColumnName(update.getTable(), colIndex);
         @Nullable
-        Object obj = getObjectMatchingSchema(update.getTable(),valuesList.get(lcv), getColumnName(update.getTable(), colIndex));
+        Object obj = getObjectMatchingSchema(update.getTable(),valuesList.get(lcv), columnName);
+        if(null!=obj){
+          checkUniqueness(update.getTable(), columnName, obj);
+        }
         updateCommandColumns.add(new UpdateCommandColumn(colIndex,obj));
       }
       return new UpdateCommand(
@@ -525,7 +529,7 @@ public class Compiler {
       return true;
     }
     if (!isNullable(tableName, columnName) && value instanceof NullValue) {
-      throw new CompileException("Column " + columnName + "is not nullable");
+      throw new CompileException("Column " + columnName + " is not nullable");
     }
     return false;
   }
