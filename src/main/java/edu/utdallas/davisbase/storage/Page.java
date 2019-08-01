@@ -6,7 +6,7 @@ import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-public class Page {
+class Page {
 
   static final int BYTES_OF_PAGE_OFFSET = Short.BYTES;
 
@@ -19,7 +19,7 @@ public class Page {
   static final long metaDataRootPageNoOffsetInFile = 0x05;
 
 	// called when the interior node is overflowed
-	public static int AddInteriorPage(RandomAccessFile file) {
+	static int AddInteriorPage(RandomAccessFile file) {
 		int numofPages = 0;
 		try {
 			numofPages = (int) (file.length() / pageSize);
@@ -37,7 +37,7 @@ public class Page {
 	}
 
 	// called when the leaf id overflowed.
-	public static int AddLeafPage(RandomAccessFile file) {
+	static int AddLeafPage(RandomAccessFile file) {
 		int numofPages = 0;
 		try {
 			numofPages = (int) (file.length() / pageSize);
@@ -55,7 +55,7 @@ public class Page {
 		return numofPages;
 	}
 
-	public static void addTableMetaDataPage(RandomAccessFile file) throws IOException {
+	static void addTableMetaDataPage(RandomAccessFile file) throws IOException {
 		try {
 			file.setLength(pageSize);
 			file.seek(0x00);
@@ -75,7 +75,7 @@ public class Page {
 	}
 
 	// if no space in leaf node
-	public static int splitLeafPage(RandomAccessFile file, int pageNo) {
+	static int splitLeafPage(RandomAccessFile file, int pageNo) {
 
 		boolean rootflag = CheckifRootNode(file, pageNo);
 		try {
@@ -107,7 +107,7 @@ public class Page {
 		return -1;
 	}
 
-	public static int getLeftChild(RandomAccessFile file, int currentPageNo) {
+	static int getLeftChild(RandomAccessFile file, int currentPageNo) {
 		try {
 			int currentPageOffset = (currentPageNo-1)*Page.pageSize;
 			file.seek(currentPageOffset+16);
@@ -127,7 +127,7 @@ public class Page {
 
 	}
 
-	public static void appendChildInINteriorPage(RandomAccessFile file, int childPageNo, int currentPageNo) {
+	static void appendChildInINteriorPage(RandomAccessFile file, int childPageNo, int currentPageNo) {
 		try {
 			int leftChildPage = getLeftChild(file, currentPageNo);
 			if (leftChildPage == -1) {
@@ -173,7 +173,7 @@ public class Page {
 		}
 	}
 
-	public static int getnextRowIdInterior(RandomAccessFile file) {
+	static int getnextRowIdInterior(RandomAccessFile file) {
 		try {
 			file.seek(0x09);
 			int rowId = file.readInt();
@@ -185,7 +185,7 @@ public class Page {
 
 	}
 
-	public static int splitInteriorPage(RandomAccessFile file, int pageNo) {
+	static int splitInteriorPage(RandomAccessFile file, int pageNo) {
 		boolean rootflag = CheckifRootNode(file, pageNo);
 		int siblingInteriorPageNo = AddInteriorPage(file);
 		try {
@@ -214,7 +214,7 @@ public class Page {
 
 	}
 
-	public static void splitInteriorData(RandomAccessFile file, int currentPageNo, int siblingInteriorPageNo) {
+	static void splitInteriorData(RandomAccessFile file, int currentPageNo, int siblingInteriorPageNo) {
 		long currentPageOffset = (currentPageNo - 1) * pageSize;
 		long siblingPageOffset = (siblingInteriorPageNo - 1) * pageSize;
 		int currentPageCellContentReference = 3;
@@ -279,7 +279,7 @@ public class Page {
 		return;
 	}
 
-	public static void updateLeftChildInfo(RandomAccessFile file, int currentPageNo) {
+	static void updateLeftChildInfo(RandomAccessFile file, int currentPageNo) {
         try {
             int pageOffset = ((currentPageNo - 1) * Page.pageSize);
             int cellContentOffset = pageOffset + 3;
@@ -295,7 +295,7 @@ public class Page {
 
     }
 
-	public static Boolean checkParentspace(RandomAccessFile file, int currentPageNo) {
+	static Boolean checkParentspace(RandomAccessFile file, int currentPageNo) {
 		long seekNoofRecords = (currentPageNo - 1) * pageSize + 1;
 		try {
 			file.seek(seekNoofRecords);
@@ -307,7 +307,7 @@ public class Page {
 		return false;
 	}
 
-	public static int getParent(RandomAccessFile file, int currentPageNo) {
+	static int getParent(RandomAccessFile file, int currentPageNo) {
 		long seekParentByte = (currentPageNo - 1) * pageSize + 10;
 		try {
 			file.seek(seekParentByte);
@@ -318,7 +318,7 @@ public class Page {
 		return -1;
 	}
 
-	public static void setRightMostChild(RandomAccessFile file, int currentPageNo) {
+	static void setRightMostChild(RandomAccessFile file, int currentPageNo) {
 		int rightMostChildPageNo = getRightMostChildPageNo(file, currentPageNo);
 		long seekRightMostChildByte = (currentPageNo - 1) * pageSize + 6;
 		try {
@@ -329,7 +329,7 @@ public class Page {
 		}
 	}
 
-	public static int getRightMostChildPageNo(RandomAccessFile file, int currentPageNo) {
+	static int getRightMostChildPageNo(RandomAccessFile file, int currentPageNo) {
 		// get the rightmost child - after clarification
 		try {
 			long currentPageCell = (currentPageNo - 1) * Page.pageSize;
@@ -363,7 +363,7 @@ public class Page {
 		return 0;
 	}
 
-	public static void setRightSibling(RandomAccessFile file, int currentPageNo, int newPageNo) {
+	static void setRightSibling(RandomAccessFile file, int currentPageNo, int newPageNo) {
 		long seekSiblingByte = (currentPageNo - 1) * pageSize + 6;
 		try {
 			file.seek(seekSiblingByte);
@@ -376,7 +376,7 @@ public class Page {
   /**
    * @return the page no of the right sibling of the given leaf page; `-1` indicates
    */
-  public static int getRightSiblingOfLeafPage(RandomAccessFile file, int pageNo) throws IOException {
+  static int getRightSiblingOfLeafPage(RandomAccessFile file, int pageNo) throws IOException {
     assert Page.getTablePageType(file, pageNo) == LEAF;
 
     final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
@@ -387,7 +387,7 @@ public class Page {
     return rightSiblingPageNo;
   }
 
-	public static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
+	static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
 		try {
 
 			appendChildInINteriorPage(file, childpageNo, currentPageNo);
@@ -399,7 +399,7 @@ public class Page {
 
 	}
 
-	public static void updateInteriorRowID(RandomAccessFile file, int rowId) {
+	static void updateInteriorRowID(RandomAccessFile file, int rowId) {
 		try {
 			file.seek(0x09);
 			file.writeInt(rowId);
@@ -409,11 +409,11 @@ public class Page {
 		return;
 	}
 
-	public static void SortRowIds(RandomAccessFile file, int currentPageNo) {
+	static void SortRowIds(RandomAccessFile file, int currentPageNo) {
 
 	}
 
-	public static void setParent(RandomAccessFile file, int childpageNo, int parentPageNo) {
+	static void setParent(RandomAccessFile file, int childpageNo, int parentPageNo) {
 		long seekParentByte = (childpageNo - 1) * pageSize + 10;
 		try {
 			file.seek(seekParentByte);
@@ -423,7 +423,7 @@ public class Page {
 		}
 	}
 
-	public static void setPageasRoot(RandomAccessFile file, int pageNo) {
+	static void setPageasRoot(RandomAccessFile file, int pageNo) {
 
 		int seekParentByte = (pageNo - 1) * pageSize + 10;
 		try {
@@ -434,17 +434,17 @@ public class Page {
 		}
 	}
 
-	public static void updateMetaDataRoot(RandomAccessFile file, int newRootPageNo) throws IOException {
+	static void updateMetaDataRoot(RandomAccessFile file, int newRootPageNo) throws IOException {
     file.seek(metaDataRootPageNoOffsetInFile);
     file.writeInt(newRootPageNo);
   }
 
-  public static int getMetaDataRootPageNo(RandomAccessFile file) throws IOException {
+  static int getMetaDataRootPageNo(RandomAccessFile file) throws IOException {
     file.seek(metaDataRootPageNoOffsetInFile);
     return file.readInt();
   }
 
-	public static boolean CheckifRootNode(RandomAccessFile file, int pageNo) {
+	static boolean CheckifRootNode(RandomAccessFile file, int pageNo) {
 
 		int seekParentByte = (pageNo - 1) * pageSize + 10;
 		try {
@@ -457,14 +457,14 @@ public class Page {
 		return false;
   }
 
-  public static long convertPageNoToFileOffset(int pageNo) {
+  static long convertPageNoToFileOffset(int pageNo) {
     assert 1 <= pageNo && pageNo <= Integer.MAX_VALUE;
 
     final long fileOffset = (pageNo - 1) * (long) Page.pageSize;
     return fileOffset;
   }
 
-  public static TablePageType getTablePageType(RandomAccessFile file, int pageNo) throws IOException {
+  static TablePageType getTablePageType(RandomAccessFile file, int pageNo) throws IOException {
     final long fileOffset = convertPageNoToFileOffset(pageNo);
     file.seek(fileOffset);
 
@@ -473,7 +473,7 @@ public class Page {
     return type;
   }
 
-  public static short getNumberOfCells(RandomAccessFile file, int pageNo) throws IOException {
+  static short getNumberOfCells(RandomAccessFile file, int pageNo) throws IOException {
     final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
     final long fileOffsetOfPageCellCount = fileOffsetOfPage + PAGE_OFFSET_OF_CELL_COUNT;
     file.seek(fileOffsetOfPageCellCount);
@@ -489,7 +489,7 @@ public class Page {
    * @return zero-based offset of the start of the cell relative to the beginning of the page
    * @throws IOException
    */
-  public static short getPageOffsetOfCell(RandomAccessFile file, int pageNo, short cellIndex) throws IOException {
+  static short getPageOffsetOfCell(RandomAccessFile file, int pageNo, short cellIndex) throws IOException {
     final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
     final long fileOffsetOfCellPageOffsetArray = fileOffsetOfPage + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY;
     final long fileOffsetOfEntryInCellPageOffsetArray = fileOffsetOfCellPageOffsetArray + (cellIndex * BYTES_OF_PAGE_OFFSET);
@@ -506,7 +506,7 @@ public class Page {
    * @return the left child page no of the table interior cell
    * @throws IOException
    */
-  public static int getTableInteriorCellLeftChildPageNo(RandomAccessFile file, int pageNo, short cellIndex) throws IOException {
+  static int getTableInteriorCellLeftChildPageNo(RandomAccessFile file, int pageNo, short cellIndex) throws IOException {
     final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
     final short pageOffsetOfCell = getPageOffsetOfCell(file, pageNo, cellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
@@ -516,7 +516,7 @@ public class Page {
     return leftChildPageNo;
   }
 
-  public static int getLeftmostChildPageNoOfInteriorPage(RandomAccessFile file, int pageNo) throws IOException {
+  static int getLeftmostChildPageNoOfInteriorPage(RandomAccessFile file, int pageNo) throws IOException {
     assert getTablePageType(file, pageNo) == INTERIOR;
 
     final short cellCount = getNumberOfCells(file, pageNo);
@@ -532,16 +532,16 @@ public class Page {
    * @return whether the specified page exists in the given file
    * @throws IOException
    */
-  public static boolean exists(RandomAccessFile file, int pageNo) throws IOException {
+  static boolean exists(RandomAccessFile file, int pageNo) throws IOException {
     return pageNo > 0 && convertPageNoToFileOffset(pageNo) < file.length();
   }
 
-  public static byte getNumberOfColumnsOfTableLeafCell(RandomAccessFile file, long fileOffsetOfTableLeafCell) throws IOException {
+  static byte getNumberOfColumnsOfTableLeafCell(RandomAccessFile file, long fileOffsetOfTableLeafCell) throws IOException {
     file.seek(fileOffsetOfTableLeafCell);
     return file.readByte();
   }
 
-  public static int getSizeOfTableLeafCellColumn(RandomAccessFile file, long fileOffsetOfTableLeafCell, int columnIndex) throws IOException {
+  static int getSizeOfTableLeafCellColumn(RandomAccessFile file, long fileOffsetOfTableLeafCell, int columnIndex) throws IOException {
     file.seek(fileOffsetOfTableLeafCell + 1 + columnIndex);  // COMBAK Clean this up.
     return file.readByte();
   }
