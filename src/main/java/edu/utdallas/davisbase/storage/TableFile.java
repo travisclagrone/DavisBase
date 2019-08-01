@@ -1,8 +1,10 @@
-package edu.utdallas.davisbase.storage;
+ package edu.utdallas.davisbase.storage;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static edu.utdallas.davisbase.storage.Page.convertPageNoToFileOffset;
+import static edu.utdallas.davisbase.storage.Page.getPageOffsetOfCell;
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 import static java.lang.String.format;
@@ -521,6 +523,10 @@ public class TableFile implements Closeable {
             this.currentLeafPageNo,
             this.currentLeafCellIndex,
             this.file.length()));
+
+    final short pageOffsetOfCell = getPageOffsetOfCell(this.file, this.currentLeafPageNo, this.currentLeafCellIndex);
+    final long fileOffsetOfCell = convertPageNoToFileOffset(this.currentLeafPageNo) + pageOffsetOfCell;
+    final TableLeafCellBuffer cellBuffer = TableLeafCellBuffer.fromBytes(file, fileOffsetOfCell);
 
     /*
 
