@@ -1,15 +1,18 @@
- package edu.utdallas.davisbase.storage;
+package edu.utdallas.davisbase.storage;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static edu.utdallas.davisbase.storage.DataUtils.convertToBytes;
 import static edu.utdallas.davisbase.storage.Page.convertPageNoToFileOffset;
 import static edu.utdallas.davisbase.storage.Page.getPageOffsetOfCell;
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 
 import edu.utdallas.davisbase.YearUtils;
+import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
 import java.io.Closeable;
 import java.io.IOException;
@@ -19,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
+import java.util.Map;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -526,7 +530,26 @@ public class TableFile implements Closeable {
 
     final short pageOffsetOfCell = getPageOffsetOfCell(this.file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfCell = convertPageNoToFileOffset(this.currentLeafPageNo) + pageOffsetOfCell;
-    final TableLeafCellBuffer cellBuffer = TableLeafCellBuffer.fromBytes(file, fileOffsetOfCell);
+
+    // NOTE TableLeafCellBuffer is *mutable* (albeit encapsulated).
+    file.seek(fileOffsetOfCell);
+    final TableLeafCellBuffer cellBuffer = TableLeafCellBuffer.fromBytes(file);
+
+    final int oldCellLength = cellBuffer.length();
+
+    for (final Map.Entry<Byte, @Nullable Object> column : rowWrite) {
+      assert 1 <= column.getKey() && column.getKey() < cellBuffer.size();  // Cannot be zero because that is built-in reserved for rowId, which is not user-writable.
+      assert column.getValue() == null || stream(DataType.values()).allMatch(dt -> dt.getJavaClass().isInstance(column.getValue()));
+
+      final byte columnIndex = column.getKey();
+      final byte[] data = convertToBytes(column.getValue());
+
+      cellBuffer.set(columnIndex, data);
+    }
+
+    // NOTE newCellData is a *complete* cell, both header and body included.
+    final byte[] newCellData = cellBuffer.toBytes();
+    final int newCellLength = newCellData.length;
 
     /*
 
