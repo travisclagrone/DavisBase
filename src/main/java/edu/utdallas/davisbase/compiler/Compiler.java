@@ -525,10 +525,10 @@ public class Compiler {
    * @throws IOException
    */
   private boolean isNullValue(String tableName, String columnName, Expression value) throws CompileException, StorageException, IOException {
-    if (isNullable(tableName, columnName) && value instanceof NullValue) {
+    if (isColumnNullable(tableName, columnName) && value instanceof NullValue) {
       return true;
     }
-    if (!isNullable(tableName, columnName) && value instanceof NullValue) {
+    if (!isColumnNullable(tableName, columnName) && value instanceof NullValue) {
       throw new CompileException("Column " + columnName + " is not nullable");
     }
     return false;
@@ -543,7 +543,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  private boolean isNullable(String tableName, String columnName) throws CompileException, StorageException, IOException {
+  private boolean isColumnNullable(String tableName, String columnName) throws CompileException, StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_COLUMNS.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseColumnsTableColumn.COLUMN_NAME.getOrdinalPosition()))
@@ -624,7 +624,7 @@ public class Compiler {
         columnIndex,
         columnName,
         getColumnType(tableName, columnName),
-        isNullable(tableName, columnName),
+        isColumnNullable(tableName, columnName),
         false  // TODO: COME BACK AND FIX THIS ONCE INDEX IMPLEMENTED
     );
     return new CommandWhere(
