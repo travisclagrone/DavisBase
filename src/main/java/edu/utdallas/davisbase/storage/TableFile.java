@@ -229,6 +229,11 @@ public class TableFile implements Closeable {
 
   }
 
+  private void appendRow(TableLeafCellBuffer cellBuffer) throws IOException {
+    // TODO implement TableFile-appendRow(TableLeafCellBuffer)
+    throw new NotImplementedException("TableFile-appendRow(TableLeafCellBuffer)");
+  }
+
   private boolean checkPagesize(int sizeRequired, int currentPageNo) {
     try {
       file.seek((currentPageNo - 1) * Page.PAGE_SIZE);
@@ -591,19 +596,8 @@ public class TableFile implements Closeable {
        */
 
       this.removeRow();
-
-      // TODO Implement case 2/2
+      this.appendRow(cellBuffer);
     }
-
-    /*
-    else:
-      removeRow()
-      appendRow()
-      this.isCurrentRowRemoved = true
-    */
-
-    // TODO Implement TableFile.writeRow(TableRowWrite)
-    throw new NotImplementedException("edu.utdallas.davisbase.storage.TableFile#writeRow(TableRowWrite)");
   }
 
   public int getCurrentMaxRowId() throws IOException {
