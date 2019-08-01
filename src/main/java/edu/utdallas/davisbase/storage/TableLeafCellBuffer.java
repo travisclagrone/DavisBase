@@ -115,7 +115,19 @@ class TableLeafCellBuffer implements Iterable<byte[]> {
    *         state of this {@code TableLeafCellBuffer}
    */
   public int length() {
-    return this.toBytes().length;
+    int length = 0;
+
+    // Cell Header
+    length += 1;  // "Number of Columns" byte field
+    length += binaryValues.size();  // "List of Data Sizes" byte array field
+
+    // Cell Body
+    for (byte[] binaryValue : this.binaryValues) {
+      length += binaryValue.length;  // "Column Data Value" payload for each column
+    }
+
+    assert length == this.toBytes().length;
+    return length;
   }
 
   @Override
