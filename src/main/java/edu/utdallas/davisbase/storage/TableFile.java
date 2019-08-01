@@ -67,8 +67,8 @@ public class TableFile implements Closeable {
 
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
     int currentPageNo;
-    currentPageNo = (int) (this.file.length() / Page.pageSize);
-    long pageOffset = (currentPageNo - 1) * Page.pageSize;
+    currentPageNo = (int) (this.file.length() / Page.PAGE_SIZE);
+    long pageOffset = (currentPageNo - 1) * Page.PAGE_SIZE;
     file.seek(pageOffset);
     byte pageType = file.readByte();
 
@@ -80,7 +80,7 @@ public class TableFile implements Closeable {
 
     while (rightPageNo != -1) {
       searchFlag = true;
-      rightPageSeekPoint = ((rightPageNo - 1) * Page.pageSize) + 6;
+      rightPageSeekPoint = ((rightPageNo - 1) * Page.PAGE_SIZE) + 6;
       file.seek(rightPageSeekPoint);
       rightPageNo = file.readInt();
       file.seek(rightPageSeekPoint);
@@ -88,7 +88,7 @@ public class TableFile implements Closeable {
     if (searchFlag) {
 
       pageOffset = rightPageSeekPoint - 6;
-      currentPageNo = (int) ((pageOffset / Page.pageSize) + 1);
+      currentPageNo = (int) ((pageOffset / Page.PAGE_SIZE) + 1);
       searchFlag = false;
     }
 
@@ -166,7 +166,7 @@ public class TableFile implements Closeable {
     }
     if (splitFlag) {
 
-      pageOffset = (currentPageNo - 1) * Page.pageSize;
+      pageOffset = (currentPageNo - 1) * Page.PAGE_SIZE;
       splitFlag = false;
     }
     file.seek(pageOffset);
@@ -175,7 +175,7 @@ public class TableFile implements Closeable {
     file.seek(seekOffset);
     short cellOffset = file.readShort();
     if (cellOffset == 0) {
-      cellOffset = (short) (Page.pageSize);
+      cellOffset = (short) (Page.PAGE_SIZE);
     }
 
     short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
@@ -225,17 +225,17 @@ public class TableFile implements Closeable {
 
   private boolean checkPagesize(int sizeRequired, int currentPageNo) {
     try {
-      file.seek((currentPageNo - 1) * Page.pageSize);
+      file.seek((currentPageNo - 1) * Page.PAGE_SIZE);
       byte pageType = file.readByte();
       if (pageType == 0x0D) {
 
-        this.file.seek((currentPageNo - 1) * Page.pageSize + 1);
+        this.file.seek((currentPageNo - 1) * Page.PAGE_SIZE + 1);
         short noOfRecords = this.file.readShort();
 
-        this.file.seek((currentPageNo - 1) * Page.pageSize + 3);
+        this.file.seek((currentPageNo - 1) * Page.PAGE_SIZE + 3);
         short startofCellConcent = file.readShort();
         if (startofCellConcent == 0) {
-          startofCellConcent = (short) (Page.pageSize);
+          startofCellConcent = (short) (Page.PAGE_SIZE);
         }
         short arryLastEntry = (short) (16 + (noOfRecords * 2));
         if ((startofCellConcent - arryLastEntry - 1) < sizeRequired) {
