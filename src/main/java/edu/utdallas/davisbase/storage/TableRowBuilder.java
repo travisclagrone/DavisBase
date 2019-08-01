@@ -2,9 +2,7 @@ package edu.utdallas.davisbase.storage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -83,15 +81,6 @@ public class TableRowBuilder {
 		this.values.add(value);
 	}
 
-
-	private byte[] intToByteArray(final int i) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(bos);
-		dos.writeInt(i);
-		dos.flush();
-		return bos.toByteArray();
-	}
-
 	public byte[] toBytes() {
     List<byte[]> bytesArraysList = new ArrayList<>();
     int finalByteArraySize = 0;
@@ -159,5 +148,6 @@ public class TableRowBuilder {
 		}
 
 		return finalByteArray;
-	}
+  }
+
 }
