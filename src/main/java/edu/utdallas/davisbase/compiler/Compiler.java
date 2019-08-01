@@ -499,33 +499,22 @@ public class Compiler {
   }
 
   /**
-   * @param tableName
-   * @return whether or not the table exists within DavisBase
-   * @throws StorageException
-   * @throws IOException
-   */
-  private boolean isTableExisting(String tableName) throws StorageException, IOException {
-    TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
-    while (table.goToNextRow()) {
-      if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
-          .equalsIgnoreCase(tableName)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Validates that the table exists
+   * Validates that the table exists within DavisBase
    * @param tableName
    * @throws CompileException
    * @throws IOException
    * @throws StorageException
    */
   private void checkTableExists(String tableName)throws CompileException, IOException, StorageException{
-    if(!isTableExisting(tableName)){
-      throw new CompileException("Table " + tableName + " does not exist within DavisBase");
+    TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
+    while (table.goToNextRow()) {
+      if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
+        .equalsIgnoreCase(tableName)) {
+        return;
+      }
     }
+    throw new CompileException("Table " + tableName + " does not exist within DavisBase");
+
   }
 
   /**
