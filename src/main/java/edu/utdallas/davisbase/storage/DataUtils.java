@@ -14,8 +14,12 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.Shorts;
 import edu.utdallas.davisbase.DataType;
+import edu.utdallas.davisbase.NotImplementedException;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -28,7 +32,8 @@ import java.time.Year;
  */
 class DataUtils {
 
-  private static byte[] NULL_BINARY_VALUE = new byte[0];
+  private static byte[] EMPTY_BYTE_ARRAY = new byte[0];
+  private static byte[] NULL_BINARY_VALUE = EMPTY_BYTE_ARRAY;
 
   private DataUtils() {
     throw new IllegalStateException(
@@ -36,7 +41,7 @@ class DataUtils {
             DataUtils.class.getName()));
   }
 
-  //region Convert To Bytes
+  //region Convert (to byte array)
 
   public static byte[] convertToBytes(@Nullable Object value) {
     final byte[] binaryValue;
@@ -162,9 +167,173 @@ class DataUtils {
 
   //endregion
 
-  //region Convert From Bytes
+  //region Output (to binary stream)
 
-  // TODO
+  public static void output(DataOutput output, @Nullable Object value) throws IOException {
+    if (value == null) {
+      outputNull(output);
+    }
+    else if (DataType.TINYINT.getJavaClass().isInstance(value)) {
+      outputTinyInt(output, (Byte) value);
+    }
+    else if (DataType.SMALLINT.getJavaClass().isInstance(value)) {
+      outputSmallInt(output, (Short) value);
+    }
+    else if (DataType.INT.getJavaClass().isInstance(value)) {
+      outputInt(output, (Integer) value);
+    }
+    else if (DataType.BIGINT.getJavaClass().isInstance(value)) {
+      outputBigInt(output, (Long) value);
+    }
+    else if (DataType.FLOAT.getJavaClass().isInstance(value)) {
+      outputFloat(output, (Float) value);
+    }
+    else if (DataType.DOUBLE.getJavaClass().isInstance(value)) {
+      outputDouble(output, (Double) value);
+    }
+    else if (DataType.YEAR.getJavaClass().isInstance(value)) {
+      outputYear(output, (Year) value);
+    }
+    else if (DataType.TIME.getJavaClass().isInstance(value)) {
+      outputTime(output, (LocalTime) value);
+    }
+    else if (DataType.DATETIME.getJavaClass().isInstance(value)) {
+      outputDateTime(output, (LocalDateTime) value);
+    }
+    else if (DataType.DATE.getJavaClass().isInstance(value)) {
+      outputDate(output, (LocalDate) value);
+    }
+    else if (DataType.TEXT.getJavaClass().isInstance(value)) {
+      outputText(output, (String) value);
+    }
+    else {
+      throw new IllegalArgumentException(
+          format("value is neither null nor an instance of %1$s#getJavaClass() for any of %1$s#values(), but rather is an instance of %2$s",
+              DataType.class.getName(),
+              value.getClass().getName()));
+    }
+  }
+
+  public static void outputNull(DataOutput output) throws IOException {
+    final byte[] data = convertNullToBytes();
+    output.write(data);
+  }
+
+  public static void outputTinyInt(DataOutput output, byte value) throws IOException {
+    output.writeByte(value);
+  }
+
+  public static void outputSmallInt(DataOutput output, short value) throws IOException {
+    output.writeShort(value);
+  }
+
+  public static void outputInt(DataOutput output, int value) throws IOException {
+    output.writeInt(value);
+  }
+
+  public static void outputBigInt(DataOutput output, long value) throws IOException {
+    output.writeLong(value);
+  }
+
+  public static void outputFloat(DataOutput output, float value) throws IOException {
+    output.writeFloat(value);
+  }
+
+  public static void outputDouble(DataOutput output, double value) throws IOException {
+    output.writeDouble(value);
+  }
+
+  public static void outputYear(DataOutput output, @NonNull Year value) throws IOException {
+    // Delegate to the byte array conversion method because it contains important validation logic.
+    final byte[] data = convertYearToBytes(value);
+    output.write(data);
+  }
+
+  public static void outputTime(DataOutput output, @NonNull LocalTime value) throws IOException {
+    final int secondOfDay = value.toSecondOfDay();
+    output.writeInt(secondOfDay);
+  }
+
+  public static void outputDateTime(DataOutput output, @NonNull LocalDateTime value) throws IOException {
+    final long epochSecond = value.toEpochSecond(DATETIME_ZONE_OFFSET);
+    output.writeLong(epochSecond);
+  }
+
+  public static void outputDate(DataOutput output, @NonNull LocalDate value) throws IOException {
+    final long epochDay = value.toEpochDay();
+    output.writeLong(epochDay);
+  }
+
+  public static void outputText(DataOutput output, @NonNull String value) throws IOException {
+    // Delegate to the byte array conversion method because it contains important validation logic.
+    final byte[] data = convertTextToBytes(value);
+    output.write(data);
+  }
+
+  //endregion
+
+  //region Input (from binary stream)
+
+  public static @Nullable Object inputNull(DataInput input) throws IOException {
+    assert EMPTY_BYTE_ARRAY != null && EMPTY_BYTE_ARRAY.length == 0;
+
+    input.readFully(EMPTY_BYTE_ARRAY);
+    return null;
+  }
+
+  public static byte inputTinyInt(DataInput input) throws IOException {
+    return input.readByte();
+  }
+
+  public static short inputSmallInt(DataInput input) throws IOException {
+    return input.readShort();
+  }
+
+  public static int inputInt(DataInput input) throws IOException {
+    return input.readInt();
+  }
+
+  public static long inputBigInt(DataInput input) throws IOException {
+    return input.readLong();
+  }
+
+  public static float inputFloat(DataInput input) throws IOException {
+    return input.readFloat();
+  }
+
+  public static double inputDouble(DataInput input) throws IOException {
+    return input.readDouble();
+  }
+
+  public static @NonNull Year inputYear(DataInput input) throws IOException {
+    final byte offsetYear = input.readByte();
+    final int isoYear = offsetYear + YEAR_OFFSET;
+    return Year.of(isoYear);
+  }
+
+  public static @NonNull LocalTime inputTime(DataInput input) throws IOException {
+    final int secondOfDay = input.readInt();
+    return LocalTime.ofSecondOfDay(secondOfDay);
+  }
+
+  public static @NonNull LocalDateTime inputDateTime(DataInput input) throws IOException {
+    final long epochSecond = input.readLong();
+    return LocalDateTime.ofEpochSecond(epochSecond, 0, DATETIME_ZONE_OFFSET);
+  }
+
+  public static @NonNull LocalDate inputDate(DataInput input) throws IOException {
+    final long epochDay = input.readLong();
+    return LocalDate.ofEpochDay(epochDay);
+  }
+
+  public static @NonNull String inputText(DataInput input, byte dataLength) throws IOException {
+    checkArgument(0 <= dataLength, "TEXT dataLength may not be negative.");
+    checkArgument(dataLength <= TEXT_MAX_BINARY_LENGTH, "TEXT dataLength may not be greater than " + TEXT_MAX_BINARY_LENGTH);
+
+    final byte[] data = new byte[dataLength];
+    input.readFully(data);
+    return new String(data, TEXT_CHARSET);
+  }
 
   //endregion
 
