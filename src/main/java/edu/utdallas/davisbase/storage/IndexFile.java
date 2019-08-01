@@ -191,6 +191,7 @@ public class IndexFile implements Closeable {
     
     else if(noOfRecordsInRootPage > 0 && rootPageType == 0x0A) {
       short recordCount = noOfRecordsInRootPage;
+      short matchedRecordOffset = 0;
       short addOffset = 0;
       short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
       boolean valueMatchFlag = false;
@@ -204,13 +205,15 @@ public class IndexFile implements Closeable {
         file.seek(rootPageOffset+recordOffset+2);
         file.read(recordBytes);
         String recordValue = new String(recordBytes);
-        if(indexValue.compareToIgnoreCase(recordValue) == 0)
-          valueMatchFlag = true;          
+        if(indexValue.compareToIgnoreCase(recordValue) == 0) {
+          valueMatchFlag = true;
+          matchedRecordOffset = recordOffset;
+        }
         recordCount--;
         addOffset += 2;
       }
       if(valueMatchFlag)
-        addRowIdInRecord(rootPageOffset, recordOffset, minRecordOffset, rowId);
+        addRowIdInRecord(rootPageOffset, matchedRecordOffset, minRecordOffset, rowId);
       else {
         recordOffset = (short) (minRecordOffset-indexValue.length()-6);
         file.seek(rootPageOffset+recordOffset);
@@ -230,7 +233,7 @@ public class IndexFile implements Closeable {
         file.writeShort(noOfRecordsInRootPage+1);
         file.seek(5);
         int pageNo = file.readInt();
-        IndexPage.sortKeys(file, pageNo);
+        //IndexPage.sortKeys(file, pageNo);
         if(noOfRecordsInRootPage+1 > 3)
           IndexPage.splitLeafPage(file, pageNo);
       }
@@ -290,6 +293,7 @@ public class IndexFile implements Closeable {
       if(pageType == 0x0A) {
         file.seek(pageOffset+1);
         short recordCount = file.readShort();
+        short matchedRecordOffset = 0;
         short addOffset = 0;
         short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
         boolean valueMatchFlag = false;
@@ -303,13 +307,15 @@ public class IndexFile implements Closeable {
           file.seek(pageOffset+recordOffset+2);
           file.read(recordBytes);
           String recordValue = new String(recordBytes);
-          if(recordValue == indexValue)
-            valueMatchFlag = true;          
+          if(recordValue == indexValue) {
+            matchedRecordOffset = recordOffset;
+            valueMatchFlag = true;
+          }
           recordCount--;
           addOffset += 2;
         }
         if(valueMatchFlag)
-          addRowIdInRecord(pageOffset, recordOffset, minRecordOffset, rowId);
+          addRowIdInRecord(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {
           recordOffset = (short) (minRecordOffset-indexValue.length()-6);
           file.seek(pageOffset+recordOffset);
