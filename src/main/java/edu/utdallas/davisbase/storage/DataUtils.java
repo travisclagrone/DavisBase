@@ -1,6 +1,7 @@
 package edu.utdallas.davisbase.storage;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static edu.utdallas.davisbase.DateTimeUtils.DATETIME_ZONE_OFFSET;
 import static edu.utdallas.davisbase.TextUtils.TEXT_CHARSET;
 import static edu.utdallas.davisbase.TextUtils.TEXT_MAX_BINARY_LENGTH;
@@ -13,6 +14,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.Shorts;
 import edu.utdallas.davisbase.DataType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,6 +35,8 @@ class DataUtils {
         format("%s may not be instantiated.",
             DataUtils.class.getName()));
   }
+
+  //region Convert To Bytes
 
   public static byte[] convertToBytes(@Nullable Object value) {
     final byte[] binaryValue;
@@ -81,36 +85,36 @@ class DataUtils {
     return binaryValue;
   }
 
-  private static byte[] convertNullToBytes() {
+  public static byte[] convertNullToBytes() {
     return NULL_BINARY_VALUE;
   }
 
-  private static byte[] convertTinyIntToBytes(byte value) {
+  public static byte[] convertTinyIntToBytes(byte value) {
     return new byte[] { value };
   }
 
-  private static byte[] convertSmallIntToBytes(short value) {
+  public static byte[] convertSmallIntToBytes(short value) {
     return Shorts.toByteArray(value);
   }
 
-  private static byte[] convertIntToBytes(int value) {
+  public static byte[] convertIntToBytes(int value) {
     return Ints.toByteArray(value);
   }
 
-  private static byte[] convertBigIntToBytes(long value) {
+  public static byte[] convertBigIntToBytes(long value) {
     return Longs.toByteArray(value);
   }
 
-  private static byte[] convertFloatToBytes(float value) {
+  public static byte[] convertFloatToBytes(float value) {
     return Ints.toByteArray(floatToIntBits(value));
   }
 
-  private static byte[] convertDoubleToBytes(double value) {
+  public static byte[] convertDoubleToBytes(double value) {
     return Longs.toByteArray(doubleToLongBits(value));
   }
 
-  private static byte[] convertYearToBytes(Year value) {
-    assert value != null;
+  public static byte[] convertYearToBytes(@NonNull Year value) {
+    checkNotNull(value, "value");
 
     final int isoYear = value.getValue();
     final int offsetYear = isoYear - YEAR_OFFSET;
@@ -124,26 +128,26 @@ class DataUtils {
     return new byte[] { (byte) offsetYear };
   }
 
-  private static byte[] convertTimeToBytes(LocalTime value) {
-    assert value != null;
+  public static byte[] convertTimeToBytes(@NonNull LocalTime value) {
+    checkNotNull(value, "value");
 
     return Ints.toByteArray(value.toSecondOfDay());
   }
 
-  private static byte[] convertDateTimeToBytes(LocalDateTime value) {
-    assert value != null;
+  public static byte[] convertDateTimeToBytes(@NonNull LocalDateTime value) {
+    checkNotNull(value, "value");
 
     return Longs.toByteArray(value.toEpochSecond(DATETIME_ZONE_OFFSET));
   }
 
-  private static byte[] convertDateToBytes(LocalDate value) {
-    assert value != null;
+  public static byte[] convertDateToBytes(@NonNull LocalDate value) {
+    checkNotNull(value, "value");
 
     return Longs.toByteArray(value.toEpochDay());
   }
 
-  private static byte[] convertTextToBytes(String value) {
-    assert value != null;
+  public static byte[] convertTextToBytes(@NonNull String value) {
+    checkNotNull(value, "value");
 
     final byte[] binaryValue = value.getBytes(TEXT_CHARSET);
     checkArgument(binaryValue.length <= TEXT_MAX_BINARY_LENGTH,
@@ -155,5 +159,13 @@ class DataUtils {
 
     return binaryValue;
   }
+
+  //endregion
+
+  //region Convert From Bytes
+
+  // TODO
+
+  //endregion
 
 }
