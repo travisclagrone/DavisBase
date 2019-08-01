@@ -7,8 +7,8 @@ import static java.lang.String.format;
 import static java.util.Arrays.copyOf;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,89 +25,106 @@ import java.util.List;
  */
 class TableLeafCellBuffer implements Iterable<byte[]> {
 
-  private final List<byte[]> binaryValues;
+  private final List<byte[]> datas;  // spell-checker:ignore datas
 
   public TableLeafCellBuffer() {
-    this.binaryValues = new ArrayList<>();
+    this.datas = new ArrayList<>();
   }
 
   private TableLeafCellBuffer(int initialSize) {
-    this.binaryValues = new ArrayList<>(initialSize);
+    this.datas = new ArrayList<>(initialSize);
   }
 
   /**
+   * Appends a new column of data to this {@code TableLeafCellBuffer}.
+   *
+   * @param data the data to append as a new column (not null, but may be empty)
    * @see java.util.List#add(Object)
    */
-  public boolean add(byte[] binaryValue) {
-    checkNotNull(binaryValue, "binaryValue");
-    checkArgument(binaryValue.length <= Byte.MAX_VALUE,
-        format("binaryValue may not be longer than %d bytes",
+  public void add(byte[] data) {
+    checkNotNull(data, "data");
+    checkArgument(data.length <= Byte.MAX_VALUE,
+        format("data may not be longer than %d bytes",
             Byte.MAX_VALUE));
-    checkState(binaryValues.size() + 1 <= Byte.MAX_VALUE,
-        format("Cannot accept more than %d elements",
+    checkState(datas.size() < Byte.MAX_VALUE,
+        format("Cannot accept more than %d data columns",
             Byte.MAX_VALUE));
 
-    final byte[] privateBinaryValue = copyOf(binaryValue, binaryValue.length);
-    return binaryValues.add(privateBinaryValue);
+    final byte[] internalArray = copyOf(data, data.length);
+    datas.add(internalArray);
   }
 
   /**
+   * Inserts a new column of data into this {@code TableLeafCellBuffer} at the specified
+   * {@code columnIndex}.
+   * <p>
+   * Does <b>not</b> overwrite the pre-existing column of data (if any) at the specified
+   * {@code columnIndex}, but rather shifts every data array at a column index equal to or greater
+   * than the given {@code columnIndex} to the next greatest column index.
+   *
+   * @param columnIndex
    * @see java.util.List#add(int, Object)
    */
-  public void add(byte columnIndex, byte[] binaryValue) {
-    checkNotNull(binaryValue, "binaryValue");
-    checkArgument(binaryValue.length <= Byte.MAX_VALUE,
-        format("binaryValue may not be longer than %d bytes",
+  public void add(byte columnIndex, byte[] data) {
+    checkNotNull(data, "data");
+    checkArgument(data.length <= Byte.MAX_VALUE,
+        format("data may not be longer than %d bytes",
             Byte.MAX_VALUE));
-    checkState(binaryValues.size() + 1 <= Byte.MAX_VALUE,
+    checkState(datas.size() + 1 <= Byte.MAX_VALUE,
         format("Cannot accept more than %d elements",
             Byte.MAX_VALUE));
 
-    binaryValues.add(columnIndex, binaryValue);
+    final byte[] internalArray = copyOf(data, data.length);
+    datas.add(columnIndex, internalArray);
   }
 
   /**
    * @see java.util.List#get(int)
    */
   public byte[] get(byte columnIndex) {
-    final byte[] privateBinaryValue = binaryValues.get(columnIndex);
-    final byte[] publicBinaryValue = copyOf(privateBinaryValue, privateBinaryValue.length);
-    return publicBinaryValue;
+    final byte[] internalArray = datas.get(columnIndex);
+    final byte[] externalArray = copyOf(internalArray, internalArray.length);
+    return externalArray;
   }
 
   /**
    * @see java.util.List#remove(int)
    */
   public byte[] remove(byte columnIndex) {
-    return binaryValues.remove((int) columnIndex);
+    return datas.remove((int) columnIndex);
   }
 
   /**
    * @see java.util.List#set(int, Object)
    */
-  public byte[] set(byte columnIndex, byte[] binaryValue) {
-    checkNotNull(binaryValue, "binaryValue");
-    checkArgument(binaryValue.length <= Byte.MAX_VALUE,
-        format("binaryValue may not be longer than %d bytes",
+  public byte[] set(byte columnIndex, byte[] data) {
+    checkNotNull(data, "data");
+    checkArgument(data.length <= Byte.MAX_VALUE,
+        format("data may not be longer than %d bytes",
             Byte.MAX_VALUE));
 
-    return binaryValues.set(columnIndex, binaryValue);
+    final byte[] internalArray = copyOf(data, data.length);
+    return datas.set(columnIndex, internalArray);
   }
 
   /**
    * @see java.util.List#isEmpty()
+   * @return {@code true} if-and-only-if this {@code TableLeafCellBuffer} does not contain any data
+   *         instances; empty-but-existent data instances entail <i>not</i> empty
    */
   public boolean isEmpty() {
-    return binaryValues.isEmpty();
+    return datas.isEmpty();
   }
 
   /**
    * @see java.util.List#size()
+   * @return the count of the column-wise data instances that this {@code TableLeafCellBuffer}
+   *         contains; empty-but-existent data instances are counted
    */
   public byte size() {
-    assert binaryValues.size() <= Byte.MAX_VALUE;
+    assert datas.size() <= Byte.MAX_VALUE;
 
-    return (byte) binaryValues.size();
+    return (byte) datas.size();
   }
 
   /**
@@ -119,11 +136,11 @@ class TableLeafCellBuffer implements Iterable<byte[]> {
 
     // Cell Header
     length += 1;  // "Number of Columns" byte field
-    length += binaryValues.size();  // "List of Data Sizes" byte array field
+    length += datas.size();  // "List of Data Sizes" byte array field
 
     // Cell Body
-    for (byte[] binaryValue : this.binaryValues) {
-      length += binaryValue.length;  // "Column Data Value" payload for each column
+    for (byte[] data : this.datas) {
+      length += data.length;  // "Column Data Value" payload for each column
     }
 
     assert length == this.toBytes().length;
@@ -132,13 +149,13 @@ class TableLeafCellBuffer implements Iterable<byte[]> {
 
   @Override
   public Iterator<byte[]> iterator() {
-    final List<byte[]> publicBinaryValues = new ArrayList<>(this.size());
-    for (byte[] privateBinaryValue : this.binaryValues) {
-      final byte[] publicBinaryValue = copyOf(privateBinaryValue, privateBinaryValue.length);
-      publicBinaryValues.add(publicBinaryValue);
+    final List<byte[]> externalArrays = new ArrayList<>(this.size());
+    for (byte[] internalArray : this.datas) {
+      final byte[] externalArray = copyOf(internalArray, internalArray.length);
+      externalArrays.add(externalArray);
     }
 
-    return publicBinaryValues.iterator();
+    return externalArrays.iterator();
   }
 
   /**
@@ -156,13 +173,13 @@ class TableLeafCellBuffer implements Iterable<byte[]> {
     baos.write(this.size());
 
     // Write the list of column data value sizes in the cell header.
-    for (byte[] binaryValue : this.binaryValues) {
-      baos.write(binaryValue.length);
+    for (byte[] data : this.datas) {
+      baos.write(data.length);
     }
 
     // Write the list of column data values in the cell body.
-    for (byte[] binaryValue : this.binaryValues) {
-      baos.write(binaryValue, 0, binaryValue.length);
+    for (byte[] data : this.datas) {
+      baos.write(data, 0, data.length);
     }
 
     final byte[] cell = baos.toByteArray();
@@ -170,36 +187,31 @@ class TableLeafCellBuffer implements Iterable<byte[]> {
   }
 
   /**
-   * @param file             the (open) file from which to read the bytes (not null)
-   * @param fileOffsetOfCell the (valid) position in the file at which to begin reading bytes
+   * @param input the {@link DataInput} from which to read the bytes (not null, open, in a valid
+   *              state, and not empty)
    * @return the {@code TableLeafCellBuffer} representation of the {@link TableFile}
-   *         {@link TablePageType#LEAF LEAF} {@link Page} cell beginning at the given position
+   *         {@link TablePageType#LEAF LEAF} {@link Page} cell beginning at the current position of
+   *         the {@code input} when passed to this method
    * @throws IOException
    */
-  public static TableLeafCellBuffer fromBytes(RandomAccessFile file, long fileOffsetOfCell) throws IOException {
-    checkNotNull(file, "file");
-    checkArgument(file.getChannel().isOpen(), "file is not open");
-    checkArgument(0 <= fileOffsetOfCell, "fileOffsetOfCell may not be negative");
-    checkArgument(fileOffsetOfCell < file.length(), "fileOffsetOfCell must be less than the file length " + file.length());
+  public static TableLeafCellBuffer fromBytes(DataInput input) throws IOException {
+    assert input != null;  // Don't need to actually do a check here since input is dereferenced almost immediately anyway.
 
-    file.seek(fileOffsetOfCell);
-
-    final byte columnCount = file.readByte();
-    assert 0 <= columnCount && columnCount <= Byte.MAX_VALUE;
+    final byte columnCount = input.readByte();
+    assert 1 <= columnCount && columnCount <= Byte.MAX_VALUE;  // At least one since there will should always be the built-in rowId at columIndex zero.
 
     final List<Byte> dataSizes = new ArrayList<>(columnCount);
     for (int i = 0; i < columnCount; i++) {
-      final byte dataSize = file.readByte();
-      assert 0 <= dataSize && dataSize <= Byte.MAX_VALUE;
+      final byte dataSize = input.readByte();
+      assert 0 <= dataSize && dataSize <= Byte.MAX_VALUE;  // Zero dataSize denotes null.
       dataSizes.add(dataSize);
     }
 
     final TableLeafCellBuffer cellBuffer = new TableLeafCellBuffer(columnCount);
     for (byte dataSize : dataSizes) {
-      final byte[] binaryValue = new byte[dataSize];
-      final int countRead = file.read(binaryValue);
-      assert countRead == binaryValue.length;
-      cellBuffer.add(binaryValue);
+      final byte[] data = new byte[dataSize];
+      input.readFully(data);
+      cellBuffer.add(data);
     }
 
     return cellBuffer;
