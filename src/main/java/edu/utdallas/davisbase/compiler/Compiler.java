@@ -62,7 +62,7 @@ public class Compiler {
     }
     else if (command instanceof CreateTableCommandRepresentation) {
       CreateTableCommandRepresentation createTable = (CreateTableCommandRepresentation) command;
-      if(isTableExisting(createTable.getTable())){
+      if(isExistingTable(createTable.getTable())){
         throw new CompileException("Table already exists within DavisBase with that name");
       }
       List<CreateTableCommandColumn> columnSchemas = new ArrayList<>();
@@ -506,7 +506,7 @@ public class Compiler {
    * @throws StorageException
    * @throws IOException
    */
-  private boolean isTableExisting(String tableName) throws StorageException, IOException {
+  private boolean isExistingTable(String tableName) throws StorageException, IOException {
     TableFile table = context.openTableFile(CatalogTable.DAVISBASE_TABLES.getName());
     while (table.goToNextRow()) {
       if (castNonNull(table.readText(DavisBaseTablesTableColumn.TABLE_NAME.getOrdinalPosition()))
@@ -525,7 +525,7 @@ public class Compiler {
    * @throws StorageException
    */
   private void checkTableExists(String tableName)throws CompileException, IOException, StorageException{
-    if(!isTableExisting(tableName)){
+    if(!isExistingTable(tableName)){
       throw new CompileException("Table " + tableName + " does not exist within DavisBase");
     }
   }
