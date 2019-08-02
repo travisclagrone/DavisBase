@@ -20,6 +20,7 @@ public class RowIdUtils {
   public static final int ROWID_MAX_VALUE = Integer.MAX_VALUE - 1;
   public static final int ROWID_MIN_VALUE = 0;
   public static final int ROWID_DEFAULT_VALUE = 0;
+  public static final int ROWID_NULL_VALUE = -1;
 
   private RowIdUtils() {
     throw new IllegalStateException(

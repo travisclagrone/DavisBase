@@ -1,5 +1,7 @@
 package edu.utdallas.davisbase.storage;
 
+import static edu.utdallas.davisbase.RowIdUtils.ROWID_NULL_VALUE;
+import static edu.utdallas.davisbase.storage.RandomAccessFileUtils.skipFully;
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 
@@ -7,19 +9,20 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 class Page {
+  static final byte METADATA_PAGE_TYPE_CODE = -1;
 
-  static final long FILE_OFFSET_OF_METADATA_ROOT_PAGE_NO = 0x05;
+  static final long FILE_OFFSET_OF_METADATA_PAGE_TYPE_CODE = 0x00;
+  static final long FILE_OFFSET_OF_METADATA_CURRENT_ROWID  = 0x01;
+  static final long FILE_OFFSET_OF_METADATA_ROOT_PAGENO    = 0x05;  // spell-checker:ignore pageno
 
+  static final int PAGE_OFFSET_OF_PAGE_TYPE_CODE         = 0X00;
   static final int PAGE_OFFSET_OF_CELL_COUNT             = 0x01;
-  static final int PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO      = 0x06;
+  static final int PAGE_OFFSET_OF_RIGHTMOST_PAGENO       = 0x06;
   static final int PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY = 0x10;
 
+  static final int PAGE_CHILDREN_MAX_COUNT = 2;  // inclusive
   static final int PAGE_OFFSET_SIZE = Short.BYTES;
   static final int PAGE_SIZE = StorageConfiguration.Builder.getDefaultPageSize();
-
-  static final int PAGE_CHILDREN_MAX_COUNT = 2;  // inclusive
-
-  static final int PAYLOAD_MAX_SIZE = Short.MAX_VALUE;
 
 	// called when the interior node is overflowed
 	static int AddInteriorPage(RandomAccessFile file) {
@@ -59,22 +62,23 @@ class Page {
 	}
 
 	static void addTableMetaDataPage(RandomAccessFile file) throws IOException {
-		try {
-			file.setLength(PAGE_SIZE);
-			file.seek(0x00);
-			file.writeByte(-1);
-			int firstPageNo = AddLeafPage(file);
-			int rowId = -1;
-			file.seek(0x01);
-			file.writeInt(rowId);
-			file.seek(0x05);
-			file.writeInt(firstPageNo);
-			file.seek(0x09);
-			file.writeInt(rowId);
-			setPageasRoot(file, firstPageNo);
-		} catch (Exception e) {
+    file.setLength(PAGE_SIZE);
 
-		}
+    file.seek(FILE_OFFSET_OF_METADATA_PAGE_TYPE_CODE);
+    file.writeByte(METADATA_PAGE_TYPE_CODE);
+
+    file.seek(FILE_OFFSET_OF_METADATA_CURRENT_ROWID);
+    file.writeInt(ROWID_NULL_VALUE);
+
+    final int rootPageNo = AddLeafPage(file);
+
+    file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
+    file.writeInt(rootPageNo);
+
+    file.seek(0x09);  // QUESTION What is the field at 0x09 in the metadata page?
+    file.writeInt(ROWID_NULL_VALUE);
+
+    setPageasRoot(file, rootPageNo);
 	}
 
 	// if no space in leaf node
@@ -383,7 +387,7 @@ class Page {
     assert Page.getTablePageType(file, pageNo) == LEAF;
 
     final long fileOffsetOfPage = convertPageNoToFileOffset(pageNo);
-    final long fileOffsetOfPageRightSiblingPageNo = fileOffsetOfPage + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO;
+    final long fileOffsetOfPageRightSiblingPageNo = fileOffsetOfPage + PAGE_OFFSET_OF_RIGHTMOST_PAGENO;
     file.seek(fileOffsetOfPageRightSiblingPageNo);
 
     final int rightSiblingPageNo = file.readInt();
@@ -432,18 +436,18 @@ class Page {
 		try {
 			file.seek(seekParentByte);
 			file.writeInt(-1);// making root
-			updateMetaDataRoot(file, pageNo);
+			setMetaDataRootPageNo(file, pageNo);
 		} catch (Exception e) {
 		}
 	}
 
-	static void updateMetaDataRoot(RandomAccessFile file, int newRootPageNo) throws IOException {
-    file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGE_NO);
+	static void setMetaDataRootPageNo(RandomAccessFile file, int newRootPageNo) throws IOException {
+    file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
     file.writeInt(newRootPageNo);
   }
 
   static int getMetaDataRootPageNo(RandomAccessFile file) throws IOException {
-    file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGE_NO);
+    file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
     return file.readInt();
   }
 
@@ -467,6 +471,11 @@ class Page {
     return fileOffset;
   }
 
+  static void seekPageNo(RandomAccessFile file, int pageNo) throws IOException {
+    final long pageFileOffset = convertPageNoToFileOffset(pageNo);
+    file.seek(pageFileOffset);
+  }
+
   static TablePageType getTablePageType(RandomAccessFile file, int pageNo) throws IOException {
     final long fileOffset = convertPageNoToFileOffset(pageNo);
     file.seek(fileOffset);
@@ -474,6 +483,16 @@ class Page {
     final byte code = file.readByte();
     final TablePageType type = TablePageType.fromCode(code);
     return type;
+  }
+
+  private static void setPageTypeCode(RandomAccessFile file, int pageNo, byte pageTypeCode) throws IOException {
+    seekPageNo(file, pageNo);
+    skipFully(file, PAGE_OFFSET_OF_PAGE_TYPE_CODE);
+    file.write(pageTypeCode);
+  }
+
+  static void setTablePageType(RandomAccessFile file, int pageNo, TablePageType tablePageType) throws IOException {
+    setPageTypeCode(file, pageNo, tablePageType.toCode());
   }
 
   static short getNumberOfCells(RandomAccessFile file, int pageNo) throws IOException {
