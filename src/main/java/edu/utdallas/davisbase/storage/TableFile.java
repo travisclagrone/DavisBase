@@ -45,6 +45,7 @@ public class TableFile implements Closeable {
   protected final RandomAccessFile file;
   private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
   private int currentLeafCellIndex = NULL_LEAF_CELL_INDEX;
+  private static boolean isCurrentRowDeleted = false;
 
   public TableFile(RandomAccessFile file) {
     checkNotNull(file);
@@ -497,7 +498,7 @@ public class TableFile implements Closeable {
 
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
-    // goToNextRow();
+    goToNextRow();
     // goToNextRow();
     // goToNextRow();
 
@@ -513,16 +514,42 @@ public class TableFile implements Closeable {
 
 
     file.seek(cellCountOffset);
+    System.out.println("getFilePointer ::: " + file.getFilePointer());
     short cellCount = file.readShort();
 
-    if (cellCount == 1) {
+    if (cellCount == 1 && currentRowId == maxRowId) {
       // escalate to Parent
+      removeRow(currentCellOffset, cellCount);
+      file.seek(cellCountOffset);
+      System.out.println("getFilePointer ::: " + file.getFilePointer());
+      file.writeShort(-1);
+      // file.writeInt(-1);
+      System.out.println("cellCount ::: " + cellCount);
+
+      removeRow(currentCellOffset, cellCount);
+      file.seek(0x01);
+      System.out.println("getFilePointer ::: " + file.getFilePointer());
+      file.writeInt(-1);
+      this.isCurrentRowDeleted = true;
+
+    } else if (cellCount == 1) {
+      // escalate to Parent
+      removeRow(currentCellOffset, cellCount);
+      file.seek(cellCountOffset);
+      System.out.println("getFilePointer ::: " + file.getFilePointer());
+      file.writeShort(-1);
+      System.out.println("cellCount ::: " + cellCount);
+      this.isCurrentRowDeleted = true;
+
     } else if (currentRowId == maxRowId) {
       removeRow(currentCellOffset, cellCount);
       file.seek(0x01);
-      file.writeInt(maxRowId - 1);
+      //do not decrease maxRow count
+      //file.writeInt(maxRowId - 1);
+      this.isCurrentRowDeleted = true;
     } else {
       removeRow(currentCellOffset, cellCount);
+      this.isCurrentRowDeleted = true;
     }
 
     file.seek(cellCountOffset);
