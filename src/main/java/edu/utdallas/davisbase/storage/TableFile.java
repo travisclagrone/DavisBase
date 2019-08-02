@@ -5,13 +5,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_MAX_VALUE;
 import static edu.utdallas.davisbase.TextUtils.TEXT_CHARSET;
-import static edu.utdallas.davisbase.storage.DataUtils.*;
-import static edu.utdallas.davisbase.storage.Page.*;
-import static edu.utdallas.davisbase.storage.TablePageType.*;
-import static java.lang.Integer.min;
+import static edu.utdallas.davisbase.storage.DataUtils.convertToBytes;
+import static edu.utdallas.davisbase.storage.Page.FILE_OFFSET_OF_METADATA_CURRENT_ROWID;
+import static edu.utdallas.davisbase.storage.Page.FILE_OFFSET_OF_METADATA_ROOT_PAGENO;  // spell-checker:ignore pageno
+import static edu.utdallas.davisbase.storage.Page.PAGE_SIZE;
+import static edu.utdallas.davisbase.storage.Page.convertPageNoToFileOffset;
+import static edu.utdallas.davisbase.storage.Page.getPageOffsetOfCell;
+import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
+import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Shorts;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.YearUtils;
@@ -24,8 +30,6 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.Map;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Shorts;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -77,8 +81,14 @@ public class TableFile implements Closeable {
 
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
 
-    // XXX tableRowBuilder.
-    // TODO final int newRowId = getNextRowId();
+    // QUESTION Can the post-split page actually be INTERIOR? If so, why? If not, what's fucked up?
+
+    //region Allocate new rowId, and update table metadata accordingly.
+
+    final int newRowId = getNextRowId();
+    incrementMetaDataCurrentRowId();
+
+    //endregion
 
     //region Calculate total space required to insert row.
 
@@ -156,7 +166,6 @@ public class TableFile implements Closeable {
 
     //endregion
 
-
     //region Find rightmost leaf page.
 
     // FIXME Initialize pageNo to the root page (from metadata) instead of the last physical page.
@@ -181,7 +190,6 @@ public class TableFile implements Closeable {
 
     //endregion
 
-
     //region Check ahead for overflow, and preemptively "split" page if so.
 
     final boolean overflowFlag = wouldPageOverflow(newCellDataSize, pageNo);
@@ -204,28 +212,6 @@ public class TableFile implements Closeable {
 
       file.seek(pageFileOffset);
       pageTypeCode = file.readByte();
-    }
-
-    //endregion
-
-    //region Allocate new rowId, and update metadata in table accordingly.
-
-    // QUESTION Can the post-split page actually be INTERIOR? If so, why? If not, what's fucked up?
-    final int newRowId;
-    if (pageTypeCode == 0x05) {  // FIXME magic number
-      newRowId = getNextRowIdInterior();  // VERIFY -getNextRowIdInterior(): int
-      file.seek(0x09);  // FIXME magic number
-      file.writeInt(newRowId);
-    }
-    else if (pageTypeCode == 0x0D) {  // FIXME magic number
-      newRowId = getNextRowId();  // VERIFY -getNextRowId(): int
-      file.seek(0x01);  // FIXME magic number
-      file.writeInt(newRowId);
-    }
-    else {
-      throw new IllegalStateException(
-          format("Unrecognized page type serial code: %#04x",
-              pageTypeCode));
     }
 
     //endregion
@@ -682,6 +668,30 @@ public class TableFile implements Closeable {
     int rowId = file.readInt();
     return (rowId + 1);
   }
+
+  private void incrementMetaDataCurrentRowId() throws IOException {
+    this.file.seek(FILE_OFFSET_OF_METADATA_CURRENT_ROWID);
+    final int oldRowId = this.file.readInt();
+
+    checkState(oldRowId < ROWID_MAX_VALUE,
+        format("All ROWIDs up through the maximum of %d have been exhausted. Cannot allocate new ROWID.",  // spell-checker:ignore rowids
+            ROWID_MAX_VALUE));
+    final int newRowId = oldRowId + 1;
+
+    this.file.seek(FILE_OFFSET_OF_METADATA_CURRENT_ROWID);
+    this.file.writeInt(newRowId);
+  }
+
+  private void setMetaDataRootPageNo(int newRootPageNo) throws IOException {
+    this.file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
+    this.file.writeInt(newRootPageNo);
+  }
+
+  private int getMetaDataRootPageNo() throws IOException {
+    this.file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
+    return this.file.readInt();
+  }
+
 
   private boolean hasCurrentLeafPageNo() {
     return currentLeafPageNo != NULL_PAGE_NO;
