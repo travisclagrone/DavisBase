@@ -6,18 +6,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_COLUMN_INDEX;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_MAX_VALUE;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_MIN_VALUE;
+import static edu.utdallas.davisbase.storage.DataUtils.convertToBytes;
 import static java.lang.String.format;
 
-import edu.utdallas.davisbase.RowIdUtils;
-import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class TableRowBuilder {
@@ -137,74 +133,13 @@ public class TableRowBuilder {
 		return this.values.size();
 	}
 
-  // TODO Refactor +toBytes(): byte[] to +toCellBuffer(): TableLeafCellBuffer
-	public byte[] toBytes() {
-    List<byte[]> bytesArraysList = new ArrayList<>();
-    int finalByteArraySize = 0;
-		for (int i = 0; i < this.size(); i++) {
-      final Object value = this.getValue(i);
-
-      final byte[] tempByteArray;
-      if (value.equals("")) {  // An empty string denotes null.
-        tempByteArray = new byte[0];
-      }
-      else if (value instanceof Byte) {
-        tempByteArray = ByteBuffer.allocate(1).put((byte) value).array();
-      }
-      else if (value instanceof Short) {
-        tempByteArray = ByteBuffer.allocate(2).putShort((short) value).array();
-      }
-      else if (value instanceof Integer) {
-        tempByteArray = ByteBuffer.allocate(4).putInt((int) value).array();
-      }
-      else if (value instanceof Long) {
-        tempByteArray = ByteBuffer.allocate(8).putLong((long) value).array();
-      }
-      else if (value instanceof Float) {
-        tempByteArray = ByteBuffer.allocate(4).putFloat((float) value).array();
-      }
-      else if (value instanceof Double) {
-        tempByteArray = ByteBuffer.allocate(8).putDouble((double) value).array();
-      }
-      else if (value instanceof Year) {
-        final int yearInt = ((Year) value).getValue() - 2000;
-        tempByteArray = ByteBuffer.allocate(1).put((byte) yearInt).array();
-      }
-      else if (value instanceof LocalTime) {
-        final int timeInt = ((LocalTime) value).toSecondOfDay();
-        tempByteArray = ByteBuffer.allocate(4).putInt((int) timeInt).array();
-      }
-      else if (value instanceof LocalDateTime) {
-        final long dateTimeInt = ((LocalDateTime) value).toEpochSecond(ZoneOffset.UTC);
-        tempByteArray = ByteBuffer.allocate(8).putLong((long) dateTimeInt).array();
-      }
-      else if (value instanceof LocalDate) {
-        final long dateInt = ((LocalDate) value).toEpochDay();
-        tempByteArray = ByteBuffer.allocate(8).putLong((long) dateInt).array();
-      }
-      else if (value instanceof String) {
-        tempByteArray = value.toString().getBytes();
-      }
-      else {
-        throw new IllegalStateException(format("Value index %d of TableRowBuilder instance is of class %s.", i, value.getClass().getName()));
-      }
-
-			if (tempByteArray.length > 0) {
-        bytesArraysList.add(tempByteArray);
-      }
-			finalByteArraySize = finalByteArraySize + tempByteArray.length;
-		}
-
-		final byte[] finalByteArray = new byte[finalByteArraySize];
-		int k = 0;
-		for (int j = 0; j < bytesArraysList.size(); j++) {
-			for (int i = 0; i < bytesArraysList.get(j).length; i++) {
-				finalByteArray[k] = bytesArraysList.get(j)[i];
-				k++;
-			}
-		}
-
-		return finalByteArray;
+	public TableLeafCellBuffer toLeafCellBuffer() {
+    final TableLeafCellBuffer cell = new TableLeafCellBuffer();
+    for (final @Nullable Object value : this.values) {
+      final byte[] data = convertToBytes(value);
+      cell.add(data);
+    }
+    return cell;
   }
 
 }

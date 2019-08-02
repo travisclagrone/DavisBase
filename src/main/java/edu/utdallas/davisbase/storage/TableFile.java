@@ -77,8 +77,8 @@ public class TableFile implements Closeable {
 
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
 
-    final int newRowId = getNextRowId();
     // XXX tableRowBuilder.
+    // TODO final int newRowId = getNextRowId();
 
     //region Calculate total space required to insert row.
 
@@ -246,18 +246,13 @@ public class TableFile implements Closeable {
 
     //region Insert cell in content area of page.
 
-    // TODO Serialize using TableLeafCellBuffer.
+    tableRowBuilder.prependRowId(newRowId);
+
+    final TableLeafCellBuffer tableLeafCellBuffer = tableRowBuilder.toLeafCellBuffer();
+    final byte[] tableLeafCellData = tableLeafCellBuffer.toBytes();
 
     file.seek(pageFileOffset + newContentPageOffset);
-
-    file.writeByte(nColumns);
-
-    for (int i = 0; i < columnSizes.length; i++) {
-      file.writeByte(columnSizes[i]);
-    }
-
-    file.writeInt(newRowId);
-    file.write(tableRowBuilder.toBytes());
+    file.write(tableLeafCellData);
 
     //endregion
 
