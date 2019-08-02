@@ -19,6 +19,7 @@ public class testIndexFile {
       iFile.addText("ooooo", 11);
       iFile.addText("aaaaaaaaaaa", 13);
 //      iFile.addText("wwwwwww", 10);
+
       System.out.print("happy");
     } catch (Exception e) {
 
