@@ -17,7 +17,9 @@ class Page {
   static final int PAGE_OFFSET_SIZE = Short.BYTES;
   static final int PAGE_SIZE = StorageConfiguration.Builder.getDefaultPageSize();
 
-  static final int MAX_COUNT_OF_CHILDREN = 2;  // inclusive
+  static final int PAGE_CHILDREN_MAX_COUNT = 2;  // inclusive
+
+  static final int PAYLOAD_MAX_SIZE = Short.MAX_VALUE;
 
 	// called when the interior node is overflowed
 	static int AddInteriorPage(RandomAccessFile file) {
@@ -300,7 +302,7 @@ class Page {
 		long seekNoofRecords = (currentPageNo - 1) * PAGE_SIZE + 1;
 		try {
 			file.seek(seekNoofRecords);
-			if (MAX_COUNT_OF_CHILDREN > file.readShort()) {
+			if (PAGE_CHILDREN_MAX_COUNT > file.readShort()) {
 				return true;
 			}
 		} catch (Exception e) {

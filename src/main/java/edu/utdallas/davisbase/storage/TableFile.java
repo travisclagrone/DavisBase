@@ -3,17 +3,17 @@ package edu.utdallas.davisbase.storage;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static edu.utdallas.davisbase.storage.DataUtils.convertToBytes;
-import static edu.utdallas.davisbase.storage.Page.convertPageNoToFileOffset;
-import static edu.utdallas.davisbase.storage.Page.getPageOffsetOfCell;
-import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
-import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
+import static edu.utdallas.davisbase.TextUtils.TEXT_CHARSET;
+import static edu.utdallas.davisbase.storage.DataUtils.*;
+import static edu.utdallas.davisbase.storage.Page.*;
+import static edu.utdallas.davisbase.storage.TablePageType.*;
+import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
 
-import edu.utdallas.davisbase.YearUtils;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.YearUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -23,6 +23,8 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.Map;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Shorts;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -44,12 +46,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class TableFile implements Closeable {
 
-  private static int NULL_LEAF_PAGE_NO = -1;
-  private static short NULL_LEAF_CELL_INDEX = -1;
+  private static final int   NULL_PAGE_NO    = -1;
+  private static final short NULL_CELL_INDEX = -1;
+
+  private int   currentLeafPageNo    = NULL_PAGE_NO;
+  private short currentLeafCellIndex = NULL_CELL_INDEX;
 
   protected final RandomAccessFile file;
-  private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
-  private short currentLeafCellIndex = NULL_LEAF_CELL_INDEX;
 
   public TableFile(RandomAccessFile file) {
     checkNotNull(file);
@@ -72,184 +75,243 @@ public class TableFile implements Closeable {
   }
 
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
-    int currentPageNo;
-    currentPageNo = (int) (this.file.length() / Page.PAGE_SIZE);
-    long pageOffset = (currentPageNo - 1) * Page.PAGE_SIZE;
-    file.seek(pageOffset);
-    byte pageType = file.readByte();
 
-    int rightPageSeekPoint = (int) (pageOffset + 6);
-    file.seek(rightPageSeekPoint);
+    //region Find rightmost leaf page.
+
+    // FIXME Initialize pageNo to the root page (from metadata) instead of the last physical page.
+    int  pageNo = Ints.checkedCast(file.length() / PAGE_SIZE);
+    long pageFileOffset = convertPageNoToFileOffset(pageNo);
+    byte pageTypeCode;
+
+    // TODO Refactor the following two lines to a new method Page+getRightPageNo(file, pageNo)
+    file.seek(pageFileOffset + 6);
     int rightPageNo = file.readInt();
 
-    boolean searchFlag = false;
+    while (rightPageNo != -1) {  // FIXME magic number
+      pageNo = rightPageNo;
+      pageFileOffset = convertPageNoToFileOffset(pageNo);
 
-    while (rightPageNo != -1) {
-      searchFlag = true;
-      rightPageSeekPoint = ((rightPageNo - 1) * Page.PAGE_SIZE) + 6;
-      file.seek(rightPageSeekPoint);
+      file.seek(pageFileOffset + 6);
       rightPageNo = file.readInt();
-      file.seek(rightPageSeekPoint);
-    }
-    if (searchFlag) {
-
-      pageOffset = rightPageSeekPoint - 6;
-      currentPageNo = (int) ((pageOffset / Page.PAGE_SIZE) + 1);
-      searchFlag = false;
     }
 
-    int noOfColumns = tableRowBuilder.getNoOfValues();
-    noOfColumns = noOfColumns + 1;
-    int[] columnSizeArray = new int[noOfColumns];
-    int payLoad = 4;// since rowId is not a part of table row builder
-    columnSizeArray[0] = payLoad;
-    Object data;
-    for (int i = 1; i < columnSizeArray.length; i++) {
-      data = tableRowBuilder.getValueAt(i - 1);
-      switch (data.getClass().getSimpleName()) {
+    file.seek(pageFileOffset);
+    pageTypeCode = file.readByte();
+
+    //endregion
+
+    //region Calculate total space required to insert row.
+
+    // TODO Convert tableRowBuilder to a TableLeafCellBuffer.
+    // TODO "Calculate" cell space requirements using TableLeafCellBuffer.
+
+    final int nColumns = tableRowBuilder.getNoOfValues() + 1;  // count of columns
+    int[] columnSizes = new int[nColumns];  // size in bytes
+    int payloadSize = 0;  // total size in bytes
+
+    columnSizes[0] = 4;  // since rowId is not a part of table row builder
+    payloadSize += columnSizes[0];
+
+    @Nullable Object value;
+    for (int i = 1; i < nColumns; i++) {
+      value = tableRowBuilder.getValueAt(i - 1);
+      switch (value.getClass().getSimpleName()) {
         case "Integer":
-          columnSizeArray[i] = 4;
+          columnSizes[i] = 4;
           break;
-
         case "String":
-
-          columnSizeArray[i] = data.toString().length();
+          columnSizes[i] = value.toString().getBytes(TEXT_CHARSET).length;
           break;
         case "Byte":
-          columnSizeArray[i] = 1;
+          columnSizes[i] = 1;
           break;
         case "Short":
-          columnSizeArray[i] = 2;
+          columnSizes[i] = 2;
           break;
         case "Long":
-          columnSizeArray[i] = 8;
+          columnSizes[i] = 8;
           break;
         case "Float":
-          columnSizeArray[i] = 4;
+          columnSizes[i] = 4;
           break;
         case "Double":
-          columnSizeArray[i] = 8;
+          columnSizes[i] = 8;
           break;
         case "Year":
-          columnSizeArray[i] = 1;
+          columnSizes[i] = 1;
           break;
         case "LocalTime":
-          columnSizeArray[i] = 4;
+          columnSizes[i] = 4;
           break;
         case "LocalDateTime":
-          columnSizeArray[i] = 8;
+          columnSizes[i] = 8;
           break;
         case "LocalDate":
-          columnSizeArray[i] = 8;
+          columnSizes[i] = 8;
           break;
+
+        /* FIXME case ""
+         *
+         * Refactor this case to use proper null evaluation as designed, rather than repurposing the
+         * empty string to serve as a "null object". Make sure to refactor any TableDataRow building
+         * and serialization logic that is coupled to this empty-string-as-null-object design, too.
+         */
         case "":
-          columnSizeArray[i] = 0;
+          columnSizes[i] = 0;
           break;
 
+        /* FIXME default
+         *
+         * The default case should throw an IllegalArgumentException since the value was not an
+         * of the corresponding Java class for any DavisBase data type.
+         */
         default:
-          columnSizeArray[i] = 0;
+          columnSizes[i] = 0;
           break;
-
       }
-      payLoad = (short) (payLoad + columnSizeArray[i]);
+      payloadSize += columnSizes[i];
     }
 
-    int totalSpaceRequired;
+    final int newCellDataSize = (1 + columnSizes.length + payloadSize);
 
-    file.seek(pageOffset);
-    pageType = file.readByte();
-    Boolean splitFlag = false;
+    //endregion
 
-    totalSpaceRequired = (1 + columnSizeArray.length + payLoad);
-    boolean overflowFlag = checkPagesize(totalSpaceRequired, currentPageNo);
+    //region Check ahead for overflow, and preemptively "split" page if so.
+
+    final boolean overflowFlag = wouldPageOverflow(newCellDataSize, pageNo);
+
     if (overflowFlag) {
-      if (pageType == 0x05) {
-        currentPageNo = Page.splitInteriorPage(file, currentPageNo);
-      } else if (pageType == 0x0D) {
-        currentPageNo = Page.splitLeafPage(file, currentPageNo);
-        splitFlag = true;
+      // QUESTION Can the original local pageNo actually be INTERIOR? If so, why? (it shouldn't be) If not, then what step(s) are we missing that's leading us to think that it could be?
+      if (pageTypeCode == 0x05) {  // FIXME magic number
+        pageNo = Page.splitInteriorPage(file, pageNo);  // VERIFY Page+splitInteriorPage(file, pageNo)
       }
-    }
-    if (splitFlag) {
+      else if (pageTypeCode == 0x0D) {  // FIXME magic number
+        pageNo = Page.splitLeafPage(file, pageNo);  // VERIFY Page+splitLeafPage(file, pageNo)
+      }
+      else {
+        throw new IllegalStateException(
+          format("Unrecognized page type serial code: %#04x",
+              pageTypeCode));
+      }
 
-      pageOffset = (currentPageNo - 1) * Page.PAGE_SIZE;
-      splitFlag = false;
-    }
-    file.seek(pageOffset);
-    pageType = file.readByte();
-    long seekOffset = pageOffset + 3;
-    file.seek(seekOffset);
-    short cellOffset = file.readShort();
-    if (cellOffset == 0) {
-      cellOffset = (short) (Page.PAGE_SIZE);
-    }
+      pageFileOffset = convertPageNoToFileOffset(pageNo);
 
-    short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
-
-    int rowId = 0;
-
-    // for (int i = 0; i < columnSizeArray.length; i++) {
-    // file.writeByte(columnSizeArray[i]);
-    // }
-
-    if (pageType == 0x05) {
-      rowId = getNextRowIdInterior();
-      file.seek(0x09);
-      file.writeInt(rowId);
-    } else if (pageType == 0x0D) {
-      rowId = getNextRowId();
-      file.seek(0x01);
-      file.writeInt(rowId);
+      file.seek(pageFileOffset);
+      pageTypeCode = file.readByte();
     }
 
-    file.seek(pageOffset + dataEntryPoint);
-    file.writeByte(noOfColumns);
+    //endregion
 
-    for (int i = 0; i < columnSizeArray.length; i++) {
-      file.writeByte(columnSizeArray[i]);
+    //region Allocate new rowId, and update metadata in table accordingly.
+
+    // QUESTION Can the post-split page actually be INTERIOR? If so, why? If not, what's fucked up?
+    final int newRowId;
+    if (pageTypeCode == 0x05) {  // FIXME magic number
+      newRowId = getNextRowIdInterior();  // VERIFY -getNextRowIdInterior(): int
+      file.seek(0x09);  // FIXME magic number
+      file.writeInt(newRowId);
     }
-    file.writeInt(rowId);
+    else if (pageTypeCode == 0x0D) {  // FIXME magic number
+      newRowId = getNextRowId();  // VERIFY -getNextRowId(): int
+      file.seek(0x01);  // FIXME magic number
+      file.writeInt(newRowId);
+    }
+    else {
+      throw new IllegalStateException(
+          format("Unrecognized page type serial code: %#04x",
+              pageTypeCode));
+    }
+
+    //endregion
+
+    //region Calculate new "cell content area" page offset.
+
+    file.seek(pageFileOffset + 3);  // FIXME magic number
+    short oldContentPageOffset = file.readShort();
+    assert oldContentPageOffset >= 0;
+
+    if (oldContentPageOffset <= 0) {
+      oldContentPageOffset = Shorts.checkedCast(PAGE_SIZE);
+    }
+
+    final short newContentPageOffset = Shorts.checkedCast(oldContentPageOffset - newCellDataSize);
+
+    //endregion
+
+    //region Insert cell in content area of page.
+
+    // TODO Serialize using TableLeafCellBuffer.
+
+    file.seek(pageFileOffset + newContentPageOffset);
+
+    file.writeByte(nColumns);
+
+    for (int i = 0; i < columnSizes.length; i++) {
+      file.writeByte(columnSizes[i]);
+    }
+
+    file.writeInt(newRowId);
     file.write(tableRowBuilder.toBytes());
 
-    file.seek(pageOffset + 1);
-    int noOfCellsInPage = file.readShort();
-    noOfCellsInPage = noOfCellsInPage + 1;
-    file.seek(pageOffset + 1);
-    file.writeShort(noOfCellsInPage);
+    //endregion
 
-    file.seek(pageOffset + 3);
-    file.writeShort(dataEntryPoint);// writing Offset
+    //region Increment cell count in page.
 
-    file.seek(pageOffset + 16 + 2 * (noOfCellsInPage - 1));
-    file.writeShort(dataEntryPoint);
+    file.seek(pageFileOffset + 1);  // FIXME magic number
+    final short oldPageCellCount = file.readShort();
 
-    // Update table meta data with rowId
-    // file.seek(0x01);
-    // file.writeInt(rowId);
+    final short newPageCellCount = Shorts.checkedCast(oldPageCellCount + 1);
 
+    file.seek(pageFileOffset + 1);  // FIXME magic number
+    file.writeShort(newPageCellCount);
+
+    //endregion
+
+    //region Update "cell content area" page offset in page.
+
+    file.seek(pageFileOffset + 3);  // FIXME magic number
+    file.writeShort(newContentPageOffset);
+
+    //endregion
+
+    //region Append the new cell's page offset to the array of such in page.
+
+    file.seek(pageFileOffset + 16 + 2 * (newPageCellCount - 1));  // FIXME magic numbers
+    file.writeShort(newContentPageOffset);
+
+    /* NOTE newContentPageOffset
+     *
+     * The cell was inserted beginning at newContentPageOffset, and so newContentPageOffset is
+     * exactly the newCellPageOffset for this cell.
+     */
+
+    //endregion
+
+    // TODO Recursively update ancestors with new greatest row id key (as far as applicable, anyway).
   }
 
   private void appendRow(TableLeafCellBuffer cellBuffer) throws IOException {
-    // TODO implement TableFile-appendRow(TableLeafCellBuffer)
+    // TODO TableFile-appendRow(TableLeafCellBuffer)
     throw new NotImplementedException("TableFile-appendRow(TableLeafCellBuffer)");
   }
 
-  private boolean checkPagesize(int sizeRequired, int currentPageNo) {
+  // VERIFY -wouldPageOverflow(newCellDataSize, pageNo): boolean
+  private boolean wouldPageOverflow(int newCellDataSize, int pageNo) {
     try {
-      file.seek((currentPageNo - 1) * Page.PAGE_SIZE);
+      file.seek((pageNo - 1) * PAGE_SIZE);
       byte pageType = file.readByte();
       if (pageType == 0x0D) {
 
-        this.file.seek((currentPageNo - 1) * Page.PAGE_SIZE + 1);
+        this.file.seek((pageNo - 1) * PAGE_SIZE + 1);
         short noOfRecords = this.file.readShort();
 
-        this.file.seek((currentPageNo - 1) * Page.PAGE_SIZE + 3);
+        this.file.seek((pageNo - 1) * PAGE_SIZE + 3);
         short startofCellConcent = file.readShort();
         if (startofCellConcent == 0) {
-          startofCellConcent = (short) (Page.PAGE_SIZE);
+          startofCellConcent = (short) (PAGE_SIZE);
         }
         short arryLastEntry = (short) (16 + (noOfRecords * 2));
-        if ((startofCellConcent - arryLastEntry - 1) < sizeRequired) {
+        if ((startofCellConcent - arryLastEntry - 1) < newCellDataSize) {
           return true;
         }
       } else {// to Update in Part 2 for the remainig page types
@@ -312,7 +374,6 @@ public class TableFile implements Closeable {
     return valueSizeInBytes <= 0;
   }
 
-  // TODO How account for null values?
   private void goToCurrentLeafPageCellColumnValue(int columnIndex)
       throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
@@ -506,7 +567,7 @@ public class TableFile implements Closeable {
   }
 
   public void removeRow() throws IOException {
-    // TODO Implement TableFile.removeRow()
+    // TODO TableFile+removeRow()
     throw new NotImplementedException();
   }
 
@@ -619,11 +680,11 @@ public class TableFile implements Closeable {
   }
 
   private boolean hasCurrentLeafPageNo() {
-    return currentLeafPageNo != NULL_LEAF_PAGE_NO;
+    return currentLeafPageNo != NULL_PAGE_NO;
   }
 
   private boolean hasCurrentLeafCellIndex() {
-    return currentLeafCellIndex != NULL_LEAF_CELL_INDEX;
+    return currentLeafCellIndex != NULL_CELL_INDEX;
   }
 
   private boolean hasCurrentRow() throws IOException {
