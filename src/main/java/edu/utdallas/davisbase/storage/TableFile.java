@@ -3,6 +3,7 @@ package edu.utdallas.davisbase.storage;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static edu.utdallas.davisbase.RowIdUtils.ROWID_MAX_VALUE;
 import static edu.utdallas.davisbase.TextUtils.TEXT_CHARSET;
 import static edu.utdallas.davisbase.storage.DataUtils.*;
 import static edu.utdallas.davisbase.storage.Page.*;
@@ -668,9 +669,12 @@ public class TableFile implements Closeable {
   }
 
   private int getNextRowId() throws IOException {
-    file.seek(0x01);
-    int rowId = file.readInt();
-    return (rowId + 1);
+    final int currentMaxRowId = this.getCurrentMaxRowId();
+    checkState(currentMaxRowId < ROWID_MAX_VALUE,
+        format("Cannot get the next allocatable ROWID value because the maximum ROWID of %d has already been allocated for this table.",
+            ROWID_MAX_VALUE));
+    final int nextRowId = currentMaxRowId + 1;
+    return nextRowId;
   }
 
   private int getNextRowIdInterior() throws IOException {
