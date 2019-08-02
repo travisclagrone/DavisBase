@@ -439,7 +439,7 @@ public class IndexPage {
 				file.seek(pageOffset + jthRead + 1);
 				jthNoOfBytes = file.readByte();
 				jthByteArray = new byte[jthNoOfBytes];
-				file.seek(pageOffset + jthRead + 1);
+				file.seek(pageOffset + jthRead + 1 + 1);
 				file.read(jthByteArray);
 				if (prevIndexGreaterThanLaterIndex(ithByteArray, jthByteArray)) {
 					file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
