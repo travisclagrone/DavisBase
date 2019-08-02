@@ -498,7 +498,7 @@ public class TableFile implements Closeable {
 
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
-    goToNextRow();
+    //goToNextRow();
     // goToNextRow();
     // goToNextRow();
 
