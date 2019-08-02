@@ -1,6 +1,9 @@
 package edu.utdallas.davisbase.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static edu.utdallas.davisbase.RowIdUtils.ROWID_MAX_VALUE;
+import static edu.utdallas.davisbase.RowIdUtils.ROWID_MIN_VALUE;
 import static java.lang.String.format;
 
 import java.nio.ByteBuffer;
@@ -10,11 +13,12 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class TableRowBuilder {
 
-	private final List<Object> values = new ArrayList<>();
+	private final LinkedList<Object> values = new LinkedList<>();
 
 	public int getNoOfValues() {
 		return this.values.size();
@@ -80,6 +84,11 @@ public class TableRowBuilder {
 		checkNotNull(value);
 		this.values.add(value);
 	}
+
+  void prependRowId(int rowId) {
+    checkArgument(ROWID_MIN_VALUE <= rowId && rowId <= ROWID_MAX_VALUE);
+    this.values.addFirst(rowId);
+  }
 
 	public byte[] toBytes() {
     List<byte[]> bytesArraysList = new ArrayList<>();
