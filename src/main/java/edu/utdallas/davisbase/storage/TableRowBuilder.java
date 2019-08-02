@@ -1,11 +1,14 @@
 package edu.utdallas.davisbase.storage;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static edu.utdallas.davisbase.RowIdUtils.ROWID_COLUMN_INDEX;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_MAX_VALUE;
 import static edu.utdallas.davisbase.RowIdUtils.ROWID_MIN_VALUE;
 import static java.lang.String.format;
 
+import edu.utdallas.davisbase.RowIdUtils;
 import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,18 +18,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class TableRowBuilder {
 
 	private final LinkedList<Object> values = new LinkedList<>();
-
-	public int getNoOfValues() {
-		return this.values.size();
-	}
-
-	public Object getValueAt(int index) {
-		return this.values.get(index);
-	}
 
 	public TableRowBuilder() {
 
@@ -90,11 +86,63 @@ public class TableRowBuilder {
     this.values.addFirst(rowId);
   }
 
+  /**
+   * Replaces the value at index
+   * {@link edu.utdallas.davisbase.RowIdUtils#ROWID_COLUMN_INDEX RowIdUtils.ROWID_COLUMN_INDEX} in
+   * this {@code TableRowBuilder} with {@code newRowId}. If the index {@code ROWID_COLUMN_INDEX}
+   * does not currently exist in
+   *
+   * @param newRowId the value with which to replace the old logical ROWID value in this
+   *                 {@code TableRowBuilder}
+   * @see RowIdUtils
+   */
+  void replaceRowId(int newRowId) {
+    checkArgument(ROWID_MIN_VALUE <= newRowId && newRowId <= ROWID_MAX_VALUE);
+    checkState(!this.isEmpty(),
+        format("Cannot replace this' old ROWID value with newRowId %d because this is empty.",
+            newRowId));
+
+    this.values.set(ROWID_COLUMN_INDEX, newRowId);
+  }
+
+  /**
+   * @return the value at index
+   *         {@link edu.utdallas.davisbase.RowIdUtils#ROWID_COLUMN_INDEX RowIdUtils.ROWID_COLUMN_INDEX}
+   *         in this {@code TableRowBuilder} as the type of a ROWID only if the index exists, the
+   *         value is not null, and the value is an instance of the type of a ROWID
+   */
+  int getRowId() {
+    return (int) this.values.get(ROWID_COLUMN_INDEX);
+  }
+
+  /**
+   * @param index the zero-based index of the `index`-th value in this {@code TableRowBuilder}
+   * @return the value at the given {@code index} in this {@code TableRowBuilder)}
+   */
+	public @Nullable Object getValue(int index) {
+		return this.values.get(index);
+  }
+
+  /**
+   * @return @{code true} if-and-only-if this {@code TableRowBuilder} does not contain any values
+   */
+  public boolean isEmpty() {
+    return this.values.isEmpty();
+  }
+
+  /**
+   * @return the count of values currently in this {@code TableRowBuilder}
+   */
+  public int size() {
+		return this.values.size();
+	}
+
+  // TODO Refactor +toBytes(): byte[] to +toCellBuffer(): TableLeafCellBuffer
 	public byte[] toBytes() {
     List<byte[]> bytesArraysList = new ArrayList<>();
     int finalByteArraySize = 0;
-		for (int i = 0; i < this.getNoOfValues(); i++) {
-      final Object value = this.getValueAt(i);
+		for (int i = 0; i < this.size(); i++) {
+      final Object value = this.getValue(i);
 
       final byte[] tempByteArray;
       if (value.equals("")) {  // An empty string denotes null.

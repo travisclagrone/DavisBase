@@ -77,36 +77,15 @@ public class TableFile implements Closeable {
 
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
 
-    //region Find rightmost leaf page.
-
-    // FIXME Initialize pageNo to the root page (from metadata) instead of the last physical page.
-    int  pageNo = Ints.checkedCast(file.length() / PAGE_SIZE);
-    long pageFileOffset = convertPageNoToFileOffset(pageNo);
-    byte pageTypeCode;
-
-    // TODO Refactor the following two lines to a new method Page+getRightPageNo(file, pageNo)
-    file.seek(pageFileOffset + 6);
-    int rightPageNo = file.readInt();
-
-    while (rightPageNo != -1) {  // FIXME magic number
-      pageNo = rightPageNo;
-      pageFileOffset = convertPageNoToFileOffset(pageNo);
-
-      file.seek(pageFileOffset + 6);
-      rightPageNo = file.readInt();
-    }
-
-    file.seek(pageFileOffset);
-    pageTypeCode = file.readByte();
-
-    //endregion
+    final int newRowId = getNextRowId();
+    // XXX tableRowBuilder.
 
     //region Calculate total space required to insert row.
 
     // TODO Convert tableRowBuilder to a TableLeafCellBuffer.
     // TODO "Calculate" cell space requirements using TableLeafCellBuffer.
 
-    final int nColumns = tableRowBuilder.getNoOfValues() + 1;  // count of columns
+    final int nColumns = tableRowBuilder.size() + 1;  // count of columns
     int[] columnSizes = new int[nColumns];  // size in bytes
     int payloadSize = 0;  // total size in bytes
 
@@ -115,7 +94,7 @@ public class TableFile implements Closeable {
 
     @Nullable Object value;
     for (int i = 1; i < nColumns; i++) {
-      value = tableRowBuilder.getValueAt(i - 1);
+      value = tableRowBuilder.getValue(i - 1);
       switch (value.getClass().getSimpleName()) {
         case "Integer":
           columnSizes[i] = 4;
@@ -176,6 +155,32 @@ public class TableFile implements Closeable {
     final int newCellDataSize = (1 + columnSizes.length + payloadSize);
 
     //endregion
+
+
+    //region Find rightmost leaf page.
+
+    // FIXME Initialize pageNo to the root page (from metadata) instead of the last physical page.
+    int  pageNo = Ints.checkedCast(file.length() / PAGE_SIZE);
+    long pageFileOffset = convertPageNoToFileOffset(pageNo);
+    byte pageTypeCode;
+
+    // TODO Refactor the following two lines to a new method Page+getRightPageNo(file, pageNo)
+    file.seek(pageFileOffset + 6);
+    int rightPageNo = file.readInt();
+
+    while (rightPageNo != -1) {  // FIXME magic number
+      pageNo = rightPageNo;
+      pageFileOffset = convertPageNoToFileOffset(pageNo);
+
+      file.seek(pageFileOffset + 6);
+      rightPageNo = file.readInt();
+    }
+
+    file.seek(pageFileOffset);
+    pageTypeCode = file.readByte();
+
+    //endregion
+
 
     //region Check ahead for overflow, and preemptively "split" page if so.
 
