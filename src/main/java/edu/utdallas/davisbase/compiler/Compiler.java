@@ -392,9 +392,7 @@ public class Compiler {
    */
   private boolean isUnique(List<String> columnSpecs) {
     if (null != columnSpecs) {
-      if(columnSpecs.contains("UNIQUE")){
-        return true;
-      }
+      return columnSpecs.stream().anyMatch("unique"::equalsIgnoreCase);
     }
     return false;
   }
