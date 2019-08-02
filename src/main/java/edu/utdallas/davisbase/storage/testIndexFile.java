@@ -13,11 +13,11 @@ public class testIndexFile {
           "C:\\Users\\Supriya\\Documents\\GitHub\\DavisBase\\data\\Indextest1.tbl", "rw");
       IndexFile iFile = new IndexFile(file);
       System.out.println("happy");
-
-//      iFile.addText("ppppppp", 10);
-      iFile.addText("ooooo", 11);
+//
+      iFile.addText("ppppppp", 10);
       iFile.addText("iiii", 12);
-//      iFile.addText("aaaaaaaaaaa", 13);
+      iFile.addText("ooooo", 11);
+      iFile.addText("aaaaaaaaaaa", 13);
 //      iFile.addText("wwwwwww", 10);
       System.out.print("happy");
     } catch (Exception e) {
