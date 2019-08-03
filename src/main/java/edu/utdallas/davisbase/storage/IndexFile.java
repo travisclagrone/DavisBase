@@ -299,12 +299,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -485,12 +484,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -666,12 +664,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -847,12 +844,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1028,12 +1024,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1209,12 +1204,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1390,12 +1384,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1573,12 +1566,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1757,12 +1749,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1941,12 +1932,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
