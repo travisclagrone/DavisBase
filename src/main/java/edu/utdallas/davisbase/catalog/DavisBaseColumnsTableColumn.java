@@ -1,29 +1,36 @@
 package edu.utdallas.davisbase.catalog;
 
-import static java.lang.String.format;
-
 import edu.utdallas.davisbase.DataType;
+
+import static java.lang.String.format;
 
 /**
  * An enumerated column schema for the {@link CatalogTable#DAVISBASE_COLUMNS davisbase_columns}
  * catalog table.
  */
 public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
-  ROWID            (DataType.INT,     false),
-  TABLE_NAME       (DataType.TEXT,    false),
-  COLUMN_NAME      (DataType.TEXT,    false),
-  DATA_TYPE        (DataType.TEXT,    false),
-  ORDINAL_POSITION (DataType.TINYINT, false),
-  IS_NULLABLE      (DataType.TEXT,    false);
+  ROWID            (DataType.INT,     false, false, false),
+  TABLE_NAME       (DataType.TEXT,    false, true,  false),
+  COLUMN_NAME      (DataType.TEXT,    false, false, false),
+  DATA_TYPE        (DataType.TEXT,    false, false, false),
+  ORDINAL_POSITION (DataType.TINYINT, false, false, false),
+  IS_NULLABLE      (DataType.TEXT,    false, false, false),
+  IS_UNIQUE        (DataType.TEXT,    false, false, false),
+  COLUMN_KEY       (DataType.TEXT,    false, false, false);
 
   private final DataType dataType;
   private final boolean isNullable;
+  private final boolean isUnique;
+  private final boolean isPrimaryKey;
 
-  private DavisBaseColumnsTableColumn(DataType dataType, boolean isNullable) {
+  private DavisBaseColumnsTableColumn(DataType dataType, boolean isNullable, boolean isUnique, boolean isPrimaryKey) {
     assert dataType != null : "dataType should not be null";
+    assert !isPrimaryKey || (isNullable && isUnique);
 
     this.dataType = dataType;
     this.isNullable = isNullable;
+    this.isUnique = isUnique;
+    this.isPrimaryKey = isPrimaryKey;
   }
 
   @Override
@@ -46,6 +53,16 @@ public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
   @Override
   public boolean isNullable() {
     return isNullable;
+  }
+
+  @Override
+  public boolean isUnique() {
+    return isUnique;
+  }
+
+  @Override
+  public boolean isPrimaryKey() {
+    return isPrimaryKey;
   }
 
 }
