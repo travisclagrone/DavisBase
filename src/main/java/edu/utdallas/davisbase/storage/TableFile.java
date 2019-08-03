@@ -6,7 +6,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
 import static java.lang.String.format;
-
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.YearUtils;
 import java.io.Closeable;
@@ -21,22 +20,22 @@ import java.util.ArrayList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
-* A DavisBase "Table" file.
-*
-* A {@link TableFile} object is the lowest-level <i>structured</i> interface to a DavisBase "Table"
-* file. It is intended to wrap a live (albeit closeable) file connection, and thereby abstract
-* access and manipulation of the underlying binary file as if it were <b>a collection of
-* records</b>.
-*
-* A {@link TableFile} object functions similarly to a mutable forward-only cursor.
-*
-* @apiNote Unlike a conceptual "table", a {@link TableFile} object does not have a schema. This is
-*          because the {@link TableFile} class is intended to abstract only the binary structures
-*          and algorithms (e.g. paging, record de-/serialization, b-tree balancing, etc.), and be
-*          used by other higher-level classes to effect a schematic table and complex SQL
-*          operations. As such, <b>schematically correct reading and writing of records is the
-*          responsibility of the code using a {@link TableFile} object</b>.
-*/
+ * A DavisBase "Table" file.
+ *
+ * A {@link TableFile} object is the lowest-level <i>structured</i> interface to a DavisBase "Table"
+ * file. It is intended to wrap a live (albeit closeable) file connection, and thereby abstract
+ * access and manipulation of the underlying binary file as if it were <b>a collection of
+ * records</b>.
+ *
+ * A {@link TableFile} object functions similarly to a mutable forward-only cursor.
+ *
+ * @apiNote Unlike a conceptual "table", a {@link TableFile} object does not have a schema. This is
+ *          because the {@link TableFile} class is intended to abstract only the binary structures
+ *          and algorithms (e.g. paging, record de-/serialization, b-tree balancing, etc.), and be
+ *          used by other higher-level classes to effect a schematic table and complex SQL
+ *          operations. As such, <b>schematically correct reading and writing of records is the
+ *          responsibility of the code using a {@link TableFile} object</b>.
+ */
 public class TableFile implements Closeable {
 
   private static int NULL_LEAF_PAGE_NO = -1;
@@ -161,9 +160,9 @@ public class TableFile implements Closeable {
     totalSpaceRequired = (1 + columnSizeArray.length + payLoad);
     boolean overflowFlag = checkPagesize(totalSpaceRequired, currentPageNo);
     if (overflowFlag) {
-      //			if (pageType == 0x05) {
-      //				currentPageNo = Page.splitInteriorPage(file, currentPageNo);
-      //			} else
+      // if (pageType == 0x05) {
+      // currentPageNo = Page.splitInteriorPage(file, currentPageNo);
+      // } else
       //
       if (pageType == 0x0D) {
         currentPageNo = Page.splitLeafPage(file, currentPageNo, rowId);
@@ -187,7 +186,7 @@ public class TableFile implements Closeable {
 
     rowId = 0;
 
-      // for (int i = 0; i < columnSizeArray.length; i++) {
+    // for (int i = 0; i < columnSizeArray.length; i++) {
     // file.writeByte(columnSizeArray[i]);
     // }
 
@@ -235,7 +234,7 @@ public class TableFile implements Closeable {
   private boolean checkPagesize(int sizeRequired, int currentPageNo) {
     try {
       file.seek(Page.convertPageNoToFileOffset(currentPageNo));
-      //			file.seek((currentPageNo - 1) * Page.pageSize);
+      // file.seek((currentPageNo - 1) * Page.pageSize);
       byte pageType = file.readByte();
       if (pageType == 0x0D) {
 
@@ -297,43 +296,43 @@ public class TableFile implements Closeable {
 
   private boolean valueOfCurrentRowColumnIsNull(int columnIndex) throws IOException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     final short pageOffsetOfCell =
-    Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
+        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final int valueSizeInBytes =
-    Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
+        Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
     return valueSizeInBytes <= 0;
   }
 
   // TODO How account for null values?
   private void goToCurrentLeafPageCellColumnValue(int columnIndex)
-  throws IOException, StorageException {
+      throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     final short pageOffsetOfCell =
-    Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
+        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final byte columnCount = Page.getNumberOfColumnsOfTableLeafCell(file, fileOffsetOfPageCell);
     if (!(columnIndex < columnCount)) {
       throw new StorageException(
-      format("columnIndex (%d) is not less than columnCount (%d)", columnIndex, columnCount));
+          format("columnIndex (%d) is not less than columnCount (%d)", columnIndex, columnCount));
     }
 
     int cellOffset = 1 + columnCount; // 1 to account for the initial byte of column count.
     for (int i = 0; i < columnIndex; i++) {
       cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, i);
-      //        cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
+      // cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
     }
 
     final long fileOffsetOfPageCellColumnValue = fileOffsetOfPageCell + cellOffset;
@@ -342,9 +341,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Byte readTinyInt(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -356,9 +355,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Short readSmallInt(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -370,9 +369,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Integer readInt(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -384,9 +383,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Long readBigInt(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -398,9 +397,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Float readFloat(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -412,9 +411,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Double readDouble(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -426,9 +425,9 @@ public class TableFile implements Closeable {
 
   public @Nullable Year readYear(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -440,9 +439,9 @@ public class TableFile implements Closeable {
 
   public @Nullable LocalTime readTime(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -453,11 +452,11 @@ public class TableFile implements Closeable {
   }
 
   public @Nullable LocalDateTime readDateTime(int columnIndex)
-  throws IOException, StorageException {
+      throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -469,9 +468,9 @@ public class TableFile implements Closeable {
 
   public @Nullable LocalDate readDate(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     if (valueOfCurrentRowColumnIsNull(columnIndex)) {
       return null;
@@ -483,17 +482,17 @@ public class TableFile implements Closeable {
 
   public @Nullable String readText(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-    "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     checkState(this.hasCurrentRow(),
-    "tableFile is not pointing to a current row from which to read");
+        "tableFile is not pointing to a current row from which to read");
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     final short pageOffsetOfCell =
-    Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
+        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, (short) this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final int valueSizeInBytes =
-    Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
+        Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
     if (valueSizeInBytes <= 0) {
       return null;
     }
@@ -506,7 +505,7 @@ public class TableFile implements Closeable {
 
   public void removeRow() throws IOException {
     // int cellCountoffset = 0x01;
-    //goToNextRow();
+    // goToNextRow();
     // goToNextRow();
     // goToNextRow();
 
@@ -525,35 +524,37 @@ public class TableFile implements Closeable {
     System.out.println("getFilePointer ::: " + file.getFilePointer());
     short cellCount = file.readShort();
 
+    // leaf = rootpage, only 1 record in the table
     if (cellCount == 1 && currentRowId == maxRowId) {
       // escalate to Parent
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
-      System.out.println("getFilePointer ::: " + file.getFilePointer());
-      file.writeShort(-1);
+      //System.out.println("getFilePointer ::: " + file.getFilePointer());
+      file.writeShort(cellCount - 1);
       // file.writeInt(-1);
       System.out.println("cellCount ::: " + cellCount);
 
       removeRow(currentCellOffset, cellCount);
       file.seek(0x01);
-      System.out.println("getFilePointer ::: " + file.getFilePointer());
-      file.writeInt(-1);
+      // System.out.println("getFilePointer ::: " + file.getFilePointer());
       this.isCurrentRowDeleted = true;
 
+      // System.out.println("getFilePointer ::: " + file.getFilePointer());
+      //
     } else if (cellCount == 1) {
       // escalate to Parent
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
-      System.out.println("getFilePointer ::: " + file.getFilePointer());
+      // System.out.println("getFilePointer ::: " + file.getFilePointer());
       file.writeShort(-1);
-      System.out.println("cellCount ::: " + cellCount);
+      // System.out.println("cellCount ::: " + cellCount);
       this.isCurrentRowDeleted = true;
 
     } else if (currentRowId == maxRowId) {
       removeRow(currentCellOffset, cellCount);
       file.seek(0x01);
-      //do not decrease maxRow count
-      //file.writeInt(maxRowId - 1);
+      // do not decrease maxRow count
+      // file.writeInt(maxRowId - 1);
       this.isCurrentRowDeleted = true;
     } else {
       removeRow(currentCellOffset, cellCount);
@@ -564,16 +565,16 @@ public class TableFile implements Closeable {
     file.writeShort(cellCount - 1);
   }
 
-  private void removeRow(long offset, long currentCellOffset) throws IOException {
-    file.seek(offset);
+  private void removeRow(long currentCellOffset, long cellCount) throws IOException {
+    file.seek(currentCellOffset);
     ArrayList<Short> offsetLocationList = new ArrayList<>();
-    for (int i = 0; i < currentCellOffset; i++) {
+    for (int i = 0; i < cellCount; i++) {
       short offsetLocation = file.readShort();
       offsetLocationList.add(offsetLocation);
     }
     offsetLocationList.remove(this.currentLeafCellIndex);
     offsetLocationList.add((short) 0x00);
-    file.seek(offset);
+    file.seek(currentCellOffset);
 
     for (short val : offsetLocationList) {
       file.writeShort(val);
@@ -724,7 +725,7 @@ public class TableFile implements Closeable {
     assert this.hasCurrentLeafPageNo() == this.hasCurrentLeafCellIndex();
 
     return this.hasCurrentLeafPageNo() && Page.exists(file, this.currentLeafPageNo)
-    && this.currentLeafCellIndex < Page.getNumberOfCells(file, currentLeafPageNo);
+        && this.currentLeafCellIndex < Page.getNumberOfCells(file, currentLeafPageNo);
   }
 
   private int getLeftmostLeafPageNo() throws IOException {
