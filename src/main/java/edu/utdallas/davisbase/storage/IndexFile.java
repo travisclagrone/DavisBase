@@ -352,8 +352,7 @@ public class IndexFile implements Closeable {
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
           file.writeShort(noOfRecords+1);
-          file.seek(5);
-          int pageNo = file.readInt();
+          int pageNo = (int) ((pageOffset/512)+1);
           IndexPage.sortKeys(file, pageNo);
           if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
