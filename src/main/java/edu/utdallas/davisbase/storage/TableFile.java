@@ -535,12 +535,11 @@ public class TableFile implements Closeable {
       this.isCurrentRowDeleted = true;
 
     } else if (cellCount == 1) {
-      // escalate to Parent
+
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
-      // System.out.println("getFilePointer ::: " + file.getFilePointer());
-      file.writeShort(-1);
-      // System.out.println("cellCount ::: " + cellCount);
+      file.writeShort(cellCount - 1);
+      removeLeafFromParent();
       this.isCurrentRowDeleted = true;
 
     } else if (currentRowId + 1 == cellCount) {
@@ -554,7 +553,6 @@ public class TableFile implements Closeable {
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
       file.writeShort(cellCount - 1);
-      removeRow(currentCellOffset, cellCount);
       this.isCurrentRowDeleted = true;
     }
 
@@ -574,6 +572,25 @@ public class TableFile implements Closeable {
     file.seek(currentCellOffset);
 
     for (short val : offsetLocationList) {
+      // System.out.println("this.file.getFilePointer() ::: " + this.file.getFilePointer());
+      file.writeShort(val);
+    }
+  }
+
+  private void removeRow(long currentCellOffset, long cellCount, int cellIndexId)
+      throws IOException {
+    file.seek(currentCellOffset);
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < cellCount; i++) {
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+    }
+    offsetLocationList.remove(cellIndexId);
+    offsetLocationList.add((short) 0x00);
+    file.seek(currentCellOffset);
+
+    for (short val : offsetLocationList) {
+      // System.out.println("this.file.getFilePointer() ::: " + this.file.getFilePointer());
       file.writeShort(val);
     }
   }
@@ -625,8 +642,57 @@ public class TableFile implements Closeable {
         file.seek(maxRowIdOffset);
         file.writeInt(maxRowId - 1);
 
-        //System.out.println("maxRowId ::: " + maxRowId);
+        // System.out.println("maxRowId ::: " + maxRowId);
       }
+    }
+
+  }
+
+
+  public void removeLeafFromParent() throws IOException {
+    int parentPageNo = getParentPageNo();
+    long cellOffsetOffset = 0x0010;
+    long fileOffsetOfPage = (parentPageNo - 1) * 512;
+    long cellCountOffset = fileOffsetOfPage + 1;
+
+    long currentCellLocationOffset = fileOffsetOfPage + cellOffsetOffset;
+
+    file.seek(cellCountOffset);
+    short cellCount = file.readShort();
+
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < cellCount; i++) {
+      currentCellLocationOffset += 0x02 * i;
+      file.seek(currentCellLocationOffset);
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+      // System.out.println("offsetLocation ::: " + offsetLocation);
+    }
+
+    currentCellLocationOffset = fileOffsetOfPage + cellOffsetOffset;
+
+    int cellIndexId = 0;
+    for (short val : offsetLocationList) {
+      long recordOffset = fileOffsetOfPage + val;
+      file.seek(recordOffset);
+      int pageId = file.readInt();
+
+      // System.out.println("pageId ::: " + pageId);
+
+      if (pageId == this.currentLeafPageNo) {
+
+        // removeRow(long currentCellOffset, long cellCount, int cellIndexId)
+        removeRow(currentCellLocationOffset, cellCount, cellIndexId);
+
+        /*
+         * long maxRowIdOffset = recordOffset + 0x04; file.seek(maxRowIdOffset); int maxRowId =
+         * file.readInt();
+         * 
+         * file.seek(maxRowIdOffset); file.writeInt(maxRowId - 1);
+         */
+        // System.out.println("maxRowId ::: " + maxRowId);
+      }
+      cellIndexId++;
     }
 
   }
