@@ -41,10 +41,16 @@ public class Parser {
       Statement stmt = pm.parse(new StringReader(statement));
       if (stmt instanceof CreateTable) {
         CreateTable createTableStatement = (CreateTable) stmt;
+        if(null!= createTableStatement.getIndexes()){
+          if(createTableStatement.getIndexes().size()>1 ||
+            (createTableStatement.getIndexes().size()==1 && createTableStatement.getIndexes().get(0).getType().equalsIgnoreCase("FOREIGN KEY")))
+          throw new ParseException("DavisBase only supports a Primary Key on a single column");
+        }
         CreateTableCommandRepresentation create = new CreateTableCommandRepresentation(
           createTableStatement.toString(),
           createTableStatement.getTable().getName(),
-          createTableStatement.getColumnDefinitions()
+          createTableStatement.getColumnDefinitions(),
+          null==createTableStatement.getIndexes() ? null : createTableStatement.getIndexes().get(0)
         );
         return create;
       } else if (stmt instanceof Drop) { //type determines if index or table

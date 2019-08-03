@@ -1,6 +1,8 @@
 package edu.utdallas.davisbase.representation;
 
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
+import net.sf.jsqlparser.statement.create.table.Index;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,11 +13,13 @@ public class CreateTableCommandRepresentation implements CommandRepresentation {
     private final String command;
     private final String table;
     private final List<ColumnDefinition> definitions;
+    private final @Nullable Index index;
 
-  public CreateTableCommandRepresentation(String command, String table, List<ColumnDefinition> definitions) {
+  public CreateTableCommandRepresentation(String command, String table, List<ColumnDefinition> definitions, @Nullable Index index) {
     this.command = command;
     this.table = table;
     this.definitions = Collections.unmodifiableList(new ArrayList<>(definitions));
+    this.index=index;
   }
 
   public String getTable() {
@@ -24,6 +28,10 @@ public class CreateTableCommandRepresentation implements CommandRepresentation {
 
   public List<ColumnDefinition> getDefinitions() {
     return definitions;
+  }
+
+  public @Nullable Index getIndex() {
+    return index;
   }
 
   @Override
@@ -42,6 +50,7 @@ public class CreateTableCommandRepresentation implements CommandRepresentation {
       "command='" + command + '\'' +
       ", table='" + table + '\'' +
       ", definitions=" + definitions +
+      ", index=" + index +
       '}';
   }
 }
