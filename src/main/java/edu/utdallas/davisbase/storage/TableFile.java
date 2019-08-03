@@ -81,90 +81,13 @@ public class TableFile implements Closeable {
 
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
 
-    // QUESTION Can the post-split page actually be INTERIOR? If so, why? If not, what's fucked up?
-
-    //region Allocate new rowId, and update table metadata accordingly.
-
     final int newRowId = getNextRowId();
     incrementMetaDataCurrentRowId();
 
-    //endregion
+    tableRowBuilder.prependRowId(newRowId);
+    final TableLeafCellBuffer newLeafCellBuffer = tableRowBuilder.toLeafCellBuffer();
 
-    //region Calculate total space required to insert row.
-
-    // TODO Convert tableRowBuilder to a TableLeafCellBuffer.
-    // TODO "Calculate" cell space requirements using TableLeafCellBuffer.
-
-    final int nColumns = tableRowBuilder.size() + 1;  // count of columns
-    int[] columnSizes = new int[nColumns];  // size in bytes
-    int payloadSize = 0;  // total size in bytes
-
-    columnSizes[0] = 4;  // since rowId is not a part of table row builder
-    payloadSize += columnSizes[0];
-
-    @Nullable Object value;
-    for (int i = 1; i < nColumns; i++) {
-      value = tableRowBuilder.getValue(i - 1);
-      switch (value.getClass().getSimpleName()) {
-        case "Integer":
-          columnSizes[i] = 4;
-          break;
-        case "String":
-          columnSizes[i] = value.toString().getBytes(TEXT_CHARSET).length;
-          break;
-        case "Byte":
-          columnSizes[i] = 1;
-          break;
-        case "Short":
-          columnSizes[i] = 2;
-          break;
-        case "Long":
-          columnSizes[i] = 8;
-          break;
-        case "Float":
-          columnSizes[i] = 4;
-          break;
-        case "Double":
-          columnSizes[i] = 8;
-          break;
-        case "Year":
-          columnSizes[i] = 1;
-          break;
-        case "LocalTime":
-          columnSizes[i] = 4;
-          break;
-        case "LocalDateTime":
-          columnSizes[i] = 8;
-          break;
-        case "LocalDate":
-          columnSizes[i] = 8;
-          break;
-
-        /* FIXME case ""
-         *
-         * Refactor this case to use proper null evaluation as designed, rather than repurposing the
-         * empty string to serve as a "null object". Make sure to refactor any TableDataRow building
-         * and serialization logic that is coupled to this empty-string-as-null-object design, too.
-         */
-        case "":
-          columnSizes[i] = 0;
-          break;
-
-        /* FIXME default
-         *
-         * The default case should throw an IllegalArgumentException since the value was not an
-         * of the corresponding Java class for any DavisBase data type.
-         */
-        default:
-          columnSizes[i] = 0;
-          break;
-      }
-      payloadSize += columnSizes[i];
-    }
-
-    final int newCellDataSize = (1 + columnSizes.length + payloadSize);
-
-    //endregion
+    // QUESTION Can the post-split page actually be INTERIOR? If so, why? If not, what's fucked up?
 
     //region Find rightmost leaf page.
 
@@ -192,7 +115,8 @@ public class TableFile implements Closeable {
 
     //region Check ahead for overflow, and preemptively "split" page if so.
 
-    final boolean overflowFlag = wouldPageOverflow(newCellDataSize, pageNo);
+    final byte[] newLeafCellData = newLeafCellBuffer.toBytes();
+    final boolean overflowFlag = wouldPageOverflow(newLeafCellData.length, pageNo);
 
     if (overflowFlag) {
       // QUESTION Can the original local pageNo actually be INTERIOR? If so, why? (it shouldn't be) If not, then what step(s) are we missing that's leading us to think that it could be?
@@ -226,19 +150,14 @@ public class TableFile implements Closeable {
       oldContentPageOffset = Shorts.checkedCast(PAGE_SIZE);
     }
 
-    final short newContentPageOffset = Shorts.checkedCast(oldContentPageOffset - newCellDataSize);
+    final short newContentPageOffset = Shorts.checkedCast(oldContentPageOffset - newLeafCellData.length);
 
     //endregion
 
     //region Insert cell in content area of page.
 
-    tableRowBuilder.prependRowId(newRowId);
-
-    final TableLeafCellBuffer tableLeafCellBuffer = tableRowBuilder.toLeafCellBuffer();
-    final byte[] tableLeafCellData = tableLeafCellBuffer.toBytes();
-
     file.seek(pageFileOffset + newContentPageOffset);
-    file.write(tableLeafCellData);
+    file.write(newLeafCellData);
 
     //endregion
 
