@@ -299,7 +299,7 @@ public class IndexPage {
 
 			int[] leftChildPageNoArray = new int[noOfRecords - splitIndex];
 
-			for (int i = splitIndex; i < noOfRecords ; i++) {
+			for (int i = splitIndex; i < noOfRecords; i++) {
 				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * splitIndex));
 				seekPointOffset = (short) (file.readShort());
 
@@ -422,21 +422,28 @@ public class IndexPage {
 		short ithNoOfBytes, jthNoOfBytes;
 		byte[] ithByteArray;
 		byte[] jthByteArray;
+		file.seek(pageOffset);
+		int leftchildSpace = 0;
+
+		if (file.readByte() == 0x02) {
+			leftchildSpace = 4;
+		}
+
 		for (int i = 0; i < noOfCells; i++) {
 			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
 			ithRead = file.readShort();
-			file.seek(pageOffset + ithRead + 1);
+			file.seek(pageOffset + ithRead + leftchildSpace + 1);// 1 = no of rowids 
 			ithNoOfBytes = file.readByte();
 			ithByteArray = new byte[ithNoOfBytes];
-			file.seek(pageOffset + ithRead + 1 + 1);
+			file.seek(pageOffset + ithRead + leftchildSpace + 1 + 1);
 			file.read(ithByteArray);
 			for (int j = i + 1; j < noOfCells; j++) {
 				file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (j)));
 				jthRead = file.readShort();
-				file.seek(pageOffset + jthRead + 1);
+				file.seek(pageOffset + jthRead + leftchildSpace + 1);
 				jthNoOfBytes = file.readByte();
 				jthByteArray = new byte[jthNoOfBytes];
-				file.seek(pageOffset + jthRead + 1 + 1);
+				file.seek(pageOffset + jthRead + leftchildSpace + 1 + 1);
 				file.read(jthByteArray);
 				if (prevIndexGreaterThanLaterIndex(ithByteArray, jthByteArray)) {
 					file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
