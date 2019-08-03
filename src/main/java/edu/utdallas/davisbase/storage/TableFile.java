@@ -97,8 +97,7 @@ public class TableFile implements Closeable {
 
     //region Find rightmost leaf page.
 
-    // FIXME Initialize pageNo to the root page (from metadata) instead of the last physical page.
-    int  pageNo = Ints.checkedCast(file.length() / PAGE_SIZE);
+    int  pageNo = this.getMetaDataRootPageNo();
     long pageFileOffset = convertPageNoToFileOffset(pageNo);
     byte pageTypeCode;
 
