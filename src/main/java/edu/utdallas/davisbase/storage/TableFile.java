@@ -564,7 +564,14 @@ public class TableFile implements Closeable {
        */
 
       this.removeRow();
-      this.appendRow(cellBuffer);
+
+      final int newRowId = this.getNextRowId();
+      this.incrementMetaDataCurrentRowId();
+
+      final byte[] newRowIdData = Ints.toByteArray(newRowId);
+      cellBuffer.set((byte) 0, newRowIdData);
+
+      this.appendRow(newRowId, cellBuffer);
     }
   }
 
