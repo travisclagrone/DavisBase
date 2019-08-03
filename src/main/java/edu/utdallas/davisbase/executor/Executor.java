@@ -275,7 +275,7 @@ public class Executor {
     final TableRowBuilder rowBuilder = new TableRowBuilder();
     for (final @Nullable Object value : command.getValues()) {
       if (value == null) {
-        rowBuilder.appendNull();
+        rowBuilder.addNull();
       }
       else if (DataType.TINYINT.getJavaClass().isInstance(value)) {
         rowBuilder.appendTinyInt((byte) value);
