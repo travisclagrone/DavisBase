@@ -87,6 +87,12 @@ public class TableFile implements Closeable {
     tableRowBuilder.prependRowId(newRowId);
     final TableLeafCellBuffer newLeafCellBuffer = tableRowBuilder.toLeafCellBuffer();
 
+    this.appendRow(newRowId, newLeafCellBuffer);
+  }
+
+  private void appendRow(int newRowId, TableLeafCellBuffer newLeafCellBuffer) throws IOException {
+    assert newRowId == Ints.fromByteArray(newLeafCellBuffer.get((byte) 0));
+
     // QUESTION Can the post-split page actually be INTERIOR? If so, why? If not, what's fucked up?
 
     //region Find rightmost leaf page.
@@ -194,11 +200,6 @@ public class TableFile implements Closeable {
     //endregion
 
     // TODO Recursively update ancestors with new greatest row id key (as far as applicable, anyway).
-  }
-
-  private void appendRow(TableLeafCellBuffer cellBuffer) throws IOException {
-    // TODO TableFile-appendRow(TableLeafCellBuffer)
-    throw new NotImplementedException("TableFile-appendRow(TableLeafCellBuffer)");
   }
 
   // VERIFY -wouldPageOverflow(newCellDataSize, pageNo): boolean
