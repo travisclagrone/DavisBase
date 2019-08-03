@@ -97,8 +97,7 @@ public class TableFile implements Closeable {
 
     //region Find rightmost leaf page.
 
-    // FIXME Initialize pageNo to the root page (from metadata) instead of the last physical page.
-    int  pageNo = Ints.checkedCast(file.length() / PAGE_SIZE);
+    int  pageNo = this.getMetaDataRootPageNo();
     long pageFileOffset = convertPageNoToFileOffset(pageNo);
     byte pageTypeCode;
 
@@ -576,7 +575,7 @@ public class TableFile implements Closeable {
   }
 
   public int getCurrentMaxRowId() throws IOException {
-    file.seek(0x01);
+    file.seek(FILE_OFFSET_OF_METADATA_CURRENT_ROWID);
     final int currentMaxRowId = file.readInt();
     return currentMaxRowId;
   }
@@ -588,12 +587,6 @@ public class TableFile implements Closeable {
             ROWID_MAX_VALUE));
     final int nextRowId = currentMaxRowId + 1;
     return nextRowId;
-  }
-
-  private int getNextRowIdInterior() throws IOException {
-    file.seek(0x09);
-    int rowId = file.readInt();
-    return (rowId + 1);
   }
 
   private void incrementMetaDataCurrentRowId() throws IOException {
@@ -619,7 +612,6 @@ public class TableFile implements Closeable {
     return this.file.readInt();
   }
 
-
   private boolean hasCurrentLeafPageNo() {
     return currentLeafPageNo != NULL_PAGE_NO;
   }
@@ -638,7 +630,7 @@ public class TableFile implements Closeable {
   }
 
   private int getLeftmostLeafPageNo() throws IOException {
-    int pageNo = Page.getMetaDataRootPageNo(file);
+    int pageNo = this.getMetaDataRootPageNo();
     while (Page.getTablePageType(file, pageNo) == INTERIOR) {
       pageNo = Page.getLeftmostChildPageNoOfInteriorPage(file, pageNo);
     }
