@@ -188,7 +188,7 @@ public class IndexPage {
 			long bigPageOffset = convertPageNoToFileOffset(pageNo);
 			file.seek(bigPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
 			int noOfrecordsInBigPage = file.readShort();
-			int splitIndex = (int) Math.ceil(noOfrecordsInBigPage / 2); // this record goes into the parent.
+			int splitIndex = (int) Math.ceil(noOfrecordsInBigPage / 2.0); // this record goes into the parent.
 			// add split index + 1 th element in the array to parent.
 			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo);
 
@@ -378,7 +378,7 @@ public class IndexPage {
 		file.seek(dataSeekPoint);
 		int noOfRowIds = file.readByte();
 
-		file.seek(pageOffset + middleElementOffset + 1);
+		file.seek(pageOffset + middleElementOffset + childPageNoSpace + 1);
 		int indexDataSpace = file.readByte();
 
 		int totalRowSpace = 1 + 1 + indexDataSpace + (4 * noOfRowIds);
@@ -432,7 +432,7 @@ public class IndexPage {
 		for (int i = 0; i < noOfCells; i++) {
 			file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + 2 * i);
 			ithRead = file.readShort();
-			file.seek(pageOffset + ithRead + leftchildSpace + 1);// 1 = no of rowids 
+			file.seek(pageOffset + ithRead + leftchildSpace + 1);// 1 = no of rowids
 			ithNoOfBytes = file.readByte();
 			ithByteArray = new byte[ithNoOfBytes];
 			file.seek(pageOffset + ithRead + leftchildSpace + 1 + 1);
