@@ -31,6 +31,9 @@ public class testIndexFile {
       iFile.addText("dddddddd", 13);
       iFile.addText("abwwwwwww", 10);
       iFile.addText("abbwwwwwww", 10);
+      iFile.addText("wwwwwww", 10);
+//      iFile.addText("zzzzzzzz", 10);
+//      iFile.addText("zzzzzzzzd", 10);
 
       System.out.print("happy");
     } catch (Exception e) {

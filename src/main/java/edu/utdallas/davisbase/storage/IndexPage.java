@@ -46,7 +46,6 @@ public class IndexPage {
 			file.writeInt(-1);// setting right most child to -1
 
 		} catch (Exception e) {
-			System.out.println(e);
 		}
 		return numofPages;
 	}
@@ -76,6 +75,11 @@ public class IndexPage {
 		}
 	}
 
+	private static int getNoOfRecords(RandomAccessFile file, int pageNo) throws IOException {
+		long pageOffset = convertPageNoToFileOffset(pageNo);
+		file.seek(pageOffset+PAGE_OFFSET_OF_CELL_COUNT);
+		return file.readShort();
+	}
 	private static void updateMetaDataRoot(RandomAccessFile file, int pageNo) throws IOException {
 		// TODO Auto-generated method stub
 		file.seek(metaDataRootPageNoOffsetInFile);
@@ -98,7 +102,9 @@ public class IndexPage {
 			}
 			setParent(file, newSiblingPageNo, parentPageNo);
 			splitLeafNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
-			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+			if(getRightSiblingPointer(file, parentPageNo)==pageNo || (getNoOfRecords(file, parentPageNo)==1)) {
+				setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);	
+			}
 			setRightSiblingPointer(file, newSiblingPageNo, getRightSiblingPointer(file, pageNo));
 			setRightSiblingPointer(file, pageNo, newSiblingPageNo);
 
@@ -129,7 +135,14 @@ public class IndexPage {
 				parentPageNo = getParent(file, pageNo);
 			}
 			splitInteriorNodeData(file, pageNo, parentPageNo, newSiblingPageNo);
-			setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+			if(getRightSiblingPointer(file, parentPageNo)==pageNo || (getNoOfRecords(file, parentPageNo)==1)) {
+				setParentRightChildPointer(file, parentPageNo, newSiblingPageNo);
+			}
+			
+			if(getNoOfRecords(file, parentPageNo)>maximumNoOFKeys) {
+				splitInteriorPage(file, parentPageNo);
+			}
+			
 
 		} catch (Exception e) {
 
@@ -146,7 +159,7 @@ public class IndexPage {
 			int noOfrecordsInBigPage = file.readShort();
 			int splitIndex = (int) Math.ceil(noOfrecordsInBigPage / 2); // this record goes into the parent.
 			// add split index + 1 th element in the array to parent.
-			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo);
+			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo, siblingPageNo);
 
 			// add element above split index+1 from big page to new page.
 			addElementsAboveIToSibling(file, splitIndex, pageNo, siblingPageNo);
@@ -190,7 +203,7 @@ public class IndexPage {
 			int noOfrecordsInBigPage = file.readShort();
 			int splitIndex = (int) Math.ceil(noOfrecordsInBigPage / 2.0); // this record goes into the parent.
 			// add split index + 1 th element in the array to parent.
-			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo);
+			addMiddleElementFromChildtoParent(file, splitIndex, pageNo, parentPageNo, siblingPageNo);
 
 			// add element above split index+1 from big page to new page.
 			addElementsAboveIToSibling(file, splitIndex, pageNo, siblingPageNo);
@@ -355,7 +368,7 @@ public class IndexPage {
 	}
 
 	private static void addMiddleElementFromChildtoParent(RandomAccessFile file, int splitIndex, int pageNo,
-			int parentPageNo) throws IOException {
+			int parentPageNo, int siblingPageNo) throws IOException {
 		long pageOffset = convertPageNoToFileOffset(pageNo);
 		file.seek(pageOffset + PAGE_OFFSET_OF_CELL_PAGE_OFFSET_ARRAY + (2 * (splitIndex - 1)));
 		short middleElementOffset = file.readShort();
@@ -369,7 +382,7 @@ public class IndexPage {
 
 		file.seek(pageOffset);
 		if (file.readByte() == 0x02) {// Updating RightChild Pointer
-			file.seek(dataSeekPoint);
+			file.seek(dataSeekPoint - 4);
 			int page2BRightChildPageNo = file.readInt();
 			file.seek(pageOffset + PAGE_OFFSET_OF_RIGHTMOST_PAGE_NO);
 			file.writeInt(page2BRightChildPageNo);
@@ -392,12 +405,19 @@ public class IndexPage {
 		short currentDataStartOffset = file.readShort();
 		if (currentDataStartOffset == 0) {
 			currentDataStartOffset = (short) pageSize;
-		}
+		}		
 		long dataEntrySeekPoint = parentPageOffset + currentDataStartOffset - data2BCopied.length - 4;
+		short noOfRecordInParent=0;
+		file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
+		noOfRecordInParent=file.readShort();
 		file.seek(dataEntrySeekPoint);
 		file.writeInt(pageNo);// writing left child page no
 		file.write(data2BCopied);
 
+		// checking if we need to write sibling page number.
+		if (noOfRecordInParent != 0) {
+			file.writeInt(siblingPageNo);
+		}
 		file.seek(parentPageOffset + PAGE_OFFSET_OF_CELL_COUNT);
 		short noOfRecordsInParent = file.readShort();
 		noOfRecordsInParent = (short) (noOfRecordsInParent + 1);
