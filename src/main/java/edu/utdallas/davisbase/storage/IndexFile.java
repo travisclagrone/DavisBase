@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -165,6 +166,110 @@ public class IndexFile implements Closeable {
       noOfRecords--;
       addOffset += 2;
     }
+  }
+  
+  public List<byte[]> getRowIdsForIndex(String indexValue) throws IOException{
+	  byte pageType = rootPageType();
+      long pageOffset = rootPageOffset();
+      while(pageType == 0x02) {//checking all interior pages in path
+        short noOfRecordsInPage;
+        file.seek(pageOffset+1);
+        noOfRecordsInPage = file.readShort();
+        
+        short addOffset = 0;
+        short recordOffset = 0; 
+        boolean valueMatchFlag = false;
+        while(noOfRecordsInPage > 0) {
+          file.seek(pageOffset+16+addOffset);
+          recordOffset = file.readShort();
+          file.seek(pageOffset+recordOffset+5);
+          Byte recordLength = file.readByte();
+          byte[] recordBytes = new byte[recordLength];
+          file.seek(pageOffset+recordOffset+6);
+          file.read(recordBytes);
+          String recordValue = new String(recordBytes);
+          if(indexValue.compareToIgnoreCase(recordValue) == 0) {//if index value matches with already existing value then add rowId
+//            addRowIdInInteriorPage(pageOffset, recordOffset, rowId);
+            valueMatchFlag = true;
+            break;
+          }
+          else if(indexValue.compareToIgnoreCase(recordValue) > 0) {//if index value greater than record value move to next record on right
+            if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
+              file.seek(pageOffset+6);
+              int nextPageNo = file.readInt();
+              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              file.seek(pageOffset);
+              pageType = file.readByte();
+              break;
+            }
+          }
+          
+          else {//if index value less than record value move to left record
+            file.seek(pageOffset+recordOffset);
+            int nextPageNo = file.readInt();
+            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            file.seek(pageOffset);
+            pageType = file.readByte();
+            break;
+          }
+          
+        }
+        if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
+          break;
+        noOfRecordsInPage--;
+        addOffset += 2;
+      }
+      if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
+                            //we either add new record or just add rowId to existing record
+        file.seek(pageOffset+1);
+        short recordCount = file.readShort();
+        short matchedRecordOffset = 0;
+        short addOffset = 0;
+        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        boolean valueMatchFlag = false;
+        while(recordCount > 0) {
+          file.seek(pageOffset+16+addOffset);
+          recordOffset = file.readShort();
+          minRecordOffset = recordOffset < minRecordOffset ? recordOffset : minRecordOffset;
+          file.seek(pageOffset+recordOffset+1);
+          Byte recordLength = file.readByte();
+          byte[] recordBytes = new byte[recordLength];
+          file.seek(pageOffset+recordOffset+2);
+          file.read(recordBytes);
+          String recordValue = new String(recordBytes);
+          if(indexValue.compareToIgnoreCase(recordValue) == 0) {
+            matchedRecordOffset = recordOffset;
+            valueMatchFlag = true;
+          }
+          recordCount--;
+          addOffset += 2;
+        }
+        if(valueMatchFlag) {
+        	
+        }//add rowId to existing record
+//          addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
+        else {//add new record in index leaf page
+          recordOffset = (short) (minRecordOffset-indexValue.length()-6);
+          file.seek(pageOffset+recordOffset);
+          file.write(1);
+          file.seek(pageOffset+recordOffset+1);
+          file.write(indexValue.length());
+          file.seek(pageOffset+recordOffset+2);
+          byte[] indexValueToByteArray = indexValue.getBytes();
+          file.write(indexValueToByteArray);
+          file.seek(pageOffset+recordOffset+indexValue.length()+2);
+          file.seek(pageOffset+3);
+          file.writeShort(recordOffset);
+          file.writeShort(recordOffset);
+          file.seek(pageOffset+1);
+          file.seek(5);
+          int pageNo = file.readInt();
+          IndexPage.sortKeys(file, pageNo);
+          
+        }
+      }
+	  
+	  return null;
   }
   
   //adding a record in Index page for text type column
