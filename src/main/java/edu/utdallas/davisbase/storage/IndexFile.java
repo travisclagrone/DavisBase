@@ -350,7 +350,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -404,12 +404,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -439,6 +438,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValue.length()-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -451,14 +453,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -537,7 +539,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -587,12 +589,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -618,6 +619,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -629,14 +633,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -715,7 +719,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -765,12 +769,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -796,6 +799,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -807,14 +813,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -893,7 +899,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -943,12 +949,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -974,6 +979,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -985,14 +993,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -1052,7 +1060,7 @@ public class IndexFile implements Closeable {
       }
       if(valueMatchFlag)//inserting rowId for already existing record 
         addRowIdInLeafPage(rootPageOffset, matchedRecordOffset, minRecordOffset, rowId);
-      else {//adding a new record into Index page
+      else {//adding a new record into Index page        
         recordOffset = (short) (minRecordOffset-indexValueLength-6);
         file.seek(rootPageOffset+recordOffset);
         file.write(1);
@@ -1071,7 +1079,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -1121,12 +1129,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1152,6 +1159,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -1163,14 +1173,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -1249,7 +1259,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -1299,12 +1309,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1330,6 +1339,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -1341,14 +1353,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -1427,7 +1439,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -1477,12 +1489,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1508,6 +1519,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -1519,14 +1533,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -1607,7 +1621,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -1657,12 +1671,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1688,6 +1701,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -1700,14 +1716,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -1788,7 +1804,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -1838,12 +1854,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -1869,6 +1884,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -1881,14 +1899,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }
@@ -1969,7 +1987,7 @@ public class IndexFile implements Closeable {
         file.seek(5);
         int pageNo = file.readInt();
         IndexPage.sortKeys(file, pageNo);
-        if(noOfRecordsInRootPage+1 > 3)
+        if(noOfRecordsInRootPage+1 > IndexPage.maximumNoOFKeys)
           IndexPage.splitLeafPage(file, pageNo);
       }
     }
@@ -2019,12 +2037,11 @@ public class IndexFile implements Closeable {
             pageType = file.readByte();
             break;
           }
-          
+          noOfRecordsInPage--;
+          addOffset += 2;
         }
         if(valueMatchFlag)//if we found index value already in one of interior pages then break out of loop
-          break;
-        noOfRecordsInPage--;
-        addOffset += 2;
+          break;        
       }
       if(pageType == 0x0A) {//after breaking out of loop if the page type is 0x0A then we have reached a leaf page where
                             //we either add new record or just add rowId to existing record
@@ -2050,6 +2067,9 @@ public class IndexFile implements Closeable {
         if(valueMatchFlag)//add rowId to existing record
           addRowIdInLeafPage(pageOffset, matchedRecordOffset, minRecordOffset, rowId);
         else {//add new record in index leaf page
+          short noOfRecords;
+          file.seek(pageOffset+1);
+          noOfRecords = file.readShort();
           recordOffset = (short) (minRecordOffset-indexValueLength-6);
           file.seek(pageOffset+recordOffset);
           file.write(1);
@@ -2062,14 +2082,14 @@ public class IndexFile implements Closeable {
           file.writeInt(rowId);
           file.seek(pageOffset+3);
           file.writeShort(recordOffset);
-          file.seek(pageOffset+16+(noOfRecordsInRootPage*2));
+          file.seek(pageOffset+16+(noOfRecords*2));
           file.writeShort(recordOffset);
           file.seek(pageOffset+1);
-          file.writeShort(noOfRecordsInRootPage+1);
+          file.writeShort(noOfRecords+1);
           file.seek(5);
           int pageNo = file.readInt();
           IndexPage.sortKeys(file, pageNo);
-          if(noOfRecordsInRootPage+1 > 3)
+          if(noOfRecords+1 > IndexPage.maximumNoOFKeys)
             IndexPage.splitLeafPage(file, pageNo);
         }
       }

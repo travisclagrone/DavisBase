@@ -29,4 +29,13 @@ public interface CatalogTableColumn {
    */
   public boolean isNullable();
 
+  /**
+   * @return {@code true} if-and-only-if this column accepts only unique values
+   */
+  public boolean isUnique();
+
+  /**
+   * @return {@code true} if-and-only-if this column is the primary key
+   */
+  public boolean isPrimaryKey();
 }
