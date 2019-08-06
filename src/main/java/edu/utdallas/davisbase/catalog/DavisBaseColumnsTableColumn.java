@@ -9,7 +9,7 @@ import static java.lang.String.format;
  * catalog table.
  */
 public enum DavisBaseColumnsTableColumn implements CatalogTableColumn {
-  ROWID            (DataType.INT,     false, false, false),
+  ROWID            (DataType.INT,     false, true, false),
   TABLE_NAME       (DataType.TEXT,    false, true,  false),
   COLUMN_NAME      (DataType.TEXT,    false, false, false),
   DATA_TYPE        (DataType.TEXT,    false, false, false),
