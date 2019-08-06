@@ -184,21 +184,16 @@ public class TableFile implements Closeable {
 
     short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
 
-    rowId = 0;
-
-    // for (int i = 0; i < columnSizeArray.length; i++) {
-    // file.writeByte(columnSizeArray[i]);
-    // }
-
-    if (pageType == 0x05) {
-      rowId = getNextRowIdInterior();
-      file.seek(0x09);
-      file.writeInt(rowId);
-    } else if (pageType == 0x0D) {
-      rowId = getNextRowId();
-      file.seek(0x01);
-      file.writeInt(rowId);
-    }
+    /*
+     * rowId = 0;
+     * 
+     * // for (int i = 0; i < columnSizeArray.length; i++) { //
+     * file.writeByte(columnSizeArray[i]); // }
+     * 
+     * if (pageType == 0x05) { rowId = getNextRowIdInterior(); file.seek(0x09);
+     * file.writeInt(rowId); } else if (pageType == 0x0D) { rowId = getNextRowId();
+     * file.seek(0x01); file.writeInt(rowId); }
+     */
 
     file.seek(pageOffset + dataEntryPoint);
     file.writeByte(noOfColumns);
