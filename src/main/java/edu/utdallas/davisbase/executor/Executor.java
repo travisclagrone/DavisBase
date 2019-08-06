@@ -5,6 +5,8 @@ import static edu.utdallas.davisbase.DataType.INT;
 import static edu.utdallas.davisbase.DataType.TEXT;
 import static edu.utdallas.davisbase.DataType.TINYINT;
 import static java.lang.String.format;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
@@ -27,6 +29,7 @@ import edu.utdallas.davisbase.command.SelectCommand;
 import edu.utdallas.davisbase.command.SelectCommandColumn;
 import edu.utdallas.davisbase.command.ShowTablesCommand;
 import edu.utdallas.davisbase.command.UpdateCommand;
+import edu.utdallas.davisbase.command.UpdateCommandColumn;
 import edu.utdallas.davisbase.DataType;
 import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.result.CreateIndexResult;
@@ -47,6 +50,7 @@ import edu.utdallas.davisbase.storage.Storage;
 import edu.utdallas.davisbase.storage.StorageException;
 import edu.utdallas.davisbase.storage.TableFile;
 import edu.utdallas.davisbase.storage.TableRowBuilder;
+import edu.utdallas.davisbase.storage.TableRowWrite;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -165,6 +169,8 @@ public class Executor {
       rowidRowBuilder.appendText(INT.name());
       rowidRowBuilder.appendTinyInt(ordinalPosition);
       rowidRowBuilder.appendText(BooleanUtils.toText(false));
+      rowidRowBuilder.appendText(BooleanUtils.toText(true));
+      rowidRowBuilder.appendText(PrimaryKeyUtils.toText(false));
       davisbaseColumns.appendRow(rowidRowBuilder);
 
       for (final CreateTableCommandColumn column : command.getColumnSchemas()) {
@@ -444,16 +450,99 @@ public class Executor {
     return result;
   }
 
-  // TODO Implement support for WHERE clause in Executor#executeUpdate(UpdateCommand)
-  protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException {
+  protected UpdateResult executeUpdate(UpdateCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(UpdateCommand, Storage)
-    throw new NotImplementedException();
+    final String tableName = command.getTableName();
+    final @Nullable CommandWhere where = command.getWhere();
+    final List<UpdateCommandColumn> columns = command.getColumns();
+
+    assert columns.stream().allMatch(Objects::nonNull);
+    assert columns.size() == columns.stream().map(UpdateCommandColumn::getColumnIndex).distinct().count();
+
+    if (columns.isEmpty()) {
+      final UpdateResult result = new UpdateResult(tableName, 0);
+      return result;
+    }
+
+    final TableRowWrite.Builder builder = new TableRowWrite.Builder();
+    for (int i = 0; i < columns.size(); i += 1) {
+      final UpdateCommandColumn column = columns.get(i);
+
+      final byte columnIndex = column.getColumnIndex();
+      final @Nullable Object value = column.getValue();
+
+      if (value == null) {
+        builder.writeNull(columnIndex);
+      }
+      else if (DataType.TINYINT.getJavaClass().isInstance(value)) {
+        builder.writeTinyInt(columnIndex, (Byte) value);
+      }
+      else if (DataType.SMALLINT.getJavaClass().isInstance(value)) {
+        builder.writeSmallInt(columnIndex, (Short) value);
+      }
+      else if (DataType.INT.getJavaClass().isInstance(value)) {
+        builder.writeInt(columnIndex, (Integer) value);
+      }
+      else if (DataType.BIGINT.getJavaClass().isInstance(value)) {
+        builder.writeBigInt(columnIndex, (Long) value);
+      }
+      else if (DataType.FLOAT.getJavaClass().isInstance(value)) {
+        builder.writeFloat(columnIndex, (Float) value);
+      }
+      else if (DataType.DOUBLE.getJavaClass().isInstance(value)) {
+        builder.writeDouble(columnIndex, (Double) value);
+      }
+      else if (DataType.YEAR.getJavaClass().isInstance(value)) {
+        builder.writeYear(columnIndex, (Year) value);
+      }
+      else if (DataType.TIME.getJavaClass().isInstance(value)) {
+        builder.writeTime(columnIndex, (LocalTime) value);
+      }
+      else if (DataType.DATETIME.getJavaClass().isInstance(value)) {
+        builder.writeDateTime(columnIndex, (LocalDateTime) value);
+      }
+      else if (DataType.DATE.getJavaClass().isInstance(value)) {
+        builder.writeDate(columnIndex, (LocalDate) value);
+      }
+      else if (DataType.TEXT.getJavaClass().isInstance(value)) {
+        builder.writeText(columnIndex, (String) value);
+      }
+      else {
+        throw new IllegalStateException(
+            format("Unsupported Java class %s encountered at command.getColumns().get(%d).getValue()",
+                value.getClass().getName(),
+                i));
+      }
+    }
+    final TableRowWrite rowWrite = builder.build();
+
+    int rowsUpdated = 0;
+    try (final TableFile tableFile = context.openTableFile(tableName)) {
+      final int originalMaxRowId = tableFile.getCurrentMaxRowId();
+
+      while (tableFile.goToNextRow()) {
+        final int currentRowId = readRowId(tableFile);
+
+        if (currentRowId > originalMaxRowId) {
+          break;
+        }
+
+        if (where == null || evaluateWhere(where, tableFile)) {
+          tableFile.writeRow(rowWrite);
+
+          assert rowsUpdated <= Integer.MAX_VALUE : "Cannot increment rowsUpdated further without overflowing.";
+          rowsUpdated += 1;
+        }
+      }
+    }
+
+    final UpdateResult result = new UpdateResult(tableName, rowsUpdated);
+    return result;
   }
 
-  private @Nullable Object readValue(byte columnIndex, DataType dataType, TableFile tableFile) throws StorageException, IOException {
+  private static @Nullable Object readValue(byte columnIndex, DataType dataType, TableFile tableFile) throws StorageException, IOException {
     assert 0 <= columnIndex && columnIndex < Byte.MAX_VALUE : format("columnIndex %d should be in range [0, %d)", columnIndex, Byte.MAX_VALUE);
     assert dataType != null : "dataType should not be null";
     assert tableFile != null : "tableFile should not be null";
@@ -508,6 +597,10 @@ public class Executor {
         throw new NotImplementedException(format("edu.utdallas.davisbase.executor.Executor#readValue(byte, DataType, TableFile) for DataType %s", dataType));
     }
     return value;
+  }
+
+  private static int readRowId(TableFile tableFile) throws StorageException, IOException {
+    return (Integer) castNonNull(readValue((byte) 0, DataType.INT, tableFile));
   }
 
   private boolean evaluateWhere(CommandWhere where, TableFile tableFile) throws ExecuteException, StorageException, IOException {
