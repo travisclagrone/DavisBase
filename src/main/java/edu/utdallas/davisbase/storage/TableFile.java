@@ -9,8 +9,10 @@ import static edu.utdallas.davisbase.storage.Page.FILE_OFFSET_OF_METADATA_CURREN
 import static edu.utdallas.davisbase.storage.Page.FILE_OFFSET_OF_METADATA_ROOT_PAGENO;  // spell-checker:ignore pageno
 import static edu.utdallas.davisbase.storage.Page.PAGE_SIZE;
 import static edu.utdallas.davisbase.storage.Page.convertPageNoToFileOffset;
+import static edu.utdallas.davisbase.storage.Page.getNumberOfCells;
 import static edu.utdallas.davisbase.storage.Page.getPageOffsetOfCell;
 import static edu.utdallas.davisbase.storage.Page.getParent;
+import static edu.utdallas.davisbase.storage.Page.getRightSiblingOfLeafPage;
 import static edu.utdallas.davisbase.storage.Page.splitLeafPage;
 import static edu.utdallas.davisbase.storage.Page.updateParentwithLeafPageMaxRowID;
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
@@ -21,7 +23,6 @@ import static java.util.Arrays.stream;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
 import edu.utdallas.davisbase.DataType;
-import edu.utdallas.davisbase.NotImplementedException;
 import edu.utdallas.davisbase.YearUtils;
 import java.io.Closeable;
 import java.io.IOException;
@@ -84,7 +85,7 @@ public class TableFile implements Closeable {
   }
 
   //region Append
-  
+
   public void appendRow(TableRowBuilder tableRowBuilder) throws IOException {
 
     final int newRowId = getNextRowId();
@@ -227,23 +228,29 @@ public class TableFile implements Closeable {
   }
 
   //endregion
-  
+
   //region Go To Next
-  
+
   public boolean goToNextRow() throws IOException {
     assert this.hasCurrentLeafPageNo() == this.hasCurrentLeafCellIndex();
 
     if (this.hasCurrentLeafPageNo()) {
-      this.currentLeafCellIndex += 1;
-    } else { // Very first time goToNextRow() has been called for this TableFile instance.
+      if (this.isCurrentRowDeleted) {
+        this.isCurrentRowDeleted = false;
+      }
+      else {
+        this.currentLeafCellIndex += 1;
+      }
+    }
+    else { // Very first time goToNextRow() has been called for this TableFile instance.
       this.currentLeafPageNo = getLeftmostLeafPageNo();
       this.currentLeafCellIndex = 0;
     }
 
-    short countCells = Page.getNumberOfCells(file, this.currentLeafPageNo);
+    short countCells = getNumberOfCells(file, this.currentLeafPageNo);
     if (!(this.currentLeafCellIndex < countCells)) {
 
-      final int rightSiblingPageNo = Page.getRightSiblingOfLeafPage(file, this.currentLeafPageNo);
+      final int rightSiblingPageNo = getRightSiblingOfLeafPage(file, this.currentLeafPageNo);
       if (!Page.exists(file, rightSiblingPageNo)) {
         return false;
       }
@@ -251,7 +258,7 @@ public class TableFile implements Closeable {
       this.currentLeafPageNo = rightSiblingPageNo;
       this.currentLeafCellIndex = 0;
 
-      countCells = Page.getNumberOfCells(file, this.currentLeafPageNo);
+      countCells = getNumberOfCells(file, this.currentLeafPageNo);
       if (!(this.currentLeafCellIndex < countCells)) {
         return false;
       }
@@ -260,49 +267,45 @@ public class TableFile implements Closeable {
     return true;
   }
 
-  public boolean goToRow(int rowId) throws IOException {
-    // COMBAK Implement TableFile.goToRow(int)
-    throw new NotImplementedException();
-  }
-
   private boolean valueOfCurrentRowColumnIsNull(int columnIndex) throws IOException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        format("columnIndex (%d) is not in range [0, %d)",
+            columnIndex,
+            Byte.MAX_VALUE));
     checkState(this.hasCurrentRow(),
         "tableFile is not pointing to a current row from which to read");
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
-    final short pageOffsetOfCell =
-        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
+    final short pageOffsetOfCell = Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
-    final int valueSizeInBytes =
-        Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
+    final int valueSizeInBytes = Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
     return valueSizeInBytes <= 0;
   }
 
-  private void goToCurrentLeafPageCellColumnValue(int columnIndex)
-      throws IOException, StorageException {
+  private void goToCurrentLeafPageCellColumnValue(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
-        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+        format("columnIndex (%d) is not in range [0, %d)",
+            columnIndex,
+            Byte.MAX_VALUE));
     checkState(this.hasCurrentRow(),
         "tableFile is not pointing to a current row from which to read");
 
     final long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
-    final short pageOffsetOfCell =
-        Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
+    final short pageOffsetOfCell = Page.getPageOffsetOfCell(file, this.currentLeafPageNo, this.currentLeafCellIndex);
     final long fileOffsetOfPageCell = fileOffsetOfPage + pageOffsetOfCell;
 
     final byte columnCount = Page.getNumberOfColumnsOfTableLeafCell(file, fileOffsetOfPageCell);
     if (!(columnIndex < columnCount)) {
       throw new StorageException(
-          format("columnIndex (%d) is not less than columnCount (%d)", columnIndex, columnCount));
+          format("columnIndex (%d) is not less than columnCount (%d)",
+              columnIndex,
+              columnCount));
     }
 
     int cellOffset = 1 + columnCount; // 1 to account for the initial byte of column count.
     for (int i = 0; i < columnIndex; i++) {
       cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, i);
-      // cellOffset += Page.getSizeOfTableLeafCellColumn(file, fileOffsetOfPageCell, columnIndex);
     }
 
     final long fileOffsetOfPageCellColumnValue = fileOffsetOfPageCell + cellOffset;
@@ -310,9 +313,9 @@ public class TableFile implements Closeable {
   }
 
   //endregion
-  
+
   //region Read
-  
+
   public @Nullable Byte readTinyInt(int columnIndex) throws IOException, StorageException {
     checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
         "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
@@ -478,17 +481,11 @@ public class TableFile implements Closeable {
   }
 
   //endregion
-  
-  //region Remove
-  
-  public void removeRow() throws IOException {
-    // int cellCountoffset = 0x01;
-    // goToNextRow();
-    // goToNextRow();
-    // goToNextRow();
 
-    checkState(this.hasCurrentRow(),
-        "tableFile is not pointing to a current row from which to read");
+  //region Remove
+
+  public void removeRow() throws IOException {
+    checkState(this.hasCurrentRow(), "tableFile is not pointing to a current row from which to read");
 
     long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
     long cellOffsetOffset = 0x0010;
@@ -497,37 +494,30 @@ public class TableFile implements Closeable {
     int maxRowId = getMaxRowId();
     int currentRowId = getcurrentRowId();
 
-
     file.seek(cellCountOffset);
-    // System.out.println("getFilePointer ::: " + file.getFilePointer());
     short cellCount = file.readShort();
 
-    // leaf = rootpage, only 1 record in the table
-    if (cellCount == 1 && currentRowId == maxRowId) {
+    if (cellCount == 1 && currentRowId == maxRowId) {  // leaf = rootpage, only 1 record in the table
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
       file.writeShort(cellCount - 1);
-      // System.out.println("cellCount ::: " + cellCount);
-
-      // removeRow(currentCellOffset, cellCount);
       this.isCurrentRowDeleted = true;
-
-    } else if (cellCount == 1) {
-
+    }
+    else if (cellCount == 1) {
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
       file.writeShort(cellCount - 1);
       removeLeafFromParent();
       this.isCurrentRowDeleted = true;
-
-    } else if (currentRowId + 1 == cellCount) {
+    }
+    else if (currentRowId + 1 == cellCount) {
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
       file.writeShort(cellCount - 1);
       updateMaxRowIdInParent();
       this.isCurrentRowDeleted = true;
-
-    } else {
+    }
+    else {
       removeRow(currentCellOffset, cellCount);
       file.seek(cellCountOffset);
       file.writeShort(cellCount - 1);
@@ -555,8 +545,7 @@ public class TableFile implements Closeable {
     }
   }
 
-  private void removeRow(long currentCellOffset, long cellCount, int cellIndexId)
-      throws IOException {
+  private void removeRow(long currentCellOffset, long cellCount, int cellIndexId) throws IOException {
     file.seek(currentCellOffset);
     ArrayList<Short> offsetLocationList = new ArrayList<>();
     for (int i = 0; i < cellCount; i++) {
@@ -586,6 +575,10 @@ public class TableFile implements Closeable {
 
   public void updateMaxRowIdInParent() throws IOException {
     int parentPageNo = getParentPageNo();
+    if (parentPageNo == NULL_PAGE_NO) {
+      return;
+    }
+
     long cellOffsetOffset = 0x0010;
     long fileOffsetOfPage = (parentPageNo - 1) * 512;
     long cellCountOffset = fileOffsetOfPage + 1;
@@ -665,7 +658,7 @@ public class TableFile implements Closeable {
         /*
          * long maxRowIdOffset = recordOffset + 0x04; file.seek(maxRowIdOffset); int maxRowId =
          * file.readInt();
-         * 
+         *
          * file.seek(maxRowIdOffset); file.writeInt(maxRowId - 1);
          */
         // System.out.println("maxRowId ::: " + maxRowId);
@@ -700,7 +693,7 @@ public class TableFile implements Closeable {
   //endregion
 
   //region Write
-  
+
   /**
    * Overwrites zero-or-more pre-existing (but nullable) columns of the current row.
    * <p>
@@ -805,7 +798,7 @@ public class TableFile implements Closeable {
     final int currentMaxRowId = file.readInt();
     return currentMaxRowId;
   }
-  
+
   public int getMaxtRowIdInTable(RandomAccessFile file) throws IOException {
     try {
       file.seek(0x01);
@@ -817,9 +810,9 @@ public class TableFile implements Closeable {
     }
     return -1;
   }
-  
+
   //region Private Helper Methods
-  
+
   private int getNextRowId() throws IOException {
     final int currentMaxRowId = this.getCurrentMaxRowId();
     checkState(currentMaxRowId < ROWID_MAX_VALUE,
@@ -851,7 +844,7 @@ public class TableFile implements Closeable {
     this.file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
     return this.file.readInt();
   }
-  
+
   private boolean hasCurrentLeafPageNo() {
     return currentLeafPageNo != NULL_PAGE_NO;
   }
@@ -879,5 +872,5 @@ public class TableFile implements Closeable {
   }
 
   //endregion
-  
+
 }
