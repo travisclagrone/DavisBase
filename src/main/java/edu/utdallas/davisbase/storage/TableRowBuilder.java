@@ -16,86 +16,86 @@ import java.util.List;
 
 public class TableRowBuilder {
 
-	private final List<Object> values = new ArrayList<>();
+  private final List<Object> values = new ArrayList<>();
 
-	public int getNoOfValues() {
-		return this.values.size();
-	}
+  public int getNoOfValues() {
+    return this.values.size();
+  }
 
-	public Object getValueAt(int index) {
-		return this.values.get(index);
-	}
+  public Object getValueAt(int index) {
+    return this.values.get(index);
+  }
 
-	public TableRowBuilder() {
+  public TableRowBuilder() {
 
-	}
+  }
 
-	public void appendNull() {
-		this.values.add("");
-	}
+  public void appendNull() {
+    this.values.add("");
+  }
 
-	public void appendTinyInt(byte value) {
-		this.values.add(value);
-	}
+  public void appendTinyInt(byte value) {
+    this.values.add(value);
+  }
 
-	public void appendSmallInt(short value) {
-		this.values.add(value);
-	}
+  public void appendSmallInt(short value) {
+    this.values.add(value);
+  }
 
-	public void appendInt(int value) {
-		this.values.add(value);
-	}
+  public void appendInt(int value) {
+    this.values.add(value);
+  }
 
-	public void appendBigInt(long value) {
-		this.values.add(value);
-	}
+  public void appendBigInt(long value) {
+    this.values.add(value);
+  }
 
-	public void appendFloat(float value) {
-		this.values.add(value);
-	}
+  public void appendFloat(float value) {
+    this.values.add(value);
+  }
 
-	public void appendDouble(double value) {
-		this.values.add(value);
-	}
+  public void appendDouble(double value) {
+    this.values.add(value);
+  }
 
-	public void appendYear(Year value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendYear(Year value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendTime(LocalTime value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendTime(LocalTime value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendDateTime(LocalDateTime value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendDateTime(LocalDateTime value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendDate(LocalDate value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendDate(LocalDate value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendText(String value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendText(String value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
 
-	private byte[] intToByteArray(final int i) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(bos);
-		dos.writeInt(i);
-		dos.flush();
-		return bos.toByteArray();
-	}
+  private byte[] intToByteArray(final int i) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    DataOutputStream dos = new DataOutputStream(bos);
+    dos.writeInt(i);
+    dos.flush();
+    return bos.toByteArray();
+  }
 
-	public byte[] toBytes() {
+  public byte[] toBytes() {
     List<byte[]> bytesArraysList = new ArrayList<>();
     int finalByteArraySize = 0;
-		for (int i = 0; i < this.getNoOfValues(); i++) {
+    for (int i = 0; i < this.getNoOfValues(); i++) {
       final Object value = this.getValueAt(i);
 
       final byte[] tempByteArray;
@@ -143,21 +143,21 @@ public class TableRowBuilder {
         throw new IllegalStateException(format("Value index %d of TableRowBuilder instance is of class %s.", i, value.getClass().getName()));
       }
 
-			if (tempByteArray.length > 0) {
+      if (tempByteArray.length > 0) {
         bytesArraysList.add(tempByteArray);
       }
-			finalByteArraySize = finalByteArraySize + tempByteArray.length;
-		}
+      finalByteArraySize = finalByteArraySize + tempByteArray.length;
+    }
 
-		final byte[] finalByteArray = new byte[finalByteArraySize];
-		int k = 0;
-		for (int j = 0; j < bytesArraysList.size(); j++) {
-			for (int i = 0; i < bytesArraysList.get(j).length; i++) {
-				finalByteArray[k] = bytesArraysList.get(j)[i];
-				k++;
-			}
-		}
+    final byte[] finalByteArray = new byte[finalByteArraySize];
+    int k = 0;
+    for (int j = 0; j < bytesArraysList.size(); j++) {
+      for (int i = 0; i < bytesArraysList.get(j).length; i++) {
+        finalByteArray[k] = bytesArraysList.get(j)[i];
+        k++;
+      }
+    }
 
-		return finalByteArray;
-	}
+    return finalByteArray;
+  }
 }
