@@ -1,14 +1,13 @@
 package edu.utdallas.davisbase.storage;
 
-import static java.lang.String.format;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-
 import static edu.utdallas.davisbase.storage.TablePageType.INTERIOR;
 import static edu.utdallas.davisbase.storage.TablePageType.LEAF;
-
+import static java.lang.String.format;
+import edu.utdallas.davisbase.NotImplementedException;
+import edu.utdallas.davisbase.YearUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -17,10 +16,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
 import java.time.ZoneOffset;
-
+import java.util.ArrayList;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import edu.utdallas.davisbase.YearUtils;
-import edu.utdallas.davisbase.NotImplementedException;
 
 /**
  * A DavisBase "Table" file.
@@ -47,6 +44,7 @@ public class TableFile implements Closeable {
   protected final RandomAccessFile file;
   private int currentLeafPageNo = NULL_LEAF_PAGE_NO;
   private int currentLeafCellIndex = NULL_LEAF_CELL_INDEX;
+  private static boolean isCurrentRowDeleted = false;
 
   public TableFile(RandomAccessFile file) {
     checkNotNull(file);
@@ -95,6 +93,8 @@ public class TableFile implements Closeable {
       searchFlag = false;
     }
 
+    int rowId = 0;
+
     int noOfColumns = tableRowBuilder.getNoOfValues();
     noOfColumns = noOfColumns + 1;
     int[] columnSizeArray = new int[noOfColumns];
@@ -107,9 +107,7 @@ public class TableFile implements Closeable {
         case "Integer":
           columnSizeArray[i] = 4;
           break;
-
         case "String":
-
           columnSizeArray[i] = data.toString().length();
           break;
         case "Byte":
@@ -142,11 +140,9 @@ public class TableFile implements Closeable {
         case "":
           columnSizeArray[i] = 0;
           break;
-
         default:
           columnSizeArray[i] = 0;
           break;
-
       }
       payLoad = (short) (payLoad + columnSizeArray[i]);
     }
@@ -155,20 +151,25 @@ public class TableFile implements Closeable {
 
     file.seek(pageOffset);
     pageType = file.readByte();
+    if (pageType == 0x0D) {
+      rowId = getNextRowId();
+      file.seek(0x01);
+      file.writeInt(rowId);
+    }
     Boolean splitFlag = false;
-
     totalSpaceRequired = (1 + columnSizeArray.length + payLoad);
     boolean overflowFlag = checkPagesize(totalSpaceRequired, currentPageNo);
     if (overflowFlag) {
-      if (pageType == 0x05) {
-        currentPageNo = Page.splitInteriorPage(file, currentPageNo);
-      } else if (pageType == 0x0D) {
-        currentPageNo = Page.splitLeafPage(file, currentPageNo);
+      // if (pageType == 0x05) {
+      // currentPageNo = Page.splitInteriorPage(file, currentPageNo);
+      // } else
+      //
+      if (pageType == 0x0D) {
+        currentPageNo = Page.splitLeafPage(file, currentPageNo, rowId);
         splitFlag = true;
       }
     }
     if (splitFlag) {
-
       pageOffset = (currentPageNo - 1) * Page.pageSize;
       splitFlag = false;
     }
@@ -183,7 +184,7 @@ public class TableFile implements Closeable {
 
     short dataEntryPoint = (short) (cellOffset - totalSpaceRequired);
 
-    int rowId = 0;
+    rowId = 0;
 
     // for (int i = 0; i < columnSizeArray.length; i++) {
     // file.writeByte(columnSizeArray[i]);
@@ -220,15 +221,20 @@ public class TableFile implements Closeable {
     file.seek(pageOffset + 16 + 2 * (noOfCellsInPage - 1));
     file.writeShort(dataEntryPoint);
 
-    // Update table meta data with rowId
-    // file.seek(0x01);
-    // file.writeInt(rowId);
+    // TODO Udpate maximum row ID of the respective page in Parent.
+
+    int parentPageNo = Page.getParent(file, currentPageNo);
+    // updateParentwithLeafPageMaxRowID
+    if (parentPageNo != -1) {
+      Page.updateParentwithLeafPageMaxRowID(file, currentPageNo, parentPageNo, rowId);
+    }
 
   }
 
   private boolean checkPagesize(int sizeRequired, int currentPageNo) {
     try {
-      file.seek((currentPageNo - 1) * Page.pageSize);
+      file.seek(Page.convertPageNoToFileOffset(currentPageNo));
+      // file.seek((currentPageNo - 1) * Page.pageSize);
       byte pageType = file.readByte();
       if (pageType == 0x0D) {
 
@@ -244,7 +250,7 @@ public class TableFile implements Closeable {
         if ((startofCellConcent - arryLastEntry - 1) < sizeRequired) {
           return true;
         }
-      } else {// to Update in Part 2 for the remainig page types
+      } else {// TODO Update in Part 2 for the remainig page types
         return false;
       }
     } catch (Exception e) {
@@ -498,8 +504,219 @@ public class TableFile implements Closeable {
   }
 
   public void removeRow() throws IOException {
-    // TODO Implement TableFile.removeRow()
-    throw new NotImplementedException();
+    // int cellCountoffset = 0x01;
+    // goToNextRow();
+    // goToNextRow();
+    // goToNextRow();
+
+    checkState(this.hasCurrentRow(),
+        "tableFile is not pointing to a current row from which to read");
+
+    long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
+    long cellOffsetOffset = 0x0010;
+    long currentCellOffset = fileOffsetOfPage + cellOffsetOffset;
+    long cellCountOffset = fileOffsetOfPage + 1;
+    int maxRowId = getMaxRowId();
+    int currentRowId = getcurrentRowId();
+
+
+    file.seek(cellCountOffset);
+    // System.out.println("getFilePointer ::: " + file.getFilePointer());
+    short cellCount = file.readShort();
+
+    // leaf = rootpage, only 1 record in the table
+    if (cellCount == 1 && currentRowId == maxRowId) {
+      removeRow(currentCellOffset, cellCount);
+      file.seek(cellCountOffset);
+      file.writeShort(cellCount - 1);
+      // System.out.println("cellCount ::: " + cellCount);
+
+      // removeRow(currentCellOffset, cellCount);
+      this.isCurrentRowDeleted = true;
+
+    } else if (cellCount == 1) {
+
+      removeRow(currentCellOffset, cellCount);
+      file.seek(cellCountOffset);
+      file.writeShort(cellCount - 1);
+      removeLeafFromParent();
+      this.isCurrentRowDeleted = true;
+
+    } else if (currentRowId + 1 == cellCount) {
+      removeRow(currentCellOffset, cellCount);
+      file.seek(cellCountOffset);
+      file.writeShort(cellCount - 1);
+      updateMaxRowIdInParent();
+      this.isCurrentRowDeleted = true;
+
+    } else {
+      removeRow(currentCellOffset, cellCount);
+      file.seek(cellCountOffset);
+      file.writeShort(cellCount - 1);
+      this.isCurrentRowDeleted = true;
+    }
+
+    file.seek(cellCountOffset);
+    file.writeShort(cellCount - 1);
+  }
+
+  private void removeRow(long currentCellOffset, long cellCount) throws IOException {
+    file.seek(currentCellOffset);
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < cellCount; i++) {
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+    }
+    offsetLocationList.remove(this.currentLeafCellIndex);
+    offsetLocationList.add((short) 0x00);
+    file.seek(currentCellOffset);
+
+    for (short val : offsetLocationList) {
+      // System.out.println("this.file.getFilePointer() ::: " + this.file.getFilePointer());
+      file.writeShort(val);
+    }
+  }
+
+  private void removeRow(long currentCellOffset, long cellCount, int cellIndexId)
+      throws IOException {
+    file.seek(currentCellOffset);
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < cellCount; i++) {
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+    }
+    offsetLocationList.remove(cellIndexId);
+    offsetLocationList.add((short) 0x00);
+    file.seek(currentCellOffset);
+
+    for (short val : offsetLocationList) {
+      // System.out.println("this.file.getFilePointer() ::: " + this.file.getFilePointer());
+      file.writeShort(val);
+    }
+  }
+
+  public int getParentPageNo() throws IOException {
+    long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
+    long cellOffsetOffset = 0x0A;
+    long currentParentOffset = fileOffsetOfPage + cellOffsetOffset;
+    // System.out.println("file.getFilePointer() ::: " + file.getFilePointer());
+
+    file.seek(currentParentOffset);
+    // System.out.println("file.getFilePointer() ::: " + file.getFilePointer());
+    return file.readInt();
+  }
+
+  public void updateMaxRowIdInParent() throws IOException {
+    int parentPageNo = getParentPageNo();
+    long cellOffsetOffset = 0x0010;
+    long fileOffsetOfPage = (parentPageNo - 1) * 512;
+    long cellCountOffset = fileOffsetOfPage + 1;
+
+    long currentCellLocationOffset = fileOffsetOfPage + cellOffsetOffset;
+
+    file.seek(cellCountOffset);
+    short cellCount = file.readShort();
+
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < cellCount; i++) {
+      currentCellLocationOffset += 0x02 * i;
+      file.seek(currentCellLocationOffset);
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+      // System.out.println("offsetLocation ::: " + offsetLocation);
+    }
+
+
+    for (short val : offsetLocationList) {
+      long recordOffset = fileOffsetOfPage + val;
+      file.seek(recordOffset);
+      int pageId = file.readInt();
+
+      // System.out.println("pageId ::: " + pageId);
+
+      if (pageId == this.currentLeafPageNo) {
+        long maxRowIdOffset = recordOffset + 0x04;
+        file.seek(maxRowIdOffset);
+        int maxRowId = file.readInt();
+
+        file.seek(maxRowIdOffset);
+        file.writeInt(maxRowId - 1);
+
+        // System.out.println("maxRowId ::: " + maxRowId);
+      }
+    }
+
+  }
+
+
+  public void removeLeafFromParent() throws IOException {
+    int parentPageNo = getParentPageNo();
+    long cellOffsetOffset = 0x0010;
+    long fileOffsetOfPage = (parentPageNo - 1) * 512;
+    long cellCountOffset = fileOffsetOfPage + 1;
+
+    long currentCellLocationOffset = fileOffsetOfPage + cellOffsetOffset;
+
+    file.seek(cellCountOffset);
+    short cellCount = file.readShort();
+
+    ArrayList<Short> offsetLocationList = new ArrayList<>();
+    for (int i = 0; i < cellCount; i++) {
+      currentCellLocationOffset += 0x02 * i;
+      file.seek(currentCellLocationOffset);
+      short offsetLocation = file.readShort();
+      offsetLocationList.add(offsetLocation);
+      // System.out.println("offsetLocation ::: " + offsetLocation);
+    }
+
+    currentCellLocationOffset = fileOffsetOfPage + cellOffsetOffset;
+
+    int cellIndexId = 0;
+    for (short val : offsetLocationList) {
+      long recordOffset = fileOffsetOfPage + val;
+      file.seek(recordOffset);
+      int pageId = file.readInt();
+
+      // System.out.println("pageId ::: " + pageId);
+
+      if (pageId == this.currentLeafPageNo) {
+
+        // removeRow(long currentCellOffset, long cellCount, int cellIndexId)
+        removeRow(currentCellLocationOffset, cellCount, cellIndexId);
+
+        /*
+         * long maxRowIdOffset = recordOffset + 0x04; file.seek(maxRowIdOffset); int maxRowId =
+         * file.readInt();
+         * 
+         * file.seek(maxRowIdOffset); file.writeInt(maxRowId - 1);
+         */
+        // System.out.println("maxRowId ::: " + maxRowId);
+      }
+      cellIndexId++;
+    }
+
+  }
+
+  private int getMaxRowId() throws IOException {
+    file.seek(0x01);
+    return file.readInt();
+  }
+
+  private int getcurrentRowId() throws IOException {
+    long fileOffsetOfPage = Page.convertPageNoToFileOffset(this.currentLeafPageNo);
+    long cellOffsetOffset = 0x0010;
+    long currentCellOffset = fileOffsetOfPage + cellOffsetOffset + 0x02 * this.currentLeafCellIndex;
+    file.seek(currentCellOffset);
+    short currentCellLocation = file.readShort();
+    long currentCellLocationOffset = fileOffsetOfPage + currentCellLocation;
+    file.seek(currentCellLocationOffset);
+    byte columnCount = file.readByte();
+    long currentRowLocationOffset =
+        fileOffsetOfPage + currentCellLocation + 0x01 * (1 + columnCount);
+
+    file.seek(currentRowLocationOffset);
+    int rowId = file.readInt();
+    return rowId;
   }
 
   public void writeNull(int columnIndex) throws IOException {
@@ -507,9 +724,19 @@ public class TableFile implements Closeable {
     throw new NotImplementedException();
   }
 
-  public void writeTinyInt(int columnIndex, byte value) throws IOException {
-    // TODO Implement TableFile.writeTinyInt(int, byte)
-    throw new NotImplementedException();
+  public void writeTinyInt(int columnIndex, byte value) throws IOException, StorageException {
+    checkArgument(0 <= columnIndex && columnIndex < Byte.MAX_VALUE,
+        "columnIndex (%d) is not in range [0, %d)", columnIndex, Byte.MAX_VALUE);
+    checkState(this.hasCurrentRow(),
+        "tableFile is not pointing to a current row from which to read");
+
+    if (valueOfCurrentRowColumnIsNull(columnIndex)) {
+      // return null;
+      columnIndex++;
+    }
+
+    goToCurrentLeafPageCellColumnValue(columnIndex);
+    // return file.readByte();
   }
 
   public void writeSmallInt(int columnIndex, short value) throws IOException {
@@ -588,6 +815,18 @@ public class TableFile implements Closeable {
     file.seek(0x09);
     int rowId = file.readInt();
     return (rowId + 1);
+  }
+
+  public int getMaxtRowIdInTable(RandomAccessFile file) throws IOException {
+    try {
+      file.seek(0x01);
+
+      int rowId = file.readInt();
+      return (rowId);
+
+    } catch (Exception e) {
+    }
+    return -1;
   }
 
   private boolean hasCurrentLeafPageNo() {
