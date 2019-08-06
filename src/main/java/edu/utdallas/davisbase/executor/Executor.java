@@ -5,8 +5,6 @@ import static edu.utdallas.davisbase.DataType.INT;
 import static edu.utdallas.davisbase.DataType.TEXT;
 import static edu.utdallas.davisbase.DataType.TINYINT;
 import static java.lang.String.format;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.checkerframework.checker.nullness.NullnessUtil.castNonNull;
 
@@ -116,12 +114,15 @@ public class Executor {
     return result;
   }
 
-  protected CreateIndexResult executeCreateIndex(CreateIndexCommand command) throws ExecuteException, StorageException {
+  protected CreateIndexResult executeCreateIndex(CreateIndexCommand command) throws ExecuteException, StorageException, IOException {
     assert command != null : "command should not be null";
     assert context != null : "context should not be null";
 
-    // COMBAK Implement Executor.execute(CreateIndexCommand, Storage)
-    throw new NotImplementedException();
+    final String indexName = command.getIndexName();
+    context.createIndexFile(indexName);
+
+    final CreateIndexResult result = new CreateIndexResult(command.getTableName(), command.getColumnName());
+    return result;
   }
 
   protected CreateTableResult executeCreateTable(CreateTableCommand command) throws ExecuteException, StorageException, IOException {

@@ -18,4 +18,24 @@ public class CreateIndexCommand implements Command {
     this.columnIndex = columnIndex;
     this.dataType = dataType;
   }
+
+  public String getTableName() {
+    return tableName;
+  }
+
+  public String getIndexName() {
+    return indexName;
+  }
+
+  public String getColumnName() {
+    return columnName;
+  }
+
+  public byte getColumnIndex() {
+    return columnIndex;
+  }
+
+  public DataType getDataType() {
+    return dataType;
+  }
 }

@@ -42,6 +42,18 @@ public class Storage {
     try (final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw")) {}
   }
 
+  public void createIndexFile(String indexName) throws IOException {
+    checkNotNull(indexName, "indexName");
+
+    final File indexFileHandle = getIndexFileHandle(indexName);
+    checkArgument(!indexFileHandle.exists(),
+      format("File '%s' for index '%s' already exists.",
+        indexFileHandle.toString(),
+        indexName));
+
+    try (final RandomAccessFile randomAccessFile = new RandomAccessFile(indexFileHandle, "rw")) {}
+  }
+
   public TableFile openTableFile(String tableName) throws IOException {
     checkNotNull(tableName);
 
@@ -63,6 +75,29 @@ public class Storage {
             configuration.getPageSize()));
 
     return new TableFile(randomAccessFile);
+  }
+
+  public IndexFile openIndexFile(String indexName) throws IOException {
+    checkNotNull(indexName);
+
+    final File indexFileHandle = getIndexFileHandle(indexName);
+    checkArgument(indexFileHandle.exists(),
+      format("File '%s' for index '%s' does not exist.",
+        indexFileHandle.toString(),
+        indexName));
+    checkArgument(!indexFileHandle.isDirectory(),
+      format("File '%s' for index '%s' is a directory, but should be a file.",
+        indexFileHandle.toString(),
+        indexName));
+
+    final RandomAccessFile randomAccessFile = new RandomAccessFile(indexFileHandle, "rw");
+    final long length = randomAccessFile.length();
+    checkState(length % configuration.getPageSize() == 0,
+      format("File length %d is not a multiple of page size %d.",
+        length,
+        configuration.getPageSize()));
+
+    return new IndexFile(randomAccessFile);
   }
 
   public void deleteTableFile(String tableName) throws IOException {
@@ -90,6 +125,15 @@ public class Storage {
     final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
 
     return tableFileHandle;
+  }
+
+  private File getIndexFileHandle(String indexName) throws IOException {
+    assert indexName != null : "tableName should not be null";
+
+    final String infexFileName = indexName + "." + configuration.getIndexFileExtension();
+    final File indexFileHandle = new File(state.getDataDirectory(), infexFileName);
+
+    return indexFileHandle;
   }
 
   public void initDavisBase() {
