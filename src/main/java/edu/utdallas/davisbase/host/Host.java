@@ -89,16 +89,12 @@ public class Host {
     printer.println("\tSHOW TABLES;                                                 Display all the tables in the database.");
     printer.println("\tCREATE TABLE table_name (<column_name datatype>);            Create a new table in the database.");
     printer.println("\tINSERT INTO table_name VALUES (value1,value2,..);            Insert a new record into the table.");
-    // writer.println("\tDELETE FROM TABLE table_name WHERE row_id = key_value;
-    // Delete a record from the table whose rowid is <key_value>.");
-    // writer.println("\tUPDATE table_name SET column_name = value WHERE row_id =
-    // ..; Modifies the records in the table.");
-    // writer.println("\tCREATE INDEX ON table_name (column_name); Create index for
-    // the specified column in the table");
+    printer.println("\tDELETE FROM TABLE table_name WHERE row_id = key_value;       Delete a record from the table whose rowid is <key_value>.");
+    printer.println("\tUPDATE table_name SET column_name = value WHERE row_id = ..; Modifies the records in the table.");
+    printer.println("\tCREATE INDEX ON table_name (column_name);                    Create index for the specified column in the table");
     printer.println("\tSELECT * FROM table_name;                                    Display all records in the table.");
-    // writer.println("\tSELECT * FROM table_name WHERE column_name operator value;
-    // Display records in the table where the given condition is satisfied.");
-    // writer.println("\tDROP TABLE table_name; Remove table data and its schema.");
+    printer.println("\tSELECT * FROM table_name WHERE column_name operator value;   Display records in the table where the given condition is satisfied.");
+    printer.println("\tDROP TABLE table_name;                                       Remove table data and its schema.");
     printer.println("\tHELP;                                                        Show this help information.");
     printer.println("\tEXIT;                                                        Exit DavisBase.");
     printer.println();
