@@ -1,0 +1,84 @@
+@startuml DavisBase Activity Diagram
+
+:run();
+(R)
+
+partition "Input" {
+  :host.readStatement();
+  if () then (//exception//)
+    (E)
+    detach
+  else
+  endif
+}
+
+:statement: String]
+
+partition "Parsing" {
+  :parser.parse(statement: String);
+  if () then (//exception//)
+    (E)
+    detach
+  else
+  endif
+}
+
+:representation: CommandRepresentation]
+
+partition "Compilation" {
+  :compiler.compile(representation: CommandRepresentation, context: Storage);
+  if () then (//exception//)
+    (E)
+    detach
+  else
+  endif
+}
+
+:command: Command]
+
+partition "Execution" {
+  :executor.execute(command: Command, context: Storage);
+  if () then (//exception//)
+    (E)
+    detach
+  else
+  endif
+}
+
+:result: Result]
+if (result instanceof ExitResult) then (true)
+  stop
+else (false)
+endif
+
+partition "Output" {
+  :host.writeResult(result: Result);
+  if () then (//exception//)
+    (E)
+    detach
+  endif
+}
+
+(R)
+note : repeat run loop
+detach
+
+partition "Exception Handling" {
+  (E)
+
+  :host.writeException(:DavisBaseException);
+  if () then (//exception//)
+    :host.writeException(:HostException);
+    if () then (//exception//)
+      :System.err.println(exception.toString());
+      end
+    endif
+  endif
+
+  (R)
+  note : repeat run loop
+  detach
+}
+
+
+@enduml

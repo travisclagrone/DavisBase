@@ -168,10 +168,9 @@
                 <version>2.9.0</version>
               </path>
             </annotationProcessorPaths>
-            <annotationProcessors>
-              <!-- Add all the checkers you want to enable here -->
+            <!-- <annotationProcessors>
               <annotationProcessor>org.checkerframework.checker.nullness.NullnessChecker</annotationProcessor>
-            </annotationProcessors>
+            </annotationProcessors> -->
             <compilerArgs>
               <!-- location of the annotated JDK, which comes from a Maven dependency -->
               <arg>-Xbootclasspath/p:${annotatedJdk}</arg>

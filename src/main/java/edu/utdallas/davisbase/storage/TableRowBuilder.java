@@ -1,8 +1,7 @@
 package edu.utdallas.davisbase.storage;
 
-import static com.google.common.base.Preconditions.checkElementIndex;
 import static com.google.common.base.Preconditions.checkNotNull;
-
+import static java.lang.String.format;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -15,164 +14,150 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.utdallas.davisbase.NotImplementedException;
-
 public class TableRowBuilder {
 
-	private final List<Object> values = new ArrayList<>();
+  private final List<Object> values = new ArrayList<>();
 
-	public int getNoOfValues() {
-		return this.values.size();
-	}
+  public int getNoOfValues() {
+    return this.values.size();
+  }
 
-	public Object getValueAt(int index) {
-		return this.values.get(index);
-	}
+  public Object getValueAt(int index) {
+    return this.values.get(index);
+  }
 
-	public TableRowBuilder() {
+  public TableRowBuilder() {
 
-	}
+  }
 
-	public void appendNull() {
-		this.values.add("");
-	}
+  public void appendNull() {
+    this.values.add("");
+  }
 
-	public void appendTinyInt(byte value) {
-		this.values.add(value);
-	}
+  public void appendTinyInt(byte value) {
+    this.values.add(value);
+  }
 
-	public void appendSmallInt(short value) {
-		this.values.add(value);
-	}
+  public void appendSmallInt(short value) {
+    this.values.add(value);
+  }
 
-	public void appendInt(int value) {
-		this.values.add(value);
-	}
+  public void appendInt(int value) {
+    this.values.add(value);
+  }
 
-	public void appendBigInt(long value) {
-		this.values.add(value);
-	}
+  public void appendBigInt(long value) {
+    this.values.add(value);
+  }
 
-	public void appendFloat(float value) {
-		this.values.add(value);
-	}
+  public void appendFloat(float value) {
+    this.values.add(value);
+  }
 
-	public void appendDouble(double value) {
-		this.values.add(value);
-	}
+  public void appendDouble(double value) {
+    this.values.add(value);
+  }
 
-	public void appendYear(Year value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendYear(Year value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendTime(LocalTime value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendTime(LocalTime value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendDateTime(LocalDateTime value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendDateTime(LocalDateTime value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendDate(LocalDate value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendDate(LocalDate value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendText(String value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendText(String value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
 
-	private byte[] intToByteArray(final int i) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(bos);
-		dos.writeInt(i);
-		dos.flush();
-		return bos.toByteArray();
-	}
+  private byte[] intToByteArray(final int i) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    DataOutputStream dos = new DataOutputStream(bos);
+    dos.writeInt(i);
+    dos.flush();
+    return bos.toByteArray();
+  }
 
-	public byte[] toBytes() {
-		Object data;
-		int finalByteArraySize = 0;
-		byte[] tempByteArray;
-		List<byte[]> bytesArraysList = new ArrayList<>();
-		for (int i = 0; i < this.getNoOfValues(); i++) {
-			data = this.getValueAt(i);
-//			byte[] ByteBuffer.allocate(4).putInt((int) data).array();
-			switch (data.getClass().getSimpleName()) {
-			case "Integer":
-				tempByteArray = new byte[4];
-				tempByteArray = ByteBuffer.allocate(4).putInt((int) data).array();
-				break;
-			case "String":
-				tempByteArray = data.toString().getBytes();
-				break;
-			case "Byte":
-				tempByteArray = new byte[1];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).put((byte) data).array();
-				break;
-			case "Short":
-				tempByteArray = new byte[2];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putShort((short) data).array();
-				break;
-			case "Long":
-				tempByteArray = new byte[8];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putLong((long) data).array();
-				break;
-			case "Float":
-				tempByteArray = new byte[4];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putFloat((short) data).array();
-				break;
-			case "Double":
-				tempByteArray = new byte[8];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putDouble((long) data).array();
-				break;
-			case "Year":
-				int yearInt = ((Year) data).getValue();
-				tempByteArray = new byte[1];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).put((byte) yearInt).array();
-				break;
-			case "LocalTime":
-				int timeInt = ((LocalTime) data).toSecondOfDay();
-				tempByteArray = new byte[4];
-				tempByteArray = ByteBuffer.allocate(4).putInt((int) timeInt).array();
-				break;
-			case "LocalDateTime":
-				long dateTimeInt = ((LocalDateTime) data).toEpochSecond(ZoneOffset.UTC);
-				tempByteArray = new byte[8];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putLong((long) dateTimeInt).array();
-				break;
-			case "LocalDate":
-				long dateInt = ((LocalDate) data).toEpochDay();
-				tempByteArray = new byte[8];
-				tempByteArray = ByteBuffer.allocate(tempByteArray.length).putLong((long) dateInt).array();
-				break;
-			case "":
-				tempByteArray = new byte[0];
-				break;
-			default:
-				tempByteArray = new byte[0];
-				break;
-			}
-			if (!(tempByteArray.length == 0))
-				bytesArraysList.add(tempByteArray);
-			finalByteArraySize = finalByteArraySize + tempByteArray.length;
-		}
+  public byte[] toBytes() {
+    List<byte[]> bytesArraysList = new ArrayList<>();
+    int finalByteArraySize = 0;
+    for (int i = 0; i < this.getNoOfValues(); i++) {
+      final Object value = this.getValueAt(i);
 
-		byte[] finalByteArray = new byte[finalByteArraySize];
-		int k = 0;
-		for (int j = 0; j < bytesArraysList.size(); j++) {
-			for (int i = 0; i < bytesArraysList.get(j).length; i++) {
-				finalByteArray[k] = bytesArraysList.get(j)[i];
-				k++;
-			}
-		}
+      final byte[] tempByteArray;
+      if (value.equals("")) {  // An empty string denotes null.
+        tempByteArray = new byte[0];
+      }
+      else if (value instanceof Byte) {
+        tempByteArray = ByteBuffer.allocate(1).put((byte) value).array();
+      }
+      else if (value instanceof Short) {
+        tempByteArray = ByteBuffer.allocate(2).putShort((short) value).array();
+      }
+      else if (value instanceof Integer) {
+        tempByteArray = ByteBuffer.allocate(4).putInt((int) value).array();
+      }
+      else if (value instanceof Long) {
+        tempByteArray = ByteBuffer.allocate(8).putLong((long) value).array();
+      }
+      else if (value instanceof Float) {
+        tempByteArray = ByteBuffer.allocate(4).putFloat((float) value).array();
+      }
+      else if (value instanceof Double) {
+        tempByteArray = ByteBuffer.allocate(8).putDouble((double) value).array();
+      }
+      else if (value instanceof Year) {
+        final int yearInt = ((Year) value).getValue() - 2000;
+        tempByteArray = ByteBuffer.allocate(1).put((byte) yearInt).array();
+      }
+      else if (value instanceof LocalTime) {
+        final int timeInt = ((LocalTime) value).toSecondOfDay();
+        tempByteArray = ByteBuffer.allocate(4).putInt((int) timeInt).array();
+      }
+      else if (value instanceof LocalDateTime) {
+        final long dateTimeInt = ((LocalDateTime) value).toEpochSecond(ZoneOffset.UTC);
+        tempByteArray = ByteBuffer.allocate(8).putLong((long) dateTimeInt).array();
+      }
+      else if (value instanceof LocalDate) {
+        final long dateInt = ((LocalDate) value).toEpochDay();
+        tempByteArray = ByteBuffer.allocate(8).putLong((long) dateInt).array();
+      }
+      else if (value instanceof String) {
+        tempByteArray = value.toString().getBytes();
+      }
+      else {
+        throw new IllegalStateException(format("Value index %d of TableRowBuilder instance is of class %s.", i, value.getClass().getName()));
+      }
 
-		return finalByteArray;
+      if (tempByteArray.length > 0) {
+        bytesArraysList.add(tempByteArray);
+      }
+      finalByteArraySize = finalByteArraySize + tempByteArray.length;
+    }
 
-	}
+    final byte[] finalByteArray = new byte[finalByteArraySize];
+    int k = 0;
+    for (int j = 0; j < bytesArraysList.size(); j++) {
+      for (int i = 0; i < bytesArraysList.get(j).length; i++) {
+        finalByteArray[k] = bytesArraysList.get(j)[i];
+        k++;
+      }
+    }
+
+    return finalByteArray;
+  }
 }

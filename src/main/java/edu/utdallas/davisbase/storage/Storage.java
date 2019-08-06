@@ -1,19 +1,18 @@
 package edu.utdallas.davisbase.storage;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
+import edu.utdallas.davisbase.BooleanUtils;
+import edu.utdallas.davisbase.PrimaryKeyUtils;
+import edu.utdallas.davisbase.catalog.CatalogTable;
+import edu.utdallas.davisbase.catalog.CatalogTableColumn;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
+import java.nio.file.Files;
 import java.util.List;
-import edu.utdallas.davisbase.BooleanUtils;
-import edu.utdallas.davisbase.NotImplementedException;
-import edu.utdallas.davisbase.catalog.CatalogTable;
-import edu.utdallas.davisbase.catalog.CatalogTableColumn;
-import edu.utdallas.davisbase.catalog.DavisBaseColumnsTableColumn;
-import edu.utdallas.davisbase.common.DavisBaseConstant;
+
+import static com.google.common.base.Preconditions.*;
+import static java.lang.String.format;
 
 public class Storage {
 
@@ -21,46 +20,76 @@ public class Storage {
   private final StorageState state;
 
   @SuppressWarnings("initialization")
-
   public Storage(StorageConfiguration configuration, StorageState state) {
+    checkNotNull(configuration, "configuration");
+    checkNotNull(state, "state");
+
     this.configuration = configuration;
     this.state = state;
+
     initDavisBase();
   }
 
   public void createTableFile(String tableName) throws IOException {
+    checkNotNull(tableName, "tableName");
 
-    String path = state.getDataDirectory().getPath() + "/" + tableName + "."
-        + this.configuration.getTableFileExtension();
+    final File tableFileHandle = getTableFileHandle(tableName);
+    checkArgument(!tableFileHandle.exists(),
+        format("File '%s' for table '%s' already exists.",
+            tableFileHandle.toString(),
+            tableName));
 
-    File file = new File(path);
-
-    if (!file.exists()) {
-      RandomAccessFile table = new RandomAccessFile(state.getDataDirectory().getPath() + "/"
-          + tableName + "." + this.configuration.getTableFileExtension(), "rw");
-      // Page.addTableMetaDataPage(table);
-      table.close();
-    }
+    try (final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw")) {}
   }
 
   public TableFile openTableFile(String tableName) throws IOException {
     checkNotNull(tableName);
 
-    final String tableFileName = tableName + "." + configuration.getTableFileExtension();
-    final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
-
-    checkArgument(tableFileHandle.exists(), String.format(
-        "File \"%s\" for table \"%s\" does not exist.", tableFileHandle.toString(), tableName));
+    final File tableFileHandle = getTableFileHandle(tableName);
+    checkArgument(tableFileHandle.exists(),
+        format("File '%s' for table '%s' does not exist.",
+            tableFileHandle.toString(),
+            tableName));
     checkArgument(!tableFileHandle.isDirectory(),
-        String.format("File \"%s\" for table \"%s\" is actually a directory.",
-            tableFileHandle.toString(), tableName));
+        format("File '%s' for table '%s' is a directory, but should be a file.",
+            tableFileHandle.toString(),
+            tableName));
 
     final RandomAccessFile randomAccessFile = new RandomAccessFile(tableFileHandle, "rw");
     final long length = randomAccessFile.length();
-    checkState(length % configuration.getPageSize() == 0, String.format(
-        "File length %d is not a multiple of page size %d.", length, configuration.getPageSize()));
+    checkState(length % configuration.getPageSize() == 0,
+        format("File length %d is not a multiple of page size %d.",
+            length,
+            configuration.getPageSize()));
 
     return new TableFile(randomAccessFile);
+  }
+
+  public void deleteTableFile(String tableName) throws IOException {
+    checkNotNull(tableName, "tableName");
+
+    final File tableFileHandle = getTableFileHandle(tableName);
+    checkArgument(tableFileHandle.exists(),
+        format("File '%s' for table '%s' does not exist.",
+            tableFileHandle.toString(),
+            tableName));
+    checkArgument(!tableFileHandle.isDirectory(),
+        format("File '%s' for table '%s' is a directory, but should be a file.",
+            tableFileHandle.toString(),
+            tableName));
+
+    // Use java.nio.file.Files#delete(Path) instead of java.io.File#delete() because the former
+    // throws a descriptive exception on failure whereas the latter doesn't.
+    Files.delete(tableFileHandle.toPath());
+  }
+
+  private File getTableFileHandle(String tableName) throws IOException {
+    assert tableName != null : "tableName should not be null";
+
+    final String tableFileName = tableName + "." + configuration.getTableFileExtension();
+    final File tableFileHandle = new File(state.getDataDirectory(), tableFileName);
+
+    return tableFileHandle;
   }
 
   public void initDavisBase() {
@@ -166,6 +195,8 @@ public class Storage {
         row.appendText(col.getDataType().name());
         row.appendTinyInt(col.getOrdinalPosition());
         row.appendText(BooleanUtils.toText(col.isNullable()));
+        row.appendText(BooleanUtils.toText(col.isUnique()));
+        row.appendText(PrimaryKeyUtils.toText(col.isPrimaryKey()));
         sysColumnFile.appendRow(row);
       }
 
@@ -177,6 +208,8 @@ public class Storage {
         row.appendText(col.getDataType().name());
         row.appendTinyInt(col.getOrdinalPosition());
         row.appendText(BooleanUtils.toText(col.isNullable()));
+        row.appendText(BooleanUtils.toText(col.isUnique()));
+        row.appendText(PrimaryKeyUtils.toText(col.isPrimaryKey()));
         sysColumnFile.appendRow(row);
       }
 

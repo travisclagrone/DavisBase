@@ -15,6 +15,7 @@ import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.select.*;
 import net.sf.jsqlparser.statement.update.Update;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -40,10 +41,16 @@ public class Parser {
       Statement stmt = pm.parse(new StringReader(statement));
       if (stmt instanceof CreateTable) {
         CreateTable createTableStatement = (CreateTable) stmt;
+        if(null!= createTableStatement.getIndexes()){
+          if(createTableStatement.getIndexes().size()>1 ||
+            (createTableStatement.getIndexes().size()==1 && createTableStatement.getIndexes().get(0).getType().equalsIgnoreCase("FOREIGN KEY")))
+          throw new ParseException("DavisBase only supports a Primary Key on a single column");
+        }
         CreateTableCommandRepresentation create = new CreateTableCommandRepresentation(
           createTableStatement.toString(),
           createTableStatement.getTable().getName(),
-          createTableStatement.getColumnDefinitions()
+          createTableStatement.getColumnDefinitions(),
+          null==createTableStatement.getIndexes() ? null : createTableStatement.getIndexes().get(0)
         );
         return create;
       } else if (stmt instanceof Drop) { //type determines if index or table
@@ -112,7 +119,6 @@ public class Parser {
               }
             }
           }
-
         } else {
           throw new ParseException("DavisBase only supports simple select statements");
         }
@@ -120,7 +126,8 @@ public class Parser {
           selectStatement.toString(),
           pSelect.getFromItem().toString(),
           pSelect.getSelectItems(),
-          (pSelect.getSelectItems().get(0) instanceof AllColumns)
+          (pSelect.getSelectItems().get(0) instanceof AllColumns),
+          parseWhereExpression(pSelect.getWhere())
         );
         return select;
       } else {
@@ -135,7 +142,11 @@ public class Parser {
    * @param where clause to parse
    * @return WhereExpression representation of the expression
    */
-  public WhereExpression parseWhereExpression(Expression where) throws ParseWhereException {
+  public @Nullable WhereExpression parseWhereExpression(@Nullable Expression where) throws ParseWhereException {
+    if(null==where){
+      return null;
+    }
+
     WhereExpression whereExpression;
     if (where instanceof EqualsTo) {
       EqualsTo equals = (EqualsTo) where;
