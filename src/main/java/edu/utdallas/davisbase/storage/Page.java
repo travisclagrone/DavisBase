@@ -24,44 +24,44 @@ class Page {
   static final int PAGE_OFFSET_SIZE = Short.BYTES;
   static final int PAGE_SIZE = StorageConfiguration.Builder.getDefaultPageSize();
 
-	// called when the interior node is overflowed
-	static int AddInteriorPage(RandomAccessFile file) {
-		int numofPages = 0;
-		try {
-			numofPages = (int) (file.length() / PAGE_SIZE);
-			numofPages = numofPages + 1;
-			file.setLength(PAGE_SIZE * numofPages);
-			file.seek((numofPages - 1) * PAGE_SIZE);
-			file.writeByte(0x05);// writing page type
+  // called when the interior node is overflowed
+  static int AddInteriorPage(RandomAccessFile file) {
+    int numofPages = 0;
+    try {
+      numofPages = (int) (file.length() / PAGE_SIZE);
+      numofPages = numofPages + 1;
+      file.setLength(PAGE_SIZE * numofPages);
+      file.seek((numofPages - 1) * PAGE_SIZE);
+      file.writeByte(0x05);// writing page type
 
-			file.seek(((numofPages - 1) * PAGE_SIZE) + 6);
-			file.writeInt(-1); // setting right most child to -1
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-		return numofPages;
-	}
+      file.seek(((numofPages - 1) * PAGE_SIZE) + 6);
+      file.writeInt(-1); // setting right most child to -1
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+    return numofPages;
+  }
 
-	// called when the leaf id overflowed.
-	static int AddLeafPage(RandomAccessFile file) {
-		int numofPages = 0;
-		try {
-			numofPages = (int) (file.length() / PAGE_SIZE);
-			numofPages = numofPages + 1;
-			file.setLength(PAGE_SIZE * numofPages);
-			file.seek((numofPages - 1) * PAGE_SIZE);
-			file.writeByte(0x0D);// writing page type
+  // called when the leaf id overflowed.
+  static int AddLeafPage(RandomAccessFile file) {
+    int numofPages = 0;
+    try {
+      numofPages = (int) (file.length() / PAGE_SIZE);
+      numofPages = numofPages + 1;
+      file.setLength(PAGE_SIZE * numofPages);
+      file.seek((numofPages - 1) * PAGE_SIZE);
+      file.writeByte(0x0D);// writing page type
 
-			file.seek(((numofPages - 1) * PAGE_SIZE) + 6);
-			file.writeInt(-1);// setting right most child to -1
+      file.seek(((numofPages - 1) * PAGE_SIZE) + 6);
+      file.writeInt(-1);// setting right most child to -1
 
-		} catch (Exception e) {
-			System.out.println(e);
-		}
-		return numofPages;
-	}
+    } catch (Exception e) {
+      System.out.println(e);
+    }
+    return numofPages;
+  }
 
-	static void addTableMetaDataPage(RandomAccessFile file) throws IOException {
+  static void addTableMetaDataPage(RandomAccessFile file) throws IOException {
     file.setLength(PAGE_SIZE);
 
     file.seek(FILE_OFFSET_OF_METADATA_PAGE_TYPE_CODE);
@@ -79,46 +79,46 @@ class Page {
     file.writeInt(ROWID_NULL_VALUE);
 
     setPageasRoot(file, rootPageNo);
-	}
+  }
 
-	// if no space in leaf node
-	static int splitLeafPage(RandomAccessFile file, int pageNo) {
+  // if no space in leaf node
+  static int splitLeafPage(RandomAccessFile file, int pageNo) {
 
-		boolean rootflag = CheckifRootNode(file, pageNo);
-		try {
-			if (rootflag) {
-				int parentPageNo = AddInteriorPage(file);
-				setPageasRoot(file, parentPageNo);
-				setParent(file, pageNo, parentPageNo);
-				insertChild(file, pageNo, parentPageNo);
-				int newleafPageNo = AddLeafPage(file);
-				setParent(file, newleafPageNo, parentPageNo);
-				insertChild(file, newleafPageNo, parentPageNo);
-				setRightSibling(file, pageNo, newleafPageNo);
-				setRightMostChild(file, parentPageNo); // Asuming thre is no leaf node after this.
-				return newleafPageNo;
-			} else {
-				int parentPageNo = getParent(file, pageNo);
-				int newleafPageNo = AddLeafPage(file);
-				setParent(file, newleafPageNo, parentPageNo);
-				insertChild(file, newleafPageNo, parentPageNo);
-				setRightSibling(file, pageNo, newleafPageNo);
-				setRightMostChild(file, parentPageNo);
-				if (!checkParentspace(file, parentPageNo)) {
-					int newPageNo = splitInteriorPage(file, parentPageNo);
-				}
-				return newleafPageNo;
-			}
-		} catch (Exception e) {
-		}
-		return -1;
-	}
+    boolean rootflag = CheckifRootNode(file, pageNo);
+    try {
+      if (rootflag) {
+        int parentPageNo = AddInteriorPage(file);
+        setPageasRoot(file, parentPageNo);
+        setParent(file, pageNo, parentPageNo);
+        insertChild(file, pageNo, parentPageNo);
+        int newleafPageNo = AddLeafPage(file);
+        setParent(file, newleafPageNo, parentPageNo);
+        insertChild(file, newleafPageNo, parentPageNo);
+        setRightSibling(file, pageNo, newleafPageNo);
+        setRightMostChild(file, parentPageNo); // Asuming thre is no leaf node after this.
+        return newleafPageNo;
+      } else {
+        int parentPageNo = getParent(file, pageNo);
+        int newleafPageNo = AddLeafPage(file);
+        setParent(file, newleafPageNo, parentPageNo);
+        insertChild(file, newleafPageNo, parentPageNo);
+        setRightSibling(file, pageNo, newleafPageNo);
+        setRightMostChild(file, parentPageNo);
+        if (!checkParentspace(file, parentPageNo)) {
+          int newPageNo = splitInteriorPage(file, parentPageNo);
+        }
+        return newleafPageNo;
+      }
+    } catch (Exception e) {
+    }
+    return -1;
+  }
 
-	static int getLeftChild(RandomAccessFile file, int currentPageNo) {
-		try {
-			int currentPageOffset = (currentPageNo-1)*Page.PAGE_SIZE;
-			file.seek(currentPageOffset+16);
-			int leftChildDataOffsetPageNo = file.readShort();
+  static int getLeftChild(RandomAccessFile file, int currentPageNo) {
+    try {
+      int currentPageOffset = (currentPageNo-1)*Page.PAGE_SIZE;
+      file.seek(currentPageOffset+16);
+      int leftChildDataOffsetPageNo = file.readShort();
             int leftChildPageNo = 0;
             if (leftChildDataOffsetPageNo == 0) {
                 return -1;
@@ -126,167 +126,167 @@ class Page {
 
             file.seek(currentPageOffset + leftChildDataOffsetPageNo);
             leftChildPageNo = file.readInt();
-			return leftChildPageNo;
-		}catch(Exception e) {
+      return leftChildPageNo;
+    }catch(Exception e) {
 
-		}
-		return -1;
+    }
+    return -1;
 
-	}
+  }
 
-	static void appendChildInINteriorPage(RandomAccessFile file, int childPageNo, int currentPageNo) {
-		try {
-			int leftChildPage = getLeftChild(file, currentPageNo);
-			if (leftChildPage == -1) {
+  static void appendChildInINteriorPage(RandomAccessFile file, int childPageNo, int currentPageNo) {
+    try {
+      int leftChildPage = getLeftChild(file, currentPageNo);
+      if (leftChildPage == -1) {
                 leftChildPage = childPageNo;
             }
-			int rowId = getnextRowIdInterior(file);
-			int currentPageOffset = (currentPageNo - 1) * Page.PAGE_SIZE;
-			file.seek(currentPageOffset + 3);
-			short currentCellPointer = file.readShort();
-			if (currentCellPointer == 0) {
-				currentCellPointer = (short) Page.PAGE_SIZE;
-			}
-			int payLoad = 12;
-			int dataEntryPoint = currentCellPointer - payLoad;
-			file.seek(currentPageOffset + dataEntryPoint);
-			file.writeInt(leftChildPage);
-			file.writeInt(rowId);
-			file.writeInt(childPageNo);
+      int rowId = getnextRowIdInterior(file);
+      int currentPageOffset = (currentPageNo - 1) * Page.PAGE_SIZE;
+      file.seek(currentPageOffset + 3);
+      short currentCellPointer = file.readShort();
+      if (currentCellPointer == 0) {
+        currentCellPointer = (short) Page.PAGE_SIZE;
+      }
+      int payLoad = 12;
+      int dataEntryPoint = currentCellPointer - payLoad;
+      file.seek(currentPageOffset + dataEntryPoint);
+      file.writeInt(leftChildPage);
+      file.writeInt(rowId);
+      file.writeInt(childPageNo);
 
-			// updating page headers
-			file.seek(currentPageOffset + 1);
-			int noOfRecordsInPage = file.readShort();
-			noOfRecordsInPage = noOfRecordsInPage + 1;
-			file.seek(currentPageOffset + 1);
-			file.writeShort(noOfRecordsInPage);
+      // updating page headers
+      file.seek(currentPageOffset + 1);
+      int noOfRecordsInPage = file.readShort();
+      noOfRecordsInPage = noOfRecordsInPage + 1;
+      file.seek(currentPageOffset + 1);
+      file.writeShort(noOfRecordsInPage);
 
-			file.seek(currentPageOffset + 3);
-			file.writeShort(dataEntryPoint);
+      file.seek(currentPageOffset + 3);
+      file.writeShort(dataEntryPoint);
 
-			file.seek(currentPageOffset + 16 + 2 * (noOfRecordsInPage - 1));
-			file.writeShort(dataEntryPoint);
+      file.seek(currentPageOffset + 16 + 2 * (noOfRecordsInPage - 1));
+      file.writeShort(dataEntryPoint);
 
-//			int rightMostChild = getRightMostChildPageNo(file, currentPageNo);
-//			file.seek(currentPageOffset + 6);
-//			file.writeByte(rightMostChild);
+//      int rightMostChild = getRightMostChildPageNo(file, currentPageNo);
+//      file.seek(currentPageOffset + 6);
+//      file.writeByte(rightMostChild);
 
-			setRightMostChild(file, currentPageNo);
+      setRightMostChild(file, currentPageNo);
 
-			file.seek(0x09);
-			file.writeInt(rowId);
-		} catch (Exception e) {
+      file.seek(0x09);
+      file.writeInt(rowId);
+    } catch (Exception e) {
 
-		}
-	}
+    }
+  }
 
-	static int getnextRowIdInterior(RandomAccessFile file) {
-		try {
-			file.seek(0x09);
-			int rowId = file.readInt();
-			return (rowId + 1);
+  static int getnextRowIdInterior(RandomAccessFile file) {
+    try {
+      file.seek(0x09);
+      int rowId = file.readInt();
+      return (rowId + 1);
 
-		} catch (Exception e) {
-		}
-		return -1;
+    } catch (Exception e) {
+    }
+    return -1;
 
-	}
+  }
 
-	static int splitInteriorPage(RandomAccessFile file, int pageNo) {
-		boolean rootflag = CheckifRootNode(file, pageNo);
-		int siblingInteriorPageNo = AddInteriorPage(file);
-		try {
-			splitInteriorData(file, pageNo, siblingInteriorPageNo);
-			if (rootflag) {
-				int parentPageNo = AddInteriorPage(file);
-				setPageasRoot(file, parentPageNo);
-				insertChild(file, pageNo, parentPageNo);
-				insertChild(file, siblingInteriorPageNo, parentPageNo);
-				setParent(file, pageNo, parentPageNo);
-				setParent(file, siblingInteriorPageNo, parentPageNo);
-				setRightMostChild(file, parentPageNo);
+  static int splitInteriorPage(RandomAccessFile file, int pageNo) {
+    boolean rootflag = CheckifRootNode(file, pageNo);
+    int siblingInteriorPageNo = AddInteriorPage(file);
+    try {
+      splitInteriorData(file, pageNo, siblingInteriorPageNo);
+      if (rootflag) {
+        int parentPageNo = AddInteriorPage(file);
+        setPageasRoot(file, parentPageNo);
+        insertChild(file, pageNo, parentPageNo);
+        insertChild(file, siblingInteriorPageNo, parentPageNo);
+        setParent(file, pageNo, parentPageNo);
+        setParent(file, siblingInteriorPageNo, parentPageNo);
+        setRightMostChild(file, parentPageNo);
 
-			} else {
-				int parentPageNo = getParent(file, pageNo);
-				setParent(file, siblingInteriorPageNo, parentPageNo);
-				insertChild(file, siblingInteriorPageNo, parentPageNo);
-				setRightMostChild(file, parentPageNo);
-				if (!checkParentspace(file, parentPageNo)) {
-					return splitInteriorPage(file, parentPageNo);
-				}
-			}
-		} catch (Exception e) {
-		}
-		return siblingInteriorPageNo;
+      } else {
+        int parentPageNo = getParent(file, pageNo);
+        setParent(file, siblingInteriorPageNo, parentPageNo);
+        insertChild(file, siblingInteriorPageNo, parentPageNo);
+        setRightMostChild(file, parentPageNo);
+        if (!checkParentspace(file, parentPageNo)) {
+          return splitInteriorPage(file, parentPageNo);
+        }
+      }
+    } catch (Exception e) {
+    }
+    return siblingInteriorPageNo;
 
-	}
+  }
 
-	static void splitInteriorData(RandomAccessFile file, int currentPageNo, int siblingInteriorPageNo) {
-		long currentPageOffset = (currentPageNo - 1) * PAGE_SIZE;
-		long siblingPageOffset = (siblingInteriorPageNo - 1) * PAGE_SIZE;
-		int currentPageCellContentReference = 3;
-		try {
-			file.seek(currentPageOffset + currentPageCellContentReference);
-			short currentPageCellContentOffset = file.readShort();
-			file.seek(currentPageOffset + 1);
-			int noofRecords = file.readShort();
+  static void splitInteriorData(RandomAccessFile file, int currentPageNo, int siblingInteriorPageNo) {
+    long currentPageOffset = (currentPageNo - 1) * PAGE_SIZE;
+    long siblingPageOffset = (siblingInteriorPageNo - 1) * PAGE_SIZE;
+    int currentPageCellContentReference = 3;
+    try {
+      file.seek(currentPageOffset + currentPageCellContentReference);
+      short currentPageCellContentOffset = file.readShort();
+      file.seek(currentPageOffset + 1);
+      int noofRecords = file.readShort();
 
-			long lastBeforeElementInArray = currentPageOffset + 16 + 2 * (noofRecords - 2);
-			file.seek(lastBeforeElementInArray);
-			short lastBeforeElementOffset = file.readShort();
+      long lastBeforeElementInArray = currentPageOffset + 16 + 2 * (noofRecords - 2);
+      file.seek(lastBeforeElementInArray);
+      short lastBeforeElementOffset = file.readShort();
 
-			short noOfBytes = (short) (lastBeforeElementOffset - currentPageCellContentOffset);
-			byte[] lastChildData = new byte[noOfBytes];
-			file.seek(currentPageOffset + currentPageCellContentOffset);
-			file.readFully(lastChildData);
-			noofRecords = noofRecords - 1;
-			file.seek(currentPageOffset + 1);
-			file.writeShort(noofRecords);
-			file.seek(currentPageOffset + currentPageCellContentReference);
-			file.writeShort(lastBeforeElementOffset);
-			setRightMostChild(file, currentPageNo);
+      short noOfBytes = (short) (lastBeforeElementOffset - currentPageCellContentOffset);
+      byte[] lastChildData = new byte[noOfBytes];
+      file.seek(currentPageOffset + currentPageCellContentOffset);
+      file.readFully(lastChildData);
+      noofRecords = noofRecords - 1;
+      file.seek(currentPageOffset + 1);
+      file.writeShort(noofRecords);
+      file.seek(currentPageOffset + currentPageCellContentReference);
+      file.writeShort(lastBeforeElementOffset);
+      setRightMostChild(file, currentPageNo);
 
-			file.seek(siblingPageOffset + 3);
-			short siblingContentStartOffset = file.readShort();
+      file.seek(siblingPageOffset + 3);
+      short siblingContentStartOffset = file.readShort();
 
-			if (siblingContentStartOffset == 0) {
-				siblingContentStartOffset = (short) PAGE_SIZE;
-			}
+      if (siblingContentStartOffset == 0) {
+        siblingContentStartOffset = (short) PAGE_SIZE;
+      }
 
-			short newStartPoint = (short) (siblingContentStartOffset - noOfBytes);
+      short newStartPoint = (short) (siblingContentStartOffset - noOfBytes);
 
-			file.seek(siblingPageOffset + newStartPoint);
-			file.write(lastChildData);
+      file.seek(siblingPageOffset + newStartPoint);
+      file.write(lastChildData);
 
-			file.seek(siblingPageOffset + 1);
-			short noOfSiblingRecords = file.readShort();
-			noOfSiblingRecords = (short) (noOfSiblingRecords + 1);
+      file.seek(siblingPageOffset + 1);
+      short noOfSiblingRecords = file.readShort();
+      noOfSiblingRecords = (short) (noOfSiblingRecords + 1);
 
-			file.seek(siblingPageOffset+1);
-			file.writeShort(noOfSiblingRecords);
+      file.seek(siblingPageOffset+1);
+      file.writeShort(noOfSiblingRecords);
 
-			file.seek(siblingPageOffset + 16 + 2 * (noOfSiblingRecords - 1));
-			file.writeShort(newStartPoint);
+      file.seek(siblingPageOffset + 16 + 2 * (noOfSiblingRecords - 1));
+      file.writeShort(newStartPoint);
 
-			file.seek(siblingPageOffset + 3);
-			file.writeShort(newStartPoint);
+      file.seek(siblingPageOffset + 3);
+      file.writeShort(newStartPoint);
 
-			setRightMostChild(file, siblingInteriorPageNo);
+      setRightMostChild(file, siblingInteriorPageNo);
 
-			setParent(file, getRightMostChildPageNo(file, siblingInteriorPageNo), siblingInteriorPageNo);
+      setParent(file, getRightMostChildPageNo(file, siblingInteriorPageNo), siblingInteriorPageNo);
 
-			updateLeftChildInfo(file, siblingInteriorPageNo);
+      updateLeftChildInfo(file, siblingInteriorPageNo);
 
-		} catch (Exception e) {
+    } catch (Exception e) {
 
-		}
-		// will split the childrens between the current page and new sibling
-		// child parents to be updated.
-		// rightmost child for current and sibling to be updated.
-		return;
-	}
+    }
+    // will split the childrens between the current page and new sibling
+    // child parents to be updated.
+    // rightmost child for current and sibling to be updated.
+    return;
+  }
 
-	static void updateLeftChildInfo(RandomAccessFile file, int currentPageNo) {
+  static void updateLeftChildInfo(RandomAccessFile file, int currentPageNo) {
         try {
             int pageOffset = ((currentPageNo - 1) * Page.PAGE_SIZE);
             int cellContentOffset = pageOffset + 3;
@@ -302,82 +302,82 @@ class Page {
 
     }
 
-	static Boolean checkParentspace(RandomAccessFile file, int currentPageNo) {
-		long seekNoofRecords = (currentPageNo - 1) * PAGE_SIZE + 1;
-		try {
-			file.seek(seekNoofRecords);
-			if (PAGE_CHILDREN_MAX_COUNT > file.readShort()) {
-				return true;
-			}
-		} catch (Exception e) {
-		}
-		return false;
-	}
+  static Boolean checkParentspace(RandomAccessFile file, int currentPageNo) {
+    long seekNoofRecords = (currentPageNo - 1) * PAGE_SIZE + 1;
+    try {
+      file.seek(seekNoofRecords);
+      if (PAGE_CHILDREN_MAX_COUNT > file.readShort()) {
+        return true;
+      }
+    } catch (Exception e) {
+    }
+    return false;
+  }
 
-	static int getParent(RandomAccessFile file, int currentPageNo) {
-		long seekParentByte = (currentPageNo - 1) * PAGE_SIZE + 10;
-		try {
-			file.seek(seekParentByte);
-			return file.readInt();
-		} catch (Exception e) {
+  static int getParent(RandomAccessFile file, int currentPageNo) {
+    long seekParentByte = (currentPageNo - 1) * PAGE_SIZE + 10;
+    try {
+      file.seek(seekParentByte);
+      return file.readInt();
+    } catch (Exception e) {
 
-		}
-		return -1;
-	}
+    }
+    return -1;
+  }
 
-	static void setRightMostChild(RandomAccessFile file, int currentPageNo) {
-		int rightMostChildPageNo = getRightMostChildPageNo(file, currentPageNo);
-		long seekRightMostChildByte = (currentPageNo - 1) * PAGE_SIZE + 6;
-		try {
-			file.seek(seekRightMostChildByte);
-			file.writeInt(rightMostChildPageNo);
-		} catch (Exception e) {
+  static void setRightMostChild(RandomAccessFile file, int currentPageNo) {
+    int rightMostChildPageNo = getRightMostChildPageNo(file, currentPageNo);
+    long seekRightMostChildByte = (currentPageNo - 1) * PAGE_SIZE + 6;
+    try {
+      file.seek(seekRightMostChildByte);
+      file.writeInt(rightMostChildPageNo);
+    } catch (Exception e) {
 
-		}
-	}
+    }
+  }
 
-	static int getRightMostChildPageNo(RandomAccessFile file, int currentPageNo) {
-		// get the rightmost child - after clarification
-		try {
-			long currentPageCell = (currentPageNo - 1) * Page.PAGE_SIZE;
-//			int seekNoofCells = currentPageCell + 1;
-//			file.seek(seekNoofCells);
-//			short noOfCells = file.readShort();
-//			short arraySize = (short) (2 * noOfCells);
-//			int lastElementInArray = currentPageCell + (16 + 2 * (arraySize - 1));
-//			file.seek(lastElementInArray);
-//			int lastChildAddress = (currentPageCell + file.readShort());
-//			file.seek(currentPageCell + lastChildAddress + 4); //4 bytes for rowId
-//			return file.readInt();
+  static int getRightMostChildPageNo(RandomAccessFile file, int currentPageNo) {
+    // get the rightmost child - after clarification
+    try {
+      long currentPageCell = (currentPageNo - 1) * Page.PAGE_SIZE;
+//      int seekNoofCells = currentPageCell + 1;
+//      file.seek(seekNoofCells);
+//      short noOfCells = file.readShort();
+//      short arraySize = (short) (2 * noOfCells);
+//      int lastElementInArray = currentPageCell + (16 + 2 * (arraySize - 1));
+//      file.seek(lastElementInArray);
+//      int lastChildAddress = (currentPageCell + file.readShort());
+//      file.seek(currentPageCell + lastChildAddress + 4); //4 bytes for rowId
+//      return file.readInt();
 
-			file.seek(currentPageCell + 3);
-			short rightChildDataStart = file.readShort();
+      file.seek(currentPageCell + 3);
+      short rightChildDataStart = file.readShort();
 
-//			if (rightChildDataStart == 0) {
-//				return -1;
-//			}
-			file.seek(currentPageCell + rightChildDataStart);
-			int noofColumns = file.readByte();
-			file.seek(currentPageCell + rightChildDataStart + 8);
+//      if (rightChildDataStart == 0) {
+//        return -1;
+//      }
+      file.seek(currentPageCell + rightChildDataStart);
+      int noofColumns = file.readByte();
+      file.seek(currentPageCell + rightChildDataStart + 8);
 
-//			file.seek(currentPageCell + rightChildDataStart + 4);//change this.
-			return file.readInt();
+//      file.seek(currentPageCell + rightChildDataStart + 4);//change this.
+      return file.readInt();
 
-		} catch (Exception e) {
+    } catch (Exception e) {
 
-		}
+    }
 
-		return 0;
-	}
+    return 0;
+  }
 
-	static void setRightSibling(RandomAccessFile file, int currentPageNo, int newPageNo) {
-		long seekSiblingByte = (currentPageNo - 1) * PAGE_SIZE + 6;
-		try {
-			file.seek(seekSiblingByte);
-			file.writeInt(newPageNo);
-		} catch (Exception e) {
+  static void setRightSibling(RandomAccessFile file, int currentPageNo, int newPageNo) {
+    long seekSiblingByte = (currentPageNo - 1) * PAGE_SIZE + 6;
+    try {
+      file.seek(seekSiblingByte);
+      file.writeInt(newPageNo);
+    } catch (Exception e) {
 
-		}
+    }
   }
 
   /**
@@ -394,54 +394,54 @@ class Page {
     return rightSiblingPageNo;
   }
 
-	static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
-		try {
+  static void insertChild(RandomAccessFile file, int childpageNo, int currentPageNo) {
+    try {
 
-			appendChildInINteriorPage(file, childpageNo, currentPageNo);
-			SortRowIds(file, currentPageNo);
-			setRightMostChild(file, currentPageNo);
-		} catch (Exception e) {
+      appendChildInINteriorPage(file, childpageNo, currentPageNo);
+      SortRowIds(file, currentPageNo);
+      setRightMostChild(file, currentPageNo);
+    } catch (Exception e) {
 
-		}
+    }
 
-	}
+  }
 
-	static void updateInteriorRowID(RandomAccessFile file, int rowId) {
-		try {
-			file.seek(0x09);
-			file.writeInt(rowId);
-		}catch(Exception e) {
+  static void updateInteriorRowID(RandomAccessFile file, int rowId) {
+    try {
+      file.seek(0x09);
+      file.writeInt(rowId);
+    }catch(Exception e) {
 
-		}
-		return;
-	}
+    }
+    return;
+  }
 
-	static void SortRowIds(RandomAccessFile file, int currentPageNo) {
+  static void SortRowIds(RandomAccessFile file, int currentPageNo) {
 
-	}
+  }
 
-	static void setParent(RandomAccessFile file, int childpageNo, int parentPageNo) {
-		long seekParentByte = (childpageNo - 1) * PAGE_SIZE + 10;
-		try {
-			file.seek(seekParentByte);
-			file.writeInt(parentPageNo);
-		} catch (Exception e) {
+  static void setParent(RandomAccessFile file, int childpageNo, int parentPageNo) {
+    long seekParentByte = (childpageNo - 1) * PAGE_SIZE + 10;
+    try {
+      file.seek(seekParentByte);
+      file.writeInt(parentPageNo);
+    } catch (Exception e) {
 
-		}
-	}
+    }
+  }
 
-	static void setPageasRoot(RandomAccessFile file, int pageNo) {
+  static void setPageasRoot(RandomAccessFile file, int pageNo) {
 
-		int seekParentByte = (pageNo - 1) * PAGE_SIZE + 10;
-		try {
-			file.seek(seekParentByte);
-			file.writeInt(-1);// making root
-			setMetaDataRootPageNo(file, pageNo);
-		} catch (Exception e) {
-		}
-	}
+    int seekParentByte = (pageNo - 1) * PAGE_SIZE + 10;
+    try {
+      file.seek(seekParentByte);
+      file.writeInt(-1);// making root
+      setMetaDataRootPageNo(file, pageNo);
+    } catch (Exception e) {
+    }
+  }
 
-	static void setMetaDataRootPageNo(RandomAccessFile file, int newRootPageNo) throws IOException {
+  static void setMetaDataRootPageNo(RandomAccessFile file, int newRootPageNo) throws IOException {
     file.seek(FILE_OFFSET_OF_METADATA_ROOT_PAGENO);
     file.writeInt(newRootPageNo);
   }
@@ -451,17 +451,17 @@ class Page {
     return file.readInt();
   }
 
-	static boolean CheckifRootNode(RandomAccessFile file, int pageNo) {
+  static boolean CheckifRootNode(RandomAccessFile file, int pageNo) {
 
-		int seekParentByte = (pageNo - 1) * PAGE_SIZE + 10;
-		try {
-			file.seek(seekParentByte);
-			if (file.readInt() == -1) {
-				return true;
-			}
-		} catch (Exception e) {
-		}
-		return false;
+    int seekParentByte = (pageNo - 1) * PAGE_SIZE + 10;
+    try {
+      file.seek(seekParentByte);
+      if (file.readInt() == -1) {
+        return true;
+      }
+    } catch (Exception e) {
+    }
+    return false;
   }
 
   static long convertPageNoToFileOffset(int pageNo) {

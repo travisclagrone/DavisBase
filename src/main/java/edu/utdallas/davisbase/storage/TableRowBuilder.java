@@ -18,64 +18,64 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class TableRowBuilder {
 
-	private final LinkedList<Object> values = new LinkedList<>();
+  private final LinkedList<Object> values = new LinkedList<>();
 
-	public TableRowBuilder() {
+  public TableRowBuilder() {
 
-	}
+  }
 
-	public void appendNull() {
-		this.values.add("");
-	}
+  public void appendNull() {
+    this.values.add("");
+  }
 
-	public void appendTinyInt(byte value) {
-		this.values.add(value);
-	}
+  public void appendTinyInt(byte value) {
+    this.values.add(value);
+  }
 
-	public void appendSmallInt(short value) {
-		this.values.add(value);
-	}
+  public void appendSmallInt(short value) {
+    this.values.add(value);
+  }
 
-	public void appendInt(int value) {
-		this.values.add(value);
-	}
+  public void appendInt(int value) {
+    this.values.add(value);
+  }
 
-	public void appendBigInt(long value) {
-		this.values.add(value);
-	}
+  public void appendBigInt(long value) {
+    this.values.add(value);
+  }
 
-	public void appendFloat(float value) {
-		this.values.add(value);
-	}
+  public void appendFloat(float value) {
+    this.values.add(value);
+  }
 
-	public void appendDouble(double value) {
-		this.values.add(value);
-	}
+  public void appendDouble(double value) {
+    this.values.add(value);
+  }
 
-	public void appendYear(Year value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendYear(Year value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendTime(LocalTime value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendTime(LocalTime value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendDateTime(LocalDateTime value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendDateTime(LocalDateTime value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendDate(LocalDate value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendDate(LocalDate value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
-	public void appendText(String value) {
-		checkNotNull(value);
-		this.values.add(value);
-	}
+  public void appendText(String value) {
+    checkNotNull(value);
+    this.values.add(value);
+  }
 
   void prependRowId(int rowId) {
     checkArgument(ROWID_MIN_VALUE <= rowId && rowId <= ROWID_MAX_VALUE);
@@ -115,8 +115,8 @@ public class TableRowBuilder {
    * @param index the zero-based index of the `index`-th value in this {@code TableRowBuilder}
    * @return the value at the given {@code index} in this {@code TableRowBuilder)}
    */
-	public @Nullable Object getValue(int index) {
-		return this.values.get(index);
+  public @Nullable Object getValue(int index) {
+    return this.values.get(index);
   }
 
   /**
@@ -130,10 +130,10 @@ public class TableRowBuilder {
    * @return the count of values currently in this {@code TableRowBuilder}
    */
   public int size() {
-		return this.values.size();
-	}
+    return this.values.size();
+  }
 
-	public TableLeafCellBuffer toLeafCellBuffer() {
+  public TableLeafCellBuffer toLeafCellBuffer() {
     final TableLeafCellBuffer cell = new TableLeafCellBuffer();
     for (final @Nullable Object value : this.values) {
       final byte[] data = convertToBytes(value);
