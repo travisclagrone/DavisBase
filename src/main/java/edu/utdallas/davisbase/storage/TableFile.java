@@ -575,6 +575,10 @@ public class TableFile implements Closeable {
 
   public void updateMaxRowIdInParent() throws IOException {
     int parentPageNo = getParentPageNo();
+    if (parentPageNo == NULL_PAGE_NO) {
+      return;
+    }
+
     long cellOffsetOffset = 0x0010;
     long fileOffsetOfPage = (parentPageNo - 1) * 512;
     long cellCountOffset = fileOffsetOfPage + 1;
