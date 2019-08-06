@@ -1,5 +1,9 @@
 package edu.utdallas.davisbase.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static edu.utdallas.davisbase.storage.Page.PAGE_SIZE;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -7,21 +11,8 @@ import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Year;
 import java.time.ZoneOffset;
-import java.util.Arrays;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import edu.utdallas.davisbase.DavisBase;
-import edu.utdallas.davisbase.NotImplementedException;
-import edu.utdallas.davisbase.common.DavisBaseConstant;
-
-import static java.lang.String.format;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 public class IndexFile implements Closeable {
 
@@ -53,7 +44,7 @@ public class IndexFile implements Closeable {
     long rootPageNoOffset = 5;
     file.seek(rootPageNoOffset);
     rootPgaeNo = file.readInt();
-    long rootPageOffset = (rootPgaeNo - 1) * Page.pageSize;
+    long rootPageOffset = (rootPgaeNo - 1) * PAGE_SIZE;
     return rootPageOffset;
   }
   
@@ -73,7 +64,7 @@ public class IndexFile implements Closeable {
   //writing No.of RowIds and indexValue length in root page for first time
   public short writeFirstRecordInRootPage(long rootPageOffset, byte indexValueLength) throws IOException {
     short indexRecordOffseet;
-    indexRecordOffseet = (short) (Page.pageSize-indexValueLength-6);
+    indexRecordOffseet = (short) (PAGE_SIZE-indexValueLength-6);
     file.seek(rootPageOffset+indexRecordOffseet);
     file.writeByte(1);//No of rowIds
     file.seek(rootPageOffset+indexRecordOffseet+1);
@@ -130,7 +121,7 @@ public class IndexFile implements Closeable {
     // TODO Auto-generated method stub
     file.seek(pageOffset+1);
     short recordCount = file.readShort();
-    short minRecordOffset = (short) Page.pageSize;
+    short minRecordOffset = (short) PAGE_SIZE;
     short addOffset = 0;
     while(recordCount > 0) {
       file.seek(pageOffset+16+addOffset);
@@ -204,7 +195,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -284,7 +275,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -294,7 +285,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -312,7 +303,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -396,7 +387,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -467,7 +458,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -477,7 +468,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -495,7 +486,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -574,7 +565,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -645,7 +636,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -655,7 +646,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -673,7 +664,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -752,7 +743,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -823,7 +814,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -833,7 +824,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -851,7 +842,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -930,7 +921,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -1001,7 +992,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -1011,7 +1002,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -1029,7 +1020,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -1108,7 +1099,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -1179,7 +1170,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -1189,7 +1180,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -1207,7 +1198,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -1286,7 +1277,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -1357,7 +1348,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -1367,7 +1358,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -1385,7 +1376,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -1465,7 +1456,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -1537,7 +1528,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -1547,7 +1538,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -1565,7 +1556,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -1646,7 +1637,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -1718,7 +1709,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -1728,7 +1719,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -1746,7 +1737,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
@@ -1827,7 +1818,7 @@ public class IndexFile implements Closeable {
       short recordCount = noOfRecordsInRootPage;
       short matchedRecordOffset = 0;
       short addOffset = 0;
-      short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+      short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
       boolean valueMatchFlag = false;
       while(recordCount > 0) {
         file.seek(rootPageOffset+16+addOffset);
@@ -1899,7 +1890,7 @@ public class IndexFile implements Closeable {
             if(noOfRecordsInPage-1 == 0) {//if there are no more records to compare with then move to right child page
               file.seek(pageOffset+6);
               int nextPageNo = file.readInt();
-              pageOffset = (nextPageNo - 1) * Page.pageSize;
+              pageOffset = (nextPageNo - 1) * PAGE_SIZE;
               file.seek(pageOffset);
               pageType = file.readByte();
               break;
@@ -1909,7 +1900,7 @@ public class IndexFile implements Closeable {
           else {//if index value less than record value move to left record
             file.seek(pageOffset+recordOffset);
             int nextPageNo = file.readInt();
-            pageOffset = (nextPageNo - 1) * Page.pageSize;
+            pageOffset = (nextPageNo - 1) * PAGE_SIZE;
             file.seek(pageOffset);
             pageType = file.readByte();
             break;
@@ -1927,7 +1918,7 @@ public class IndexFile implements Closeable {
         short recordCount = file.readShort();
         short matchedRecordOffset = 0;
         short addOffset = 0;
-        short recordOffset = 0; short minRecordOffset = (short) Page.pageSize;
+        short recordOffset = 0; short minRecordOffset = (short) PAGE_SIZE;
         boolean valueMatchFlag = false;
         while(recordCount > 0) {
           file.seek(pageOffset+16+addOffset);
