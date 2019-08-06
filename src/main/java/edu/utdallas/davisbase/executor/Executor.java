@@ -169,6 +169,8 @@ public class Executor {
       rowidRowBuilder.appendText(INT.name());
       rowidRowBuilder.appendTinyInt(ordinalPosition);
       rowidRowBuilder.appendText(BooleanUtils.toText(false));
+      rowidRowBuilder.appendText(BooleanUtils.toText(true));
+      rowidRowBuilder.appendText(PrimaryKeyUtils.toText(false));
       davisbaseColumns.appendRow(rowidRowBuilder);
 
       for (final CreateTableCommandColumn column : command.getColumnSchemas()) {
